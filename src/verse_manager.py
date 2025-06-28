@@ -19,6 +19,24 @@ class VerseManager:
         self.translation = os.getenv('DEFAULT_TRANSLATION', 'kjv')
         self.timeout = int(os.getenv('REQUEST_TIMEOUT', '10'))
         
+        # Multiple API support for different translations
+        self.esv_api_key = os.getenv('ESV_API_KEY', '')  # From https://api.esv.org
+        self.supported_translations = {
+            # bible-api.com translations (confirmed working)
+            'kjv': {'api': 'bible-api', 'code': 'kjv'},
+            'web': {'api': 'bible-api', 'code': 'web'},
+            'asv': {'api': 'bible-api', 'code': 'asv'},
+            'bbe': {'api': 'bible-api', 'code': 'bbe'},
+            'ylt': {'api': 'bible-api', 'code': 'ylt'},
+            'darby': {'api': 'bible-api', 'code': 'darby'},
+            # ESV API (requires API key from https://api.esv.org)
+            'esv': {'api': 'esv', 'code': 'esv'},
+            # Popular translations (fallback to KJV with note until sources found)
+            'amp': {'api': 'fallback', 'code': 'amp'},
+            'nasb': {'api': 'fallback', 'code': 'nasb'},
+            'cev': {'api': 'fallback', 'code': 'cev'}
+        }
+        
         # Enhanced features
         self.display_mode = 'time'  # 'time', 'date', 'random'
         self.parallel_mode = False  # Enable parallel translation mode
@@ -295,6 +313,10 @@ class VerseManager:
         else:  # time mode
             verse_data = self._get_time_based_verse()
         
+        # Ensure translation field is set if not already present
+        if verse_data and not verse_data.get('translation'):
+            verse_data['translation'] = self.translation.upper()
+        
         # Add parallel translation if enabled (for all modes)
         if self.parallel_mode and verse_data and not verse_data.get('is_summary') and not verse_data.get('is_date_event'):
             verse_data = self._add_parallel_translation(verse_data)
@@ -515,8 +537,8 @@ class VerseManager:
             if not all([book, chapter, verse]):
                 return verse_data
             
-            # Try to get secondary translation from API
-            secondary_verse = self._get_verse_from_api_with_translation(
+            # Try to get secondary translation using multi-API system
+            secondary_verse = self._fetch_verse_from_multi_api(
                 book, chapter, verse, self.secondary_translation
             )
             
@@ -544,29 +566,12 @@ class VerseManager:
                 self.logger.debug(f"Verse {book} {chapter}:{verse} not valid for parallel translation")
                 return None
             
-            actual_verse = validated_verse
-            url = f"{self.api_url}/{book} {chapter}:{actual_verse}"
-            if translation != 'kjv':
-                url += f"?translation={translation}"
-            
-            response = requests.get(url, timeout=self.timeout)
-            response.raise_for_status()
-            
-            data = response.json()
-            verse_text = data.get('text', '').strip()
-            
-            if not verse_text:
-                return None
-            
-            return {
-                'reference': data.get('reference', f"{book} {chapter:02d}:{actual_verse:02d}"),
-                'text': verse_text,
-                'book': book,
-                'chapter': chapter,
-                'verse': actual_verse,
-                'translation': translation,
-                'adjusted': actual_verse != verse
-            }
+            # Use the new multi-API system
+            result = self._fetch_verse_from_multi_api(book, chapter, validated_verse, translation)
+            if result:
+                # Add adjustment info for compatibility
+                result['adjusted'] = validated_verse != verse
+            return result
             
         except Exception as e:
             self.logger.debug(f"API request failed for {translation} {book} {chapter}:{verse}: {e}")
@@ -869,6 +874,124 @@ class VerseManager:
         # Winter: December 21 - March 19
         else:
             return 'winter'
+
+
+    def _fetch_verse_from_multi_api(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
+        """Fetch verse using multiple API sources based on translation."""
+        if translation not in self.supported_translations:
+            self.logger.warning(f"Unsupported translation: {translation}, falling back to KJV")
+            translation = 'kjv'
+        
+        api_config = self.supported_translations[translation]
+        api_type = api_config['api']
+        
+        try:
+            if api_type == 'bible-api':
+                return self._fetch_from_bible_api(book, chapter, verse, api_config['code'])
+            elif api_type == 'esv':
+                return self._fetch_from_esv_api(book, chapter, verse)
+            elif api_type == 'fallback':
+                return self._fetch_from_fallback(book, chapter, verse, translation)
+            else:
+                self.logger.warning(f"Unknown API type: {api_type}")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"API fetch failed for {translation}: {e}")
+            return None
+    
+    def _fetch_from_bible_api(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse from bible-api.com."""
+        url = f"{self.api_url}/{book} {chapter}:{verse}"
+        if translation_code != 'kjv':
+            url += f"?translation={translation_code}"
+        
+        response = requests.get(url, timeout=self.timeout)
+        response.raise_for_status()
+        
+        data = response.json()
+        verse_text = data.get('text', '').strip()
+        
+        if not verse_text:
+            return None
+        
+        return {
+            'reference': data.get('reference', f"{book} {chapter}:{verse}"),
+            'text': verse_text,
+            'book': book,
+            'chapter': chapter,
+            'verse': verse,
+            'translation': translation_code.upper()
+        }
+    
+    def _fetch_from_esv_api(self, book: str, chapter: int, verse: int) -> Optional[Dict]:
+        """Fetch verse from ESV API."""
+        if not self.esv_api_key:
+            self.logger.warning("ESV API key not configured, using fallback")
+            return self._fetch_from_fallback(book, chapter, verse, 'esv')
+        
+        url = "https://api.esv.org/v3/passage/text/"
+        headers = {
+            'Authorization': f'Token {self.esv_api_key}'
+        }
+        params = {
+            'q': f'{book} {chapter}:{verse}',
+            'format': 'json',
+            'include-headings': False,
+            'include-footnotes': False,
+            'include-verse-numbers': False,
+            'include-short-copyright': False,
+            'include-passage-references': False
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
+        response.raise_for_status()
+        
+        data = response.json()
+        passages = data.get('passages', [])
+        if not passages:
+            return None
+        
+        verse_text = passages[0].strip()
+        if not verse_text:
+            return None
+        
+        return {
+            'reference': f"{book} {chapter}:{verse}",
+            'text': verse_text,
+            'book': book,
+            'chapter': chapter,
+            'verse': verse,
+            'translation': 'ESV'
+        }
+    
+    def _fetch_from_fallback(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
+        """Fallback method for unsupported translations."""
+        self.logger.info(f"Using fallback for {translation.upper()} - returning KJV with note")
+        
+        # Try to get KJV version as fallback
+        try:
+            fallback_verse = self._fetch_from_bible_api(book, chapter, verse, 'kjv')
+            if fallback_verse:
+                fallback_verse['text'] = f"[{translation.upper()} not yet available - showing KJV] " + fallback_verse['text']
+                fallback_verse['translation'] = f"{translation.upper()} (fallback)"
+                return fallback_verse
+        except Exception as e:
+            self.logger.warning(f"Fallback to KJV also failed for {book} {chapter}:{verse}: {e}")
+        
+        # Return a default verse if all else fails
+        return {
+            'reference': f"{book} {chapter}:{verse}",
+            'text': f"[{translation.upper()} not available] Unable to retrieve verse.",
+            'book': book,
+            'chapter': chapter,
+            'verse': verse,
+            'translation': f"{translation.upper()} (unavailable)"
+        }
+    
+    def get_available_translations(self) -> List[str]:
+        """Get list of available translations."""
+        return list(self.supported_translations.keys())
 
 
 class VerseScheduler:

@@ -1133,7 +1133,7 @@ class BibleClockVoiceControl:
             self._speak("Sorry, I couldn't clear the display.")
     
     def _speak(self, text: str):
-        """Speak text using TTS with enhanced voice settings."""
+        """Speak text using TTS with enhanced voice settings and display management."""
         # Check if audio output is enabled
         if not self.audio_output_enabled:
             self.logger.debug(f"Audio output disabled - would speak: {text[:100]}{'...' if len(text) > 100 else ''}")
@@ -1146,6 +1146,10 @@ class BibleClockVoiceControl:
         try:
             # Log what's being spoken (truncated for readability)
             self.logger.info(f"Speaking: {text[:100]}{'...' if len(text) > 100 else ''}")
+            
+            # Show speaking status on display
+            if hasattr(self.display_manager, 'show_transient_message'):
+                self.display_manager.show_transient_message("speaking", duration=0)  # No auto-timeout
             
             # Enhance speech for better clarity
             enhanced_text = self._enhance_speech_text(text)
@@ -1174,9 +1178,14 @@ class BibleClockVoiceControl:
                 self.tts_engine.say(enhanced_text)
                 self.tts_engine.runAndWait()
             
+            # Restore normal display after speaking completes
+            self._restore_display_after_speech()
+            
         except Exception as e:
             self.logger.error(f"TTS error: {e}")
             self.logger.warning(f"Failed to speak: {text[:100]}{'...' if len(text) > 100 else ''}")
+            # Still try to restore display even if speech failed
+            self._restore_display_after_speech()
     
     def _enhance_speech_text(self, text: str) -> str:
         """Enhance text for better speech synthesis."""
@@ -1460,6 +1469,32 @@ class BibleClockVoiceControl:
         except Exception as e:
             self.logger.debug(f"Voice response timeout or error: {e}")
             return None
+    
+    def _restore_display_after_speech(self):
+        """Restore normal Bible Clock display after speech completes."""
+        try:
+            # Use the display manager's restore callback if available
+            if hasattr(self.display_manager, 'restore_callback') and self.display_manager.restore_callback:
+                self.logger.info("Restoring display after speech using callback")
+                self.display_manager.restore_callback()
+            else:
+                # Fallback: trigger a silent display refresh to show current verse
+                self.logger.info("Restoring display after speech using silent refresh")
+                self._refresh_display_silent()
+                
+        except Exception as e:
+            self.logger.error(f"Error restoring display after speech: {e}")
+    
+    def _refresh_display_silent(self):
+        """Silently refresh the display without speaking."""
+        try:
+            verse_data = self.verse_manager.get_current_verse()
+            image = self.image_generator.create_verse_image(verse_data)
+            self.display_manager.display_image(image, force_refresh=True)
+            self.logger.info("Display silently refreshed after speech")
+            
+        except Exception as e:
+            self.logger.error(f"Error in silent display refresh: {e}")
 
 
 # Backward compatibility alias

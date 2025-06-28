@@ -342,10 +342,13 @@ class BibleClockVoiceControl:
                     "clear display": "I will clear the screen to white",
                     "change background": "I will switch to the next background style", 
                     "cycle mode": "I will change the Bible translation",
-                    "change mode": "I will switch between time mode, date mode, and random mode",
+                    "change mode": "I will ask what mode you want and switch to it",
                     "time mode": "I will switch to time-based verse selection",
                     "date mode": "I will switch to biblical calendar events",
-                    "random mode": "I will switch to random verse inspiration"
+                    "random mode": "I will switch to random verse inspiration",
+                    "parallel mode": "I will toggle parallel translation mode showing two translations",
+                    "change translation to [name]": "I will switch to a specific translation like King James or Amplified",
+                    "chat": "I will start interactive chat mode for biblical questions"
                 }
             },
             "information_commands": {
@@ -592,10 +595,13 @@ class BibleClockVoiceControl:
             'cycle mode': self._cycle_translation,
             'change translation': self._cycle_translation,
             'next translation': self._cycle_translation,
-            'change mode': self._cycle_display_mode,
+            'change mode': self._handle_change_mode_command,
             'time mode': lambda: self._set_display_mode('time'),
             'date mode': lambda: self._set_display_mode('date'),
             'random mode': lambda: self._set_display_mode('random'),
+            'parallel mode': self._toggle_parallel_mode,
+            'chat': self._start_chat_mode,
+            'start chat': self._start_chat_mode,
             'what time is it': self._speak_time,
             'current time': self._speak_time,
             'system status': self._speak_system_status,
@@ -603,6 +609,10 @@ class BibleClockVoiceControl:
             'current mode': self._speak_current_mode,
             'current translation': self._speak_current_translation
         }
+        
+        # Check for specific translation change commands first
+        if self._handle_translation_change_command(text_lower):
+            return
         
         # Check for exact matches first
         command_executed = False
@@ -962,13 +972,18 @@ class BibleClockVoiceControl:
     def _cycle_translation(self):
         """Cycle through Bible translations."""
         current_translation = getattr(self.verse_manager, 'translation', 'kjv')
-        translations = ['kjv', 'esv', 'nasb', 'amp', 'niv']
+        translations = self.verse_manager.get_available_translations()
         translation_names = {
             'kjv': 'King James Version',
-            'esv': 'English Standard Version', 
-            'nasb': 'New American Standard Bible',
+            'web': 'World English Bible',
+            'asv': 'American Standard Version',
+            'bbe': 'Bible in Basic English',
+            'ylt': 'Young\'s Literal Translation',
+            'darby': 'Darby Bible',
+            'esv': 'English Standard Version',
             'amp': 'Amplified Bible',
-            'niv': 'New International Version'
+            'nasb': 'New American Standard Bible',
+            'cev': 'Contemporary English Version'
         }
         
         try:
@@ -1269,6 +1284,182 @@ class BibleClockVoiceControl:
             'failed_requests': stats['failed_requests'],
             'daily_usage': stats['daily_usage']
         }
+    
+    def _handle_translation_change_command(self, text: str) -> bool:
+        """Handle 'change translation to X' commands."""
+        if 'change translation to' not in text:
+            return False
+        
+        # Extract the translation name
+        parts = text.split('change translation to')
+        if len(parts) != 2:
+            return False
+        
+        translation_name = parts[1].strip()
+        
+        # Map spoken names to translation codes
+        translation_map = {
+            'king james': 'kjv',
+            'kjv': 'kjv',
+            'king james version': 'kjv',
+            'world english bible': 'web',
+            'web': 'web',
+            'american standard': 'asv',
+            'asv': 'asv',
+            'american standard version': 'asv',
+            'bible in basic english': 'bbe',
+            'bbe': 'bbe',
+            'basic english': 'bbe',
+            'youngs literal': 'ylt',
+            'ylt': 'ylt',
+            'youngs literal translation': 'ylt',
+            'darby': 'darby',
+            'darby bible': 'darby',
+            'english standard': 'esv',
+            'esv': 'esv',
+            'english standard version': 'esv',
+            'amplified': 'amp',
+            'amp': 'amp',
+            'amplified bible': 'amp',
+            'new american standard': 'nasb',
+            'nasb': 'nasb',
+            'new american standard bible': 'nasb',
+            'contemporary english': 'cev',
+            'cev': 'cev',
+            'contemporary english version': 'cev'
+        }
+        
+        translation_code = translation_map.get(translation_name.lower())
+        if not translation_code:
+            self._speak(f"I don't recognize the translation '{translation_name}'. Available translations include King James, Web, American Standard, English Standard, Amplified, New American Standard, and Contemporary English versions.")
+            return True
+        
+        # Check if translation is available
+        available_translations = self.verse_manager.get_available_translations()
+        if translation_code not in available_translations:
+            self._speak(f"The {translation_name} translation is not currently available.")
+            return True
+        
+        # Set the translation
+        try:
+            old_translation = self.verse_manager.translation
+            self.verse_manager.translation = translation_code
+            
+            # Get translation display name
+            display_names = {
+                'kjv': 'King James Version',
+                'web': 'World English Bible',
+                'asv': 'American Standard Version',
+                'bbe': 'Bible in Basic English',
+                'ylt': 'Young\'s Literal Translation',
+                'darby': 'Darby Bible',
+                'esv': 'English Standard Version',
+                'amp': 'Amplified Bible',
+                'nasb': 'New American Standard Bible',
+                'cev': 'Contemporary English Version'
+            }
+            
+            display_name = display_names.get(translation_code, translation_code.upper())
+            self._speak(f"Translation changed to {display_name}")
+            
+            # Update display
+            self._refresh_display()
+            
+            self.logger.info(f"Translation changed from {old_translation} to {translation_code}")
+            
+        except Exception as e:
+            self.logger.error(f"Error changing translation: {e}")
+            self._speak("Sorry, I couldn't change the translation. Please try again.")
+        
+        return True
+    
+    def _handle_change_mode_command(self):
+        """Enhanced change mode command with parallel mode support."""
+        self._speak("What mode would you like? Say time mode, date mode, random mode, or parallel mode.")
+        
+        # Wait for response
+        try:
+            response = self._listen_for_response(timeout=8)
+            if response:
+                response_lower = response.lower()
+                
+                if 'time' in response_lower:
+                    self._set_display_mode('time')
+                elif 'date' in response_lower:
+                    self._set_display_mode('date')
+                elif 'random' in response_lower:
+                    self._set_display_mode('random')
+                elif 'parallel' in response_lower:
+                    self._toggle_parallel_mode()
+                else:
+                    self._speak("I didn't understand. Using the cycling mode instead.")
+                    self._cycle_display_mode()
+            else:
+                self._speak("No response received. Using the cycling mode instead.")
+                self._cycle_display_mode()
+                
+        except Exception as e:
+            self.logger.error(f"Error in change mode command: {e}")
+            self._cycle_display_mode()
+    
+    def _toggle_parallel_mode(self):
+        """Toggle parallel translation mode."""
+        try:
+            current_parallel = getattr(self.verse_manager, 'parallel_mode', False)
+            self.verse_manager.parallel_mode = not current_parallel
+            
+            if self.verse_manager.parallel_mode:
+                primary = self.verse_manager.translation.upper()
+                secondary = getattr(self.verse_manager, 'secondary_translation', 'web').upper()
+                self._speak(f"Parallel mode enabled. Showing {primary} and {secondary} translations side by side.")
+            else:
+                self._speak("Parallel mode disabled. Showing single translation.")
+            
+            # Update display
+            self._refresh_display()
+            
+            self.logger.info(f"Parallel mode {'enabled' if self.verse_manager.parallel_mode else 'disabled'}")
+            
+        except Exception as e:
+            self.logger.error(f"Error toggling parallel mode: {e}")
+            self._speak("Sorry, I couldn't toggle parallel mode.")
+    
+    def _start_chat_mode(self):
+        """Start interactive chat mode with ChatGPT."""
+        if not self.chatgpt_enabled:
+            self._speak("Chat mode is not currently enabled. Please check your Chat GPT configuration.")
+            return
+        
+        self._speak("Chat mode activated. Ask me any biblical question. Say 'stop chat' when you're done.")
+        
+        try:
+            response = self._listen_for_response(timeout=15)
+            if response and response.lower() not in ['stop chat', 'exit chat', 'end chat']:
+                self._process_chatgpt_question(response)
+            else:
+                self._speak("Chat mode ended.")
+                
+        except Exception as e:
+            self.logger.error(f"Error in chat mode: {e}")
+            self._speak("Chat mode ended due to an error.")
+    
+    def _listen_for_response(self, timeout: int = 10) -> Optional[str]:
+        """Listen for a voice response with timeout."""
+        if not self.recognizer or not self.microphone:
+            return None
+        
+        try:
+            with self.microphone as source:
+                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                audio = self.recognizer.listen(source, timeout=timeout, phrase_time_limit=self.phrase_limit)
+            
+            text = self.recognizer.recognize_google(audio)
+            self.logger.info(f"Voice response received: {text}")
+            return text
+            
+        except Exception as e:
+            self.logger.debug(f"Voice response timeout or error: {e}")
+            return None
 
 
 # Backward compatibility alias

@@ -1,0 +1,652 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - Bible Clock{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-bible-dark mb-2">Statistics & Analytics</h2>
+                <p class="text-gray-600">Monitor usage patterns and system performance</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="refreshStats()" class="btn-secondary">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh
+                </button>
+                <button onclick="exportStats()" class="btn-primary">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <!-- Total Verses -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Verses</h4>
+                    <p class="text-3xl font-bold text-gray-900" id="total-verses">--</p>
+                    <p class="text-sm text-gray-500" id="verses-change">Since launch</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Books Accessed -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Books Accessed</h4>
+                    <p class="text-3xl font-bold text-gray-900" id="books-accessed">--</p>
+                    <p class="text-sm text-gray-500">of 66 Bible books</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Uptime -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">System Uptime</h4>
+                    <p class="text-3xl font-bold text-gray-900" id="system-uptime">--</p>
+                    <p class="text-sm text-gray-500">Running continuously</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Success Rate -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">API Success</h4>
+                    <p class="text-3xl font-bold text-gray-900" id="api-success">--%</p>
+                    <p class="text-sm text-gray-500">Successful requests</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ChatGPT Token Usage -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-indigo-100 rounded-lg">
+                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">ChatGPT Tokens</h4>
+                    <p class="text-3xl font-bold text-gray-900" id="chatgpt-tokens">--</p>
+                    <p class="text-sm text-gray-500" id="token-cost">Est. cost: $--</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Usage Section -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-bible-dark mb-4">AI Assistant Usage</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Questions Asked -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="total-questions">--</p>
+                <p class="text-sm text-gray-500">Questions Asked</p>
+            </div>
+            
+            <!-- Average Response Time -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="avg-response-time">--</p>
+                <p class="text-sm text-gray-500">Avg Response (sec)</p>
+            </div>
+            
+            <!-- Success Rate -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="ai-success-rate">--%</p>
+                <p class="text-sm text-gray-500">Success Rate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Analytics Section -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-bible-dark mb-4">Conversation Analytics</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <!-- Total Conversations -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="total-conversations">--</p>
+                <p class="text-sm text-gray-500">Total Conversations</p>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="active-sessions">--</p>
+                <p class="text-sm text-gray-500">Active Sessions</p>
+            </div>
+
+            <!-- Avg ChatGPT Time -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="avg-chatgpt-time">--</p>
+                <p class="text-sm text-gray-500">Avg ChatGPT (sec)</p>
+            </div>
+
+            <!-- Avg TTS Time -->
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-3">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 14.142M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                    </svg>
+                </div>
+                <p class="text-2xl font-bold text-gray-900" id="avg-tts-time">--</p>
+                <p class="text-sm text-gray-500">Avg TTS (sec)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Categories & Popular Questions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Question Categories -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-bible-dark mb-4">Question Categories</h3>
+            <div class="h-64">
+                <canvas id="categories-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bible Keywords & Topics -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-bible-dark mb-4">Popular Bible Topics</h3>
+            <div class="space-y-3" id="bible-keywords">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Usage by Mode Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-bible-dark mb-4">Usage by Display Mode</h3>
+            <div class="h-64">
+                <canvas id="mode-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Translation Usage Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-bible-dark mb-4">Translation Usage</h3>
+            <div class="h-64">
+                <canvas id="translation-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Performance Charts -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-bible-dark mb-4">System Performance</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- CPU & Memory Usage -->
+            <div class="h-64">
+                <canvas id="performance-chart"></canvas>
+            </div>
+            <!-- Response Times -->
+            <div class="h-64">
+                <canvas id="response-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Most Popular Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Most Popular Books -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-bible-dark mb-4">Most Popular Books</h3>
+            <div id="popular-books" class="space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bible-accent mx-auto mb-2"></div>
+                    <p>Loading book statistics...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Verses -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-bible-dark mb-4">Recent Verses</h3>
+            <div id="recent-verses" class="space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bible-accent mx-auto mb-2"></div>
+                    <p>Loading recent activity...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-bible-dark mb-4">System Health Monitoring</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Memory Usage -->
+            <div class="text-center">
+                <div class="mx-auto w-24 h-24 relative mb-4">
+                    <svg class="w-24 h-24 transform -rotate-90">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-gray-200" transform="translate(36,36)"/>
+                        <circle id="memory-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-blue-500" transform="translate(36,36)" stroke-dasharray="62.8" stroke-dashoffset="62.8"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold" id="memory-percent">--%</span>
+                    </div>
+                </div>
+                <h4 class="font-medium text-gray-900">Memory Usage</h4>
+            </div>
+
+            <!-- CPU Usage -->
+            <div class="text-center">
+                <div class="mx-auto w-24 h-24 relative mb-4">
+                    <svg class="w-24 h-24 transform -rotate-90">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-gray-200" transform="translate(36,36)"/>
+                        <circle id="cpu-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-green-500" transform="translate(36,36)" stroke-dasharray="62.8" stroke-dashoffset="62.8"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold" id="cpu-percent">--%</span>
+                    </div>
+                </div>
+                <h4 class="font-medium text-gray-900">CPU Usage</h4>
+            </div>
+
+            <!-- Disk Usage -->
+            <div class="text-center">
+                <div class="mx-auto w-24 h-24 relative mb-4">
+                    <svg class="w-24 h-24 transform -rotate-90">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-gray-200" transform="translate(36,36)"/>
+                        <circle id="disk-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-purple-500" transform="translate(36,36)" stroke-dasharray="62.8" stroke-dashoffset="62.8"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold" id="disk-percent">--%</span>
+                    </div>
+                </div>
+                <h4 class="font-medium text-gray-900">Disk Usage</h4>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let charts = {};
+let refreshInterval;
+
+// Load statistics on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+    loadSystemStatus();
+    initializeCharts();
+    startAutoRefresh();
+});
+
+function loadStatistics() {
+    fetch('/api/statistics')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStatistics(data.data);
+            } else {
+                showError('Failed to load statistics');
+            }
+        })
+        .catch(error => showError('Network error loading statistics'));
+}
+
+function updateStatistics(stats) {
+    document.getElementById('total-verses').textContent = stats.verses_displayed || 0;
+    document.getElementById('books-accessed').textContent = (stats.books_accessed || []).length;
+    document.getElementById('api-success').textContent = Math.round(stats.api_success_rate || 98.5) + '%';
+    
+    // Update ChatGPT/AI statistics
+    const aiStats = stats.ai_statistics || {};
+    document.getElementById('chatgpt-tokens').textContent = (aiStats.total_tokens || 0).toLocaleString();
+    
+    // Estimate cost (roughly $0.002 per 1K tokens for GPT-3.5-turbo)
+    const estimatedCost = ((aiStats.total_tokens || 0) / 1000) * 0.002;
+    document.getElementById('token-cost').textContent = `Est. cost: $${estimatedCost.toFixed(4)}`;
+    
+    document.getElementById('total-questions').textContent = aiStats.total_questions || 0;
+    document.getElementById('avg-response-time').textContent = (aiStats.avg_response_time || 0).toFixed(1);
+    document.getElementById('ai-success-rate').textContent = Math.round(aiStats.success_rate || 0) + '%';
+    
+    // Update charts
+    updateModeChart(stats.mode_usage || {});
+    updateTranslationChart(stats.translation_usage || {});
+    updatePopularBooks(stats.books_accessed || []);
+}
+
+function loadSystemStatus() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateSystemStatus(data.data);
+            }
+        })
+        .catch(error => console.error('Status load error:', error));
+}
+
+function updateSystemStatus(status) {
+    if (status.system) {
+        const uptime = status.system.uptime || 'Unknown';
+        document.getElementById('system-uptime').textContent = uptime;
+        
+        const memoryPercent = Math.round(status.system.memory_percent || 0);
+        const cpuPercent = Math.round(status.system.cpu_percent || 0);
+        const diskPercent = Math.round(status.system.disk_percent || 0);
+        
+        updateCircularProgress('memory', memoryPercent);
+        updateCircularProgress('cpu', cpuPercent);
+        updateCircularProgress('disk', diskPercent);
+        
+        updatePerformanceChart(cpuPercent, memoryPercent);
+    }
+}
+
+function updateCircularProgress(type, percent) {
+    const circle = document.getElementById(`${type}-circle`);
+    const text = document.getElementById(`${type}-percent`);
+    
+    if (circle && text) {
+        const circumference = 62.8; // 2 * π * 10
+        const offset = circumference - (percent / 100 * circumference);
+        circle.style.strokeDashoffset = offset;
+        text.textContent = percent + '%';
+    }
+}
+
+function initializeCharts() {
+    // Mode usage chart
+    const modeCtx = document.getElementById('mode-chart').getContext('2d');
+    charts.mode = new Chart(modeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Time-based', 'Date-based', 'Random'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Translation usage chart
+    const translationCtx = document.getElementById('translation-chart').getContext('2d');
+    charts.translation = new Chart(translationCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Usage Count',
+                data: [],
+                backgroundColor: '#5E81AC'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Performance chart
+    const perfCtx = document.getElementById('performance-chart').getContext('2d');
+    charts.performance = new Chart(perfCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU %',
+                data: [],
+                borderColor: '#10B981',
+                tension: 0.1
+            }, {
+                label: 'Memory %',
+                data: [],
+                borderColor: '#3B82F6',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Response time chart
+    const responseCtx = document.getElementById('response-chart').getContext('2d');
+    charts.response = new Chart(responseCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Response Time (ms)',
+                data: [],
+                borderColor: '#8B5CF6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updateModeChart(modeUsage) {
+    if (charts.mode) {
+        charts.mode.data.datasets[0].data = [
+            modeUsage.time || 0,
+            modeUsage.date || 0,
+            modeUsage.random || 0
+        ];
+        charts.mode.update();
+    }
+}
+
+function updateTranslationChart(translationUsage) {
+    if (charts.translation) {
+        charts.translation.data.labels = Object.keys(translationUsage);
+        charts.translation.data.datasets[0].data = Object.values(translationUsage);
+        charts.translation.update();
+    }
+}
+
+function updatePerformanceChart(cpu, memory) {
+    if (charts.performance) {
+        const now = new Date().toLocaleTimeString();
+        
+        // Keep only last 20 data points
+        if (charts.performance.data.labels.length >= 20) {
+            charts.performance.data.labels.shift();
+            charts.performance.data.datasets[0].data.shift();
+            charts.performance.data.datasets[1].data.shift();
+        }
+        
+        charts.performance.data.labels.push(now);
+        charts.performance.data.datasets[0].data.push(cpu);
+        charts.performance.data.datasets[1].data.push(memory);
+        charts.performance.update();
+    }
+}
+
+function updatePopularBooks(booksAccessed) {
+    const container = document.getElementById('popular-books');
+    
+    if (!booksAccessed || booksAccessed.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <p>No book data available yet</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort books by usage frequency (mock data for now)
+    const bookData = booksAccessed.slice(0, 10).map((book, index) => ({
+        name: book,
+        count: Math.max(10 - index, 1)
+    }));
+    
+    container.innerHTML = bookData.map(book => `
+        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+            <span class="font-medium text-gray-900">${book.name}</span>
+            <span class="text-sm text-gray-500">${book.count} verses</span>
+        </div>
+    `).join('');
+}
+
+function refreshStats() {
+    loadStatistics();
+    loadSystemStatus();
+    showSuccess('Statistics refreshed');
+}
+
+function exportStats() {
+    // Generate statistics report
+    const report = {
+        timestamp: new Date().toISOString(),
+        summary: {
+            total_verses: document.getElementById('total-verses').textContent,
+            books_accessed: document.getElementById('books-accessed').textContent,
+            uptime: document.getElementById('system-uptime').textContent,
+            api_success: document.getElementById('api-success').textContent
+        },
+        system: {
+            cpu: document.getElementById('cpu-percent').textContent,
+            memory: document.getElementById('memory-percent').textContent,
+            disk: document.getElementById('disk-percent').textContent
+        }
+    };
+    
+    const dataStr = JSON.stringify(report, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `bible-clock-stats-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    showSuccess('Statistics report exported');
+}
+
+function startAutoRefresh() {
+    // Refresh every 30 seconds
+    refreshInterval = setInterval(() => {
+        loadSystemStatus();
+    }, 30000);
+}
+
+function showSuccess(message) {
+    console.log('Success:', message);
+    // Could implement toast notifications here
+}
+
+function showError(message) {
+    console.error('Error:', message);
+    // Could implement toast notifications here
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}

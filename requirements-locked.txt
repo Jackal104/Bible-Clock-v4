@@ -1,0 +1,30 @@
+# Bible Clock - Version-Locked Dependencies
+# This ensures consistent behavior and prevents breaking changes
+
+# Core dependencies
+python-dotenv==1.0.0
+requests==2.31.0
+Pillow==10.1.0
+numpy==1.24.3
+
+# Voice control dependencies
+openai==1.52.0  # Latest stable version with new API
+speechrecognition==3.10.0
+pyaudio==0.2.11
+pvporcupine==3.0.1
+
+# Audio processing
+soundfile==0.12.1
+pydub==0.25.1
+scipy==1.11.4  # Required for audio resampling in Porcupine wake word detection
+
+# NOTE: Also requires ffmpeg system package for OpenAI TTS playback:
+# sudo apt install ffmpeg
+
+# Web interface
+flask==3.0.0
+flask-cors==4.0.0
+
+# Utility
+colorama==0.4.6
+psutil==5.9.6

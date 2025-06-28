@@ -1,0 +1,82 @@
+{
+  "Genesis": {
+    "title": "Genesis",
+    "summary": "The book of beginnings, chronicling creation, the fall of man, and God's covenant with Abraham. Genesis establishes the foundation of God's relationship with humanity and His chosen people."
+  },
+  "Exodus": {
+    "title": "Exodus",
+    "summary": "The story of Israel's deliverance from Egyptian slavery under Moses' leadership. Contains the giving of the Law at Mount Sinai and the establishment of the tabernacle."
+  },
+  "Psalms": {
+    "title": "Psalms",
+    "summary": "A collection of 150 songs and prayers expressing the full range of human emotion in relationship with God. Written primarily by David, these poems offer comfort, praise, and wisdom."
+  },
+  "Proverbs": {
+    "title": "Proverbs",
+    "summary": "Practical wisdom for daily living, primarily written by Solomon. Covers topics like relationships, work, money, and character, contrasting wisdom with foolishness."
+  },
+  "Ecclesiastes": {
+    "title": "Ecclesiastes",
+    "summary": "A philosophical reflection on the meaning of life and the futility of earthly pursuits. The Teacher concludes that fearing God and keeping His commandments is the whole duty of man."
+  },
+  "Isaiah": {
+    "title": "Isaiah",
+    "summary": "A major prophetic book containing both judgment and hope. Isaiah prophesies about the coming Messiah and God's ultimate plan of salvation for all nations."
+  },
+  "Jeremiah": {
+    "title": "Jeremiah",
+    "summary": "The weeping prophet's messages of coming judgment on Judah for their unfaithfulness, coupled with promises of restoration and a new covenant."
+  },
+  "Matthew": {
+    "title": "Matthew",
+    "summary": "The Gospel presenting Jesus as the promised Messiah and King of the Jews. Emphasizes Jesus' fulfillment of Old Testament prophecies and His teachings on the Kingdom of Heaven."
+  },
+  "Mark": {
+    "title": "Mark",
+    "summary": "The shortest Gospel, focusing on Jesus as the suffering Servant. Mark emphasizes Jesus' actions and miracles, presenting a fast-paced account of His ministry."
+  },
+  "Luke": {
+    "title": "Luke",
+    "summary": "Written by a physician, this Gospel presents Jesus as the perfect man and Savior of all people. Luke emphasizes Jesus' compassion for the poor, sick, and outcasts."
+  },
+  "John": {
+    "title": "John",
+    "summary": "The most theological Gospel, presenting Jesus as the divine Son of God. John focuses on Jesus' deity through seven miraculous signs and profound spiritual discussions."
+  },
+  "Romans": {
+    "title": "Romans",
+    "summary": "Paul's systematic presentation of the Gospel, explaining salvation by faith alone. Covers sin, justification, sanctification, and God's plan for Israel and the Gentiles."
+  },
+  "1 Corinthians": {
+    "title": "1 Corinthians",
+    "summary": "Paul addresses problems in the Corinthian church, including divisions, immorality, and misuse of spiritual gifts. Emphasizes love as the supreme Christian virtue."
+  },
+  "2 Corinthians": {
+    "title": "2 Corinthians",
+    "summary": "Paul defends his apostolic ministry and encourages the Corinthians in their faith. Discusses the nature of Christian ministry and giving."
+  },
+  "Ephesians": {
+    "title": "Ephesians",
+    "summary": "Paul's letter on the church as the body of Christ, emphasizing spiritual blessings, unity, and practical Christian living. Contains the famous passage on spiritual armor."
+  },
+  "Philippians": {
+    "title": "Philippians",
+    "summary": "A joyful letter written from prison, encouraging believers to rejoice in all circumstances and follow Christ's example of humility and service."
+  },
+  "Colossians": {
+    "title": "Colossians",
+    "summary": "Paul combats false teachings by exalting the supremacy and sufficiency of Christ. Emphasizes that Christ is the head of the church and all creation."
+  },
+  "1 Peter": {
+    "title": "1 Peter",
+    "summary": "Encouragement for believers facing persecution, emphasizing hope in salvation and holy living. Peter teaches about suffering for righteousness' sake."
+  },
+  "2 Peter": {
+    "title": "2 Peter",
+    "summary": "Peter's final letter warning against false teachers and encouraging spiritual growth. Emphasizes the certainty of Christ's return and the importance of Scripture."
+  },
+  "1 John": {
+    "title": "1 John",
+    "summary": "John's letter on assurance of salvation, emphasizing love, light, and life in Christ. Tests of genuine faith include love for others and obedience to God's commands."
+  }
+}

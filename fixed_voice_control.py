@@ -1,0 +1,3 @@
+import speech_recognition as sr
+import time
+from bible_clock_voice_complete import BibleClockVoiceSystem

@@ -1,0 +1,384 @@
+/* Custom styles for Bible Clock web interface */
+
+/* Navigation styles */
+.nav-link {
+    @apply text-gray-300 hover:text-white px-2 py-2 rounded-md text-sm font-medium flex items-center space-x-1 transition-colors duration-200 whitespace-nowrap;
+}
+
+.nav-link.active {
+    @apply text-white bg-bible-accent;
+}
+
+/* New prominent navigation tab styles */
+.nav-tab {
+    @apply text-gray-200 hover:text-white hover:bg-white hover:bg-opacity-10 px-2 py-2 rounded-md text-sm font-medium flex items-center space-x-1 transition-all duration-200 whitespace-nowrap;
+}
+
+.nav-tab.active {
+    @apply text-white bg-bible-accent shadow-sm;
+}
+
+/* Simple clean navigation styles */
+.simple-nav-link {
+    @apply text-gray-600 hover:text-bible-accent px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2 transition-colors duration-200 whitespace-nowrap;
+}
+
+.simple-nav-link.active {
+    @apply text-bible-accent bg-blue-50 border-b-2 border-bible-accent;
+}
+
+/* Larger screens get more padding */
+@media (min-width: 1024px) {
+    .nav-link {
+        @apply px-3 space-x-2;
+    }
+    
+    .nav-tab {
+        @apply px-3 space-x-2;
+    }
+}
+
+/* Button styles */
+.btn-primary {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-bible-accent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bible-accent transition-colors duration-200;
+}
+
+.btn-secondary {
+    @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bible-accent transition-colors duration-200;
+}
+
+.btn-danger {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200;
+}
+
+/* Form styles */
+.form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-bible-accent focus:border-bible-accent sm:text-sm;
+}
+
+.form-select {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-bible-accent focus:border-bible-accent sm:text-sm;
+}
+
+/* Toggle switch styles */
+.toggle {
+    @apply relative inline-block w-12 h-6;
+}
+
+.toggle input {
+    @apply opacity-0 w-0 h-0;
+}
+
+.slider {
+    @apply absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-400 rounded-full transition-all duration-300;
+}
+
+.slider:before {
+    @apply absolute content-[''] h-5 w-5 left-0.5 bottom-0.5 bg-white rounded-full transition-all duration-300;
+}
+
+input:checked + .slider {
+    @apply bg-bible-accent;
+}
+
+input:checked + .slider:before {
+    @apply transform translate-x-6;
+}
+
+/* Card hover effects */
+.card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+}
+
+/* Status indicators */
+.status-online {
+    @apply w-3 h-3 bg-green-400 rounded-full;
+}
+
+.status-offline {
+    @apply w-3 h-3 bg-red-400 rounded-full;
+}
+
+.status-warning {
+    @apply w-3 h-3 bg-yellow-400 rounded-full;
+}
+
+/* Loading spinner */
+.spinner {
+    @apply animate-spin rounded-full border-b-2 border-bible-accent;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Chart container styles */
+.chart-container {
+    @apply relative h-64 w-full;
+}
+
+/* Bible verse display styles */
+.verse-content {
+    @apply text-center space-y-4 p-6 bg-gradient-to-br from-bible-light to-white rounded-lg border-l-4 border-bible-accent;
+}
+
+.verse-reference {
+    @apply text-lg font-semibold text-bible-dark mb-4;
+}
+
+.verse-text {
+    @apply text-gray-700 italic leading-relaxed text-lg;
+}
+
+.verse-event-name {
+    @apply text-xl font-bold text-bible-accent mb-2;
+}
+
+.verse-description {
+    @apply text-sm text-gray-500 mt-4;
+}
+
+/* Background selection grid */
+.background-option {
+    @apply relative cursor-pointer border-2 rounded-lg p-2 hover:border-bible-accent transition-colors;
+}
+
+.background-option.selected {
+    @apply border-bible-accent;
+}
+
+.background-option::after {
+    content: '';
+    @apply absolute top-1 right-1 w-3 h-3 bg-bible-accent rounded-full opacity-0 transition-opacity;
+}
+
+.background-option.selected::after {
+    @apply opacity-100;
+}
+
+/* Statistics cards */
+.stat-card {
+    @apply bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200;
+}
+
+.stat-icon {
+    @apply p-3 rounded-lg;
+}
+
+.stat-value {
+    @apply text-3xl font-bold text-gray-900;
+}
+
+.stat-label {
+    @apply text-sm font-medium text-gray-500 uppercase tracking-wide;
+}
+
+.stat-change {
+    @apply text-sm text-gray-500;
+}
+
+/* Activity log */
+.activity-item {
+    @apply flex items-center space-x-3 py-3 border-b border-gray-100 last:border-b-0;
+}
+
+.activity-icon {
+    @apply flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center;
+}
+
+.activity-content {
+    @apply flex-1 min-w-0;
+}
+
+.activity-title {
+    @apply text-sm font-medium text-gray-900;
+}
+
+.activity-time {
+    @apply text-sm text-gray-500;
+}
+
+/* Preview container */
+.preview-container {
+    @apply aspect-video bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden;
+}
+
+.preview-image {
+    @apply max-w-full max-h-full object-contain rounded-lg shadow-sm;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+    .nav-link, .nav-tab {
+        @apply px-1.5 py-1.5 text-xs space-x-0;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        @apply px-3 py-1.5 text-xs;
+    }
+    
+    .stat-value {
+        @apply text-2xl;
+    }
+}
+
+/* Extra small screens - icon-only navigation */
+@media (max-width: 480px) {
+    .nav-link, .nav-tab {
+        @apply px-1 py-1 text-xs justify-center min-w-10;
+    }
+    
+    .nav-link span, .nav-tab span {
+        @apply hidden;
+    }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        @apply text-black bg-white;
+    }
+    
+    .bg-bible-dark {
+        @apply bg-white text-black;
+    }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode styles could be added here */
+}
+
+/* Animation utilities */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Focus styles for accessibility */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bible-accent;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn-primary {
+        @apply border-2 border-black;
+    }
+    
+    .form-input,
+    .form-select {
+        @apply border-2 border-black;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Custom Bible-themed elements */
+.cross-icon {
+    position: relative;
+}
+
+.cross-icon::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 16px;
+    background-color: currentColor;
+}
+
+.cross-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 2px;
+    background-color: currentColor;
+}
+
+/* Verse reference styling */
+.verse-ref {
+    font-family: 'Georgia', serif;
+    @apply font-semibold text-bible-dark;
+}
+
+/* Event name styling */
+.event-name {
+    @apply text-bible-accent font-bold tracking-wide;
+}
+
+/* Biblical quote styling */
+.biblical-quote {
+    @apply italic text-gray-700 leading-relaxed;
+    font-family: 'Georgia', serif;
+}
+
+.biblical-quote::before {
+    content: '"';
+    @apply text-bible-accent text-2xl;
+}
+
+.biblical-quote::after {
+    content: '"';
+    @apply text-bible-accent text-2xl;
+}

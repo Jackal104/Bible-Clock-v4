@@ -1,0 +1,26 @@
+[Unit]
+Description=Bible Clock E-ink Display Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/Bible-Clock-v3
+Environment="PATH=/home/admin/Bible-Clock-v3/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+EnvironmentFile=/home/admin/Bible-Clock-v3/.env
+ExecStart=/bin/bash /home/admin/Bible-Clock-v3/start_bible_clock.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=false
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

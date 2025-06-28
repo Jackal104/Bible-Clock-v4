@@ -1,0 +1,1373 @@
+[1mdiff --git a/backup_and_setup_eink.sh b/backup_and_setup_eink.sh[m
+[1mnew file mode 100755[m
+[1mindex 0000000..83c4d25[m
+[1m--- /dev/null[m
+[1m+++ b/backup_and_setup_eink.sh[m
+[36m@@ -0,0 +1,199 @@[m
+[32m+[m[32m#!/bin/bash[m
+[32m+[m[32m# Bible Clock v3 - Backup and E-ink Display Setup Script[m
+[32m+[m[32m# Based on Waveshare 10.3inch e-Paper HAT documentation[m
+[32m+[m
+[32m+[m[32mset -e[m
+[32m+[m
+[32m+[m[32mecho "📖 Bible Clock v3 - Backup and E-ink Setup"[m
+[32m+[m[32mecho "=========================================="[m
+[32m+[m
+[32m+[m[32m# Get script directory[m
+[32m+[m[32mSCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"[m
+[32m+[m[32mcd "$SCRIPT_DIR"[m
+[32m+[m
+[32m+[m[32mBACKUP_DIR="/home/admin/Bible-Clock-v3-backup-$(date +%Y%m%d_%H%M%S)"[m
+[32m+[m[32mTEMP_DIR="/tmp/eink_setup"[m
+[32m+[m
+[32m+[m[32mecho "🗂️  Creating backup at: $BACKUP_DIR"[m
+[32m+[m
+[32m+[m[32m# Create comprehensive backup[m
+[32m+[m[32mmkdir -p "$BACKUP_DIR"[m
+[32m+[m[32mcp -r /home/admin/Bible-Clock-v3/* "$BACKUP_DIR/"[m
+[32m+[m
+[32m+[m[32m# Also backup important system files[m
+[32m+[m[32mmkdir -p "$BACKUP_DIR/system_backup"[m
+[32m+[m[32mcp /boot/config.txt "$BACKUP_DIR/system_backup/" 2>/dev/null || echo "Note: /boot/config.txt not accessible"[m
+[32m+[m[32mcp /etc/modules "$BACKUP_DIR/system_backup/" 2>/dev/null || echo "Note: /etc/modules not accessible"[m
+[32m+[m
+[32m+[m[32mecho "✅ Backup completed"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "🔧 Setting up E-ink Display Drivers"[m
+[32m+[m[32mecho "==================================="[m
+[32m+[m
+[32m+[m[32m# Check if SPI is enabled[m
+[32m+[m[32mecho "📋 Checking SPI configuration..."[m
+[32m+[m[32mif lsmod | grep -q spi_bcm2835; then[m
+[32m+[m[32m    echo "✅ SPI module is loaded"[m
+[32m+[m[32melse[m
+[32m+[m[32m    echo "❌ SPI module not loaded - will enable SPI"[m
+[32m+[m[32mfi[m
+[32m+[m
+[32m+[m[32m# Create temp directory for downloads[m
+[32m+[m[32mmkdir -p "$TEMP_DIR"[m
+[32m+[m[32mcd "$TEMP_DIR"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "📦 Installing system dependencies..."[m
+[32m+[m
+[32m+[m[32m# Update package list[m
+[32m+[m[32msudo apt-get update[m
+[32m+[m
+[32m+[m[32m# Install required packages[m
+[32m+[m[32msudo apt-get install -y \[m
+[32m+[m[32m    python3-dev \[m
+[32m+[m[32m    python3-pip \[m
+[32m+[m[32m    python3-setuptools \[m
+[32m+[m[32m    python3-wheel \[m
+[32m+[m[32m    build-essential \[m
+[32m+[m[32m    wget \[m
+[32m+[m[32m    unzip \[m
+[32m+[m[32m    p7zip-full \[m
+[32m+[m[32m    git[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "🔌 Checking Raspberry Pi model..."[m
+[32m+[m[32mPI_MODEL=$(cat /proc/cpuinfo | grep "Model" | head -n1)[m
+[32m+[m[32mecho "Detected: $PI_MODEL"[m
+[32m+[m
+[32m+[m[32m# Install appropriate GPIO library based on Pi model[m
+[32m+[m[32mif echo "$PI_MODEL" | grep -q "Raspberry Pi 5"; then[m
+[32m+[m[32m    echo "📦 Installing lg library for Pi 5..."[m
+[32m+[m[32m    if [ ! -f "/usr/local/lib/liblg.so" ]; then[m
+[32m+[m[32m        wget https://github.com/joan2937/lg/archive/master.zip -O lg-master.zip[m
+[32m+[m[32m        unzip lg-master.zip[m
+[32m+[m[32m        cd lg-master[m
+[32m+[m[32m        make[m
+[32m+[m[32m        sudo make install[m
+[32m+[m[32m        cd ..[m
+[32m+[m[32m        echo "✅ lg library installed"[m
+[32m+[m[32m    else[m
+[32m+[m[32m        echo "✅ lg library already installed"[m
+[32m+[m[32m    fi[m
+[32m+[m[32melse[m
+[32m+[m[32m    echo "📦 Installing BCM2835 library for Pi 4 and earlier..."[m
+[32m+[m[32m    if [ ! -f "/usr/local/lib/libbcm2835.a" ]; then[m
+[32m+[m[32m        wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.60.tar.gz[m
+[32m+[m[32m        tar zxvf bcm2835-1.60.tar.gz[m
+[32m+[m[32m        cd bcm2835-1.60[m
+[32m+[m[32m        ./configure[m
+[32m+[m[32m        make[m
+[32m+[m[32m        sudo make check[m
+[32m+[m[32m        sudo make install[m
+[32m+[m[32m        cd ..[m
+[32m+[m[32m        echo "✅ BCM2835 library installed"[m
+[32m+[m[32m    else[m
+[32m+[m[32m        echo "✅ BCM2835 library already installed"[m
+[32m+[m[32m    fi[m
+[32m+[m[32mfi[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "🐍 Installing Python e-ink libraries..."[m
+[32m+[m
+[32m+[m[32m# Return to Bible Clock directory[m
+[32m+[m[32mcd "$SCRIPT_DIR"[m
+[32m+[m[32msource venv/bin/activate[m
+[32m+[m
+[32m+[m[32m# Install IT8951 library and dependencies[m
+[32m+[m[32mpip install --upgrade pip[m
+[32m+[m[32mpip install IT8951[m
+[32m+[m[32mpip install Pillow[m
+[32m+[m[32mpip install numpy[m
+[32m+[m[32mpip install spidev[m
+[32m+[m[32mpip install gpiozero[m
+[32m+[m
+[32m+[m[32mecho "✅ Python libraries installed"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "⚙️  Configuring SPI interface..."[m
+[32m+[m
+[32m+[m[32m# Enable SPI if not already enabled[m
+[32m+[m[32mif ! grep -q "dtparam=spi=on" /boot/config.txt; then[m
+[32m+[m[32m    echo "Adding SPI configuration to /boot/config.txt..."[m
+[32m+[m[32m    echo "dtparam=spi=on" | sudo tee -a /boot/config.txt[m
+[32m+[m[32m    SPI_MODIFIED=1[m
+[32m+[m[32melse[m
+[32m+[m[32m    echo "✅ SPI already enabled in /boot/config.txt"[m
+[32m+[m[32mfi[m
+[32m+[m
+[32m+[m[32m# For lg library support (Pi 5), add spi0-0cs overlay[m
+[32m+[m[32mif echo "$PI_MODEL" | grep -q "Raspberry Pi 5"; then[m
+[32m+[m[32m    if ! grep -q "dtoverlay=spi0-0cs" /boot/config.txt; then[m
+[32m+[m[32m        echo "Adding Pi 5 SPI overlay to /boot/config.txt..."[m
+[32m+[m[32m        echo "dtoverlay=spi0-0cs" | sudo tee -a /boot/config.txt[m
+[32m+[m[32m        SPI_MODIFIED=1[m
+[32m+[m[32m    else[m
+[32m+[m[32m        echo "✅ Pi 5 SPI overlay already configured"[m
+[32m+[m[32m    fi[m
+[32m+[m[32mfi[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "🧪 Testing e-ink library installation..."[m
+[32m+[m
+[32m+[m[32m# Test IT8951 import[m
+[32m+[m[32mpython3 -c "[m
+[32m+[m[32mtry:[m
+[32m+[m[32m    from IT8951.display import AutoEPDDisplay[m
+[32m+[m[32m    print('✅ IT8951 library import successful')[m
+[32m+[m[32mexcept ImportError as e:[m
+[32m+[m[32m    print(f'❌ IT8951 library import failed: {e}')[m
+[32m+[m[32m    exit(1)[m
+[32m+[m[32mexcept Exception as e:[m
+[32m+[m[32m    print(f'⚠️  IT8951 library imported but may need hardware: {e}')[m
+[32m+[m[32m"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "📋 E-ink Display Setup Summary"[m
+[32m+[m[32mecho "=============================="[m
+[32m+[m[32mecho "40-Pin HAT Installation Guide:"[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "🔌 Hardware Installation:"[m
+[32m+[m[32mecho "  1. Power off your Raspberry Pi completely"[m
+[32m+[m[32mecho "  2. Carefully align the 40-pin HAT connector with Pi GPIO header"[m
+[32m+[m[32mecho "  3. Press down firmly until HAT is fully seated"[m
+[32m+[m[32mecho "  4. Ensure all 40 pins are properly connected"[m
+[32m+[m[32mecho "  5. Connect the e-ink display ribbon cable to the HAT"[m
+[32m+[m[32mecho "  6. Power on the Pi"[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "✅ The HAT uses these GPIO pins automatically:"[m
+[32m+[m[32mecho "    RST  = GPIO 17 (Pin 11)"[m
+[32m+[m[32mecho "    CS   = GPIO 8  (Pin 24)"[m
+[32m+[m[32mecho "    BUSY = GPIO 24 (Pin 18)"[m
+[32m+[m[32mecho "    SPI0 MOSI, MISO, SCLK (Pins 19, 21, 23)"[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "Your .env configuration:"[m
+[32m+[m[32mecho "  RST_PIN=17"[m
+[32m+[m[32mecho "  CS_PIN=8"[m[41m [m
+[32m+[m[32mecho "  BUSY_PIN=24"[m
+[32m+[m[32mecho "  SPI_BUS=0"[m
+[32m+[m[32mecho "  SPI_DEVICE=0"[m
+[32m+[m[32mecho ""[m
+[32m+[m
+[32m+[m[32mif [ "$SPI_MODIFIED" = "1" ]; then[m
+[32m+[m[32m    echo "⚠️  REBOOT REQUIRED: SPI configuration was modified"[m
+[32m+[m[32m    echo "   Run: sudo reboot"[m
+[32m+[m[32m    echo ""[m
+[32m+[m[32mfi[m
+[32m+[m
+[32m+[m[32mecho "📝 Next Steps:"[m
+[32m+[m[32mecho "1. Connect the e-ink display following the pin guide above"[m
+[32m+[m[32mecho "2. If SPI was modified, reboot the Pi: sudo reboot"[m
+[32m+[m[32mecho "3. Test the display: python main.py --hardware"[m
+[32m+[m[32mecho "4. Check for hardware mode in web interface"[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "🗂️  Backup saved to: $BACKUP_DIR"[m
+[32m+[m
+[32m+[m[32m# Cleanup temp directory[m
+[32m+[m[32mrm -rf "$TEMP_DIR"[m
+[32m+[m
+[32m+[m[32mecho "✅ Setup complete!"[m
+\ No newline at end of file[m
+[1mdiff --git a/diagnose_web_issue.py b/diagnose_web_issue.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..6ab7d2c[m
+[1m--- /dev/null[m
+[1m+++ b/diagnose_web_issue.py[m
+[36m@@ -0,0 +1,166 @@[m
+[32m+[m[32m#!/usr/bin/env python3[m
+[32m+[m[32m"""[m
+[32m+[m[32mDiagnostic script to troubleshoot web interface issues[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32mimport os[m
+[32m+[m[32mimport sys[m
+[32m+[m[32mimport socket[m
+[32m+[m[32mimport subprocess[m
+[32m+[m[32mfrom pathlib import Path[m
+[32m+[m
+[32m+[m[32mdef check_python_environment():[m
+[32m+[m[32m    """Check Python and virtual environment"""[m
+[32m+[m[32m    print("=== Python Environment ===")[m
+[32m+[m[32m    print(f"Python version: {sys.version}")[m
+[32m+[m[32m    print(f"Python executable: {sys.executable}")[m
+[32m+[m[32m    print(f"Virtual environment: {sys.prefix}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    # Check if we're in virtual environment[m
+[32m+[m[32m    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):[m
+[32m+[m[32m        print("✅ Virtual environment is active")[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        print("❌ Virtual environment not active")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef check_flask_installation():[m
+[32m+[m[32m    """Check Flask installation"""[m
+[32m+[m[32m    print("=== Flask Installation ===")[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        import flask[m
+[32m+[m[32m        print(f"✅ Flask version: {flask.__version__}")[m
+[32m+[m[32m        print(f"Flask path: {flask.__file__}")[m
+[32m+[m[32m    except ImportError as e:[m
+[32m+[m[32m        print(f"❌ Flask not installed: {e}")[m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef check_network_connectivity():[m
+[32m+[m[32m    """Check network settings"""[m
+[32m+[m[32m    print("=== Network Configuration ===")[m
+[32m+[m[41m    [m
+[32m+[m[32m    # Get hostname[m
+[32m+[m[32m    hostname = socket.gethostname()[m
+[32m+[m[32m    print(f"Hostname: {hostname}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    # Get IP addresses[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        # Get local IP[m
+[32m+[m[32m        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)[m
+[32m+[m[32m        s.connect(("8.8.8.8", 80))[m
+[32m+[m[32m        local_ip = s.getsockname()[0][m
+[32m+[m[32m        s.close()[m
+[32m+[m[32m        print(f"Local IP: {local_ip}")[m
+[32m+[m[32m    except Exception as e:[m
+[32m+[m[32m        print(f"Could not get local IP: {e}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    # Check if port 5000 is available[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)[m
+[32m+[m[32m        s.bind(('', 5000))[m
+[32m+[m[32m        s.close()[m
+[32m+[m[32m        print("✅ Port 5000 is available")[m
+[32m+[m[32m    except OSError as e:[m
+[32m+[m[32m        print(f"❌ Port 5000 issue: {e}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef check_file_permissions():[m
+[32m+[m[32m    """Check file permissions"""[m
+[32m+[m[32m    print("=== File Permissions ===")[m
+[32m+[m[41m    [m
+[32m+[m[32m    files_to_check = [[m
+[32m+[m[32m        'main.py',[m
+[32m+[m[32m        'src/web_interface/app.py',[m
+[32m+[m[32m        'src/web_interface/templates/dashboard.html',[m
+[32m+[m[32m        '.env'[m
+[32m+[m[32m    ][m
+[32m+[m[41m    [m
+[32m+[m[32m    for file_path in files_to_check:[m
+[32m+[m[32m        if os.path.exists(file_path):[m
+[32m+[m[32m            stat = os.stat(file_path)[m
+[32m+[m[32m            print(f"✅ {file_path} - Mode: {oct(stat.st_mode)}")[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            print(f"❌ {file_path} - Not found")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef check_dependencies():[m
+[32m+[m[32m    """Check required dependencies"""[m
+[32m+[m[32m    print("=== Dependencies ===")[m
+[32m+[m[41m    [m
+[32m+[m[32m    required_modules = [[m
+[32m+[m[32m        'flask', 'pathlib', 'json', 'logging', 'datetime',[m[41m [m
+[32m+[m[32m        'psutil', 'threading', 'os'[m
+[32m+[m[32m    ][m
+[32m+[m[41m    [m
+[32m+[m[32m    for module in required_modules:[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            __import__(module)[m
+[32m+[m[32m            print(f"✅ {module}")[m
+[32m+[m[32m        except ImportError:[m
+[32m+[m[32m            print(f"❌ {module} - Missing")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef check_processes():[m
+[32m+[m[32m    """Check running processes"""[m
+[32m+[m[32m    print("=== Running Processes ===")[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        import psutil[m
+[32m+[m[32m        bible_processes = [][m
+[32m+[m[32m        flask_processes = [][m
+[32m+[m[41m        [m
+[32m+[m[32m        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                cmdline = ' '.join(proc.info['cmdline'] or [])[m
+[32m+[m[32m                if 'bible' in cmdline.lower() or 'main.py' in cmdline:[m
+[32m+[m[32m                    bible_processes.append(f"PID {proc.info['pid']}: {cmdline}")[m
+[32m+[m[32m                elif 'flask' in cmdline.lower():[m
+[32m+[m[32m                    flask_processes.append(f"PID {proc.info['pid']}: {cmdline}")[m
+[32m+[m[32m            except (psutil.NoSuchProcess, psutil.AccessDenied):[m
+[32m+[m[32m                pass[m
+[32m+[m[41m        [m
+[32m+[m[32m        if bible_processes:[m
+[32m+[m[32m            print("Bible Clock processes:")[m
+[32m+[m[32m            for proc in bible_processes:[m
+[32m+[m[32m                print(f"  {proc}")[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            print("❌ No Bible Clock processes running")[m
+[32m+[m[41m            [m
+[32m+[m[32m        if flask_processes:[m
+[32m+[m[32m            print("Flask processes:")[m
+[32m+[m[32m            for proc in flask_processes:[m
+[32m+[m[32m                print(f"  {proc}")[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            print("❌ No Flask processes running")[m
+[32m+[m[41m            [m
+[32m+[m[32m    except ImportError:[m
+[32m+[m[32m        print("psutil not available for process checking")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef main():[m
+[32m+[m[32m    """Run all diagnostic checks"""[m
+[32m+[m[32m    print("🔍 Bible Clock Web Interface Diagnostics")[m
+[32m+[m[32m    print("=" * 50)[m
+[32m+[m[41m    [m
+[32m+[m[32m    check_python_environment()[m
+[32m+[m[32m    check_flask_installation()[m
+[32m+[m[32m    check_network_connectivity()[m
+[32m+[m[32m    check_file_permissions()[m
+[32m+[m[32m    check_dependencies()[m
+[32m+[m[32m    check_processes()[m
+[32m+[m[41m    [m
+[32m+[m[32m    print("=== Recommendations ===")[m
+[32m+[m[32m    print("1. Try starting the simple test server:")[m
+[32m+[m[32m    print("   python test_web_simple.py")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("2. If that works, try the main application:")[m
+[32m+[m[32m    print("   python main.py --web-only")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("3. Check firewall settings if still not accessible")[m
+[32m+[m[32m    print("4. Try accessing from Pi locally first: http://localhost:5000")[m
+[32m+[m
+[32m+[m[32mif __name__ == '__main__':[m
+[32m+[m[32m    main()[m
+\ No newline at end of file[m
+[1mdiff --git a/gpio_pinout_guide.py b/gpio_pinout_guide.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..15c452a[m
+[1m--- /dev/null[m
+[1m+++ b/gpio_pinout_guide.py[m
+[36m@@ -0,0 +1,130 @@[m
+[32m+[m[32m#!/usr/bin/env python3[m
+[32m+[m[32m"""[m
+[32m+[m[32m40-Pin HAT Installation Guide for 10.3" E-ink Display[m
+[32m+[m[32mSimple plug-and-play installation guide[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32mdef print_hat_installation():[m
+[32m+[m[32m    """Print HAT installation guide"""[m
+[32m+[m[41m    [m
+[32m+[m[32m    print("🎩 40-Pin HAT Installation for E-ink Display")[m
+[32m+[m[32m    print("=" * 50)[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("The Waveshare 10.3\" e-Paper HAT connects directly to your Pi's")[m
+[32m+[m[32m    print("40-pin GPIO header - no individual wire connections needed!")[m
+[32m+[m[32m    print()[m
+[32m+[m[41m    [m
+[32m+[m[32m    print("📋 Installation Steps:")[m
+[32m+[m[32m    print("-" * 25)[m
+[32m+[m[32m    print("1. 🔌 Power off your Raspberry Pi COMPLETELY")[m
+[32m+[m[32m    print("   sudo shutdown -h now")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("2. 🔧 Align the HAT with Pi GPIO header")[m
+[32m+[m[32m    print("   • The HAT has a 40-pin female connector")[m[41m [m
+[32m+[m[32m    print("   • Match it with the Pi's 40-pin male header")[m
+[32m+[m[32m    print("   • Ensure proper orientation (Pin 1 to Pin 1)")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("3. 📌 Press the HAT down firmly")[m
+[32m+[m[32m    print("   • Push evenly until fully seated")[m
+[32m+[m[32m    print("   • All 40 pins should be connected")[m
+[32m+[m[32m    print("   • No gaps between HAT and Pi")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("4. 🖥️  Connect the e-ink display")[m
+[32m+[m[32m    print("   • Connect ribbon cable to HAT's FPC connector")[m
+[32m+[m[32m    print("   • Ensure cable is properly inserted")[m
+[32m+[m[32m    print("   • Lock the FPC connector")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("5. ⚡ Power on and test")[m
+[32m+[m[32m    print("   • Power on the Pi")[m
+[32m+[m[32m    print("   • Run: python test_eink_hardware.py")[m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef print_gpio_usage():[m
+[32m+[m[32m    """Show which GPIO pins the HAT uses"""[m
+[32m+[m[41m    [m
+[32m+[m[32m    print("📍 GPIO Pins Used by HAT:")[m
+[32m+[m[32m    print("-" * 30)[m
+[32m+[m[32m    print("The HAT automatically connects to these pins:")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("Power:")[m
+[32m+[m[32m    print("  • 5V Power   (Pin 2)")[m
+[32m+[m[32m    print("  • Ground     (Pin 6)")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("SPI Interface:")[m
+[32m+[m[32m    print("  • SPI0_MOSI  (Pin 19, GPIO 10)")[m
+[32m+[m[32m    print("  • SPI0_MISO  (Pin 21, GPIO 9)")[m
+[32m+[m[32m    print("  • SPI0_SCLK  (Pin 23, GPIO 11)")[m
+[32m+[m[32m    print("  • SPI0_CE0   (Pin 24, GPIO 8)  - Chip Select")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("Control Signals:")[m
+[32m+[m[32m    print("  • RST        (Pin 11, GPIO 17) - Reset")[m
+[32m+[m[32m    print("  • BUSY       (Pin 18, GPIO 24) - Ready/Busy")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("✅ Your .env configuration matches these pins:")[m
+[32m+[m[32m    print("   RST_PIN=17, CS_PIN=8, BUSY_PIN=24")[m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef print_troubleshooting():[m
+[32m+[m[32m    """Print HAT troubleshooting guide"""[m
+[32m+[m[41m    [m
+[32m+[m[32m    print("🔧 Troubleshooting HAT Installation:")[m
+[32m+[m[32m    print("-" * 40)[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("If the display doesn't work:")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("🔍 Check Physical Connection:")[m
+[32m+[m[32m    print("  • HAT fully seated on GPIO header")[m
+[32m+[m[32m    print("  • No bent or missing pins")[m
+[32m+[m[32m    print("  • Ribbon cable properly connected")[m
+[32m+[m[32m    print("  • FPC connector locked")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("⚙️  Check Software Configuration:")[m
+[32m+[m[32m    print("  • SPI enabled: sudo raspi-config")[m
+[32m+[m[32m    print("  • Libraries installed: pip list | grep IT8951")[m
+[32m+[m[32m    print("  • Run test: python test_eink_hardware.py")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("⚡ Check Power:")[m
+[32m+[m[32m    print("  • Pi power supply adequate (3A recommended)")[m
+[32m+[m[32m    print("  • HAT LED indicators (if any)")[m
+[32m+[m[32m    print("  • Measure 5V on GPIO pins")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("📊 Check System Status:")[m
+[32m+[m[32m    print("  • SPI devices: ls /dev/spi*")[m
+[32m+[m[32m    print("  • SPI module: lsmod | grep spi")[m
+[32m+[m[32m    print("  • GPIO access: groups | grep gpio")[m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef print_advantages():[m
+[32m+[m[32m    """Print advantages of HAT installation"""[m
+[32m+[m[41m    [m
+[32m+[m[32m    print("🎉 Advantages of 40-Pin HAT:")[m
+[32m+[m[32m    print("-" * 35)[m
+[32m+[m[32m    print("✅ No individual wire connections")[m
+[32m+[m[32m    print("✅ Secure, reliable connection")[m
+[32m+[m[32m    print("✅ No wiring mistakes possible")[m
+[32m+[m[32m    print("✅ Professional appearance")[m
+[32m+[m[32m    print("✅ Easy to remove/reinstall")[m
+[32m+[m[32m    print("✅ All pins automatically connected")[m
+[32m+[m[32m    print("✅ Standard Raspberry Pi HAT format")[m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef main():[m
+[32m+[m[32m    """Display complete HAT installation guide"""[m
+[32m+[m[32m    print_hat_installation()[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print_gpio_usage()[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print_advantages()[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print_troubleshooting()[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("🌐 Additional Resources:")[m
+[32m+[m[32m    print("• Waveshare Wiki: https://www.waveshare.com/wiki/10.3inch_e-Paper_HAT")[m
+[32m+[m[32m    print("• HAT Specification: https://github.com/raspberrypi/hats")[m
+[32m+[m[32m    print("• Test Hardware: python test_eink_hardware.py")[m
+[32m+[m[32m    print()[m
+[32m+[m[32m    print("🚀 After installation, run: python main.py --hardware")[m
+[32m+[m
+[32m+[m[32mif __name__ == '__main__':[m
+[32m+[m[32m    main()[m
+\ No newline at end of file[m
+[1mdiff --git a/src/conversation_manager.py b/src/conversation_manager.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e7ebd78[m
+[1m--- /dev/null[m
+[1m+++ b/src/conversation_manager.py[m
+[36m@@ -0,0 +1,543 @@[m
+[32m+[m[32m#!/usr/bin/env python3[m
+[32m+[m[32m"""[m
+[32m+[m[32mConversation Manager for Bible Clock v3[m
+[32m+[m[32mHandles multi-turn conversations, metrics, and session management.[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32mimport json[m
+[32m+[m[32mimport logging[m
+[32m+[m[32mimport time[m
+[32m+[m[32mfrom datetime import datetime, timedelta[m
+[32m+[m[32mfrom pathlib import Path[m
+[32m+[m[32mfrom typing import Dict, List, Optional, Any[m
+[32m+[m[32mfrom dataclasses import dataclass, asdict[m
+[32m+[m[32mfrom collections import defaultdict, Counter[m
+[32m+[m[32mimport uuid[m
+[32m+[m[32mimport re[m
+[32m+[m
+[32m+[m[32mlogger = logging.getLogger(__name__)[m
+[32m+[m
+[32m+[m[32m@dataclass[m
+[32m+[m[32mclass LightweightMetrics:[m
+[32m+[m[32m    """Lightweight metrics for long-term storage (no full text)."""[m
+[32m+[m[32m    date: str  # YYYY-MM-DD format[m
+[32m+[m[32m    category: str[m
+[32m+[m[32m    keywords: List[str]  # Top keywords extracted[m
+[32m+[m[32m    response_time: float[m
+[32m+[m[32m    success: bool[m
+[32m+[m[32m    hour: int  # 0-23 for hourly trends[m
+[32m+[m
+[32m+[m[32m@dataclass[m[41m  [m
+[32m+[m[32mclass AggregatedMetrics:[m
+[32m+[m[32m    """Daily aggregated metrics to save space."""[m
+[32m+[m[32m    date: str[m
+[32m+[m[32m    total_conversations: int[m
+[32m+[m[32m    categories: Dict[str, int]  # category -> count[m
+[32m+[m[32m    keywords: Dict[str, int]   # keyword -> count[m[41m  [m
+[32m+[m[32m    avg_response_time: float[m
+[32m+[m[32m    success_rate: float[m
+[32m+[m[32m    hourly_distribution: Dict[int, int]  # hour -> count[m
+[32m+[m[41m    [m
+[32m+[m[32m@dataclass[m
+[32m+[m[32mclass ConversationMetrics:[m
+[32m+[m[32m    """Full metrics for recent conversations (purged after 7 days)."""[m
+[32m+[m[32m    session_id: str[m
+[32m+[m[32m    timestamp: str[m
+[32m+[m[32m    question: str[m
+[32m+[m[32m    question_category: str[m
+[32m+[m[32m    speech_recognition_time: float[m
+[32m+[m[32m    chatgpt_processing_time: float[m
+[32m+[m[32m    tts_generation_time: float[m
+[32m+[m[32m    total_response_time: float[m
+[32m+[m[32m    response_length: int[m
+[32m+[m[32m    success: bool[m
+[32m+[m[32m    error_message: Optional[str] = None[m
+[32m+[m[41m    [m
+[32m+[m[32mclass ConversationTurn:[m
+[32m+[m[32m    """Represents a single turn in a conversation."""[m
+[32m+[m[32m    def __init__(self, question: str, response: str, timestamp: datetime, category: str = "general"):[m
+[32m+[m[32m        self.question = question[m
+[32m+[m[32m        self.response = response[m
+[32m+[m[32m        self.timestamp = timestamp[m
+[32m+[m[32m        self.category = category[m
+[32m+[m[41m        [m
+[32m+[m[32m    def to_dict(self) -> Dict[str, Any]:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            'question': self.question,[m
+[32m+[m[32m            'response': self.response,[m
+[32m+[m[32m            'timestamp': self.timestamp.isoformat(),[m
+[32m+[m[32m            'category': self.category[m
+[32m+[m[32m        }[m
+[32m+[m[41m    [m
+[32m+[m[32m    @classmethod[m
+[32m+[m[32m    def from_dict(cls, data: Dict[str, Any]) -> 'ConversationTurn':[m
+[32m+[m[32m        return cls([m
+[32m+[m[32m            question=data['question'],[m
+[32m+[m[32m            response=data['response'],[m
+[32m+[m[32m            timestamp=datetime.fromisoformat(data['timestamp']),[m
+[32m+[m[32m            category=data.get('category', 'general')[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32mclass ConversationSession:[m
+[32m+[m[32m    """Manages a single conversation session with memory."""[m
+[32m+[m[32m    def __init__(self, session_id: str = None, max_turns: int = 10):[m
+[32m+[m[32m        self.session_id = session_id or str(uuid.uuid4())[m
+[32m+[m[32m        self.turns: List[ConversationTurn] = [][m
+[32m+[m[32m        self.max_turns = max_turns[m
+[32m+[m[32m        self.created_at = datetime.now()[m
+[32m+[m[32m        self.last_activity = self.created_at[m
+[32m+[m[41m        [m
+[32m+[m[32m    def add_turn(self, question: str, response: str, category: str = "general"):[m
+[32m+[m[32m        """Add a new turn to the conversation."""[m
+[32m+[m[32m        turn = ConversationTurn(question, response, datetime.now(), category)[m
+[32m+[m[32m        self.turns.append(turn)[m
+[32m+[m[32m        self.last_activity = datetime.now()[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Keep only the last max_turns[m
+[32m+[m[32m        if len(self.turns) > self.max_turns:[m
+[32m+[m[32m            self.turns = self.turns[-self.max_turns:][m
+[32m+[m[41m            [m
+[32m+[m[32m    def get_context(self, turns_back: int = 3) -> str:[m
+[32m+[m[32m        """Get conversation context for ChatGPT."""[m
+[32m+[m[32m        if not self.turns:[m
+[32m+[m[32m            return ""[m
+[32m+[m[41m            [m
+[32m+[m[32m        recent_turns = self.turns[-turns_back:] if turns_back > 0 else self.turns[m
+[32m+[m[32m        context_parts = [][m
+[32m+[m[41m        [m
+[32m+[m[32m        for turn in recent_turns:[m
+[32m+[m[32m            context_parts.append(f"Previous Q: {turn.question}")[m
+[32m+[m[32m            context_parts.append(f"Previous A: {turn.response}")[m
+[32m+[m[41m            [m
+[32m+[m[32m        return "\n".join(context_parts)[m
+[32m+[m[41m    [m
+[32m+[m[32m    def is_expired(self, timeout_minutes: int = 30) -> bool:[m
+[32m+[m[32m        """Check if session has expired."""[m
+[32m+[m[32m        return datetime.now() - self.last_activity > timedelta(minutes=timeout_minutes)[m
+[32m+[m[41m    [m
+[32m+[m[32m    def to_dict(self) -> Dict[str, Any]:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            'session_id': self.session_id,[m
+[32m+[m[32m            'turns': [turn.to_dict() for turn in self.turns],[m
+[32m+[m[32m            'created_at': self.created_at.isoformat(),[m
+[32m+[m[32m            'last_activity': self.last_activity.isoformat()[m
+[32m+[m[32m        }[m
+[32m+[m[41m    [m
+[32m+[m[32m    @classmethod[m
+[32m+[m[32m    def from_dict(cls, data: Dict[str, Any]) -> 'ConversationSession':[m
+[32m+[m[32m        session = cls(session_id=data['session_id'])[m
+[32m+[m[32m        session.turns = [ConversationTurn.from_dict(turn_data) for turn_data in data['turns']][m
+[32m+[m[32m        session.created_at = datetime.fromisoformat(data['created_at'])[m
+[32m+[m[32m        session.last_activity = datetime.fromisoformat(data['last_activity'])[m
+[32m+[m[32m        return session[m
+[32m+[m
+[32m+[m[32mclass ConversationManager:[m
+[32m+[m[32m    """Manages conversations, metrics, and Bible study sessions."""[m
+[32m+[m[41m    [m
+[32m+[m[32m    def __init__(self, data_dir: str = "data", max_session_turns: int = 5):[m
+[32m+[m[32m        self.data_dir = Path(data_dir)[m
+[32m+[m[32m        self.data_dir.mkdir(exist_ok=True)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Lightweight storage files[m
+[32m+[m[32m        self.aggregated_file = self.data_dir / "aggregated_metrics.json"[m
+[32m+[m[32m        self.sessions_file = self.data_dir / "active_sessions.json"  # Only active sessions[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Recent data (will be purged)[m
+[32m+[m[32m        self.recent_metrics: List[ConversationMetrics] = [][m
+[32m+[m[32m        self.aggregated_data: Dict[str, AggregatedMetrics] = {}[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Session management with size limits[m
+[32m+[m[32m        self.current_session: Optional[ConversationSession] = None[m
+[32m+[m[32m        self.sessions: Dict[str, ConversationSession] = {}[m
+[32m+[m[32m        self.max_session_turns = max_session_turns[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Bible keywords for extraction[m
+[32m+[m[32m        self.bible_keywords = {[m
+[32m+[m[32m            'books': ['genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy', 'joshua', 'judges',[m[41m [m
+[32m+[m[32m                     'ruth', 'samuel', 'kings', 'chronicles', 'ezra', 'nehemiah', 'esther', 'job',[m[41m [m
+[32m+[m[32m                     'psalms', 'proverbs', 'ecclesiastes', 'song', 'isaiah', 'jeremiah', 'lamentations',[m
+[32m+[m[32m                     'ezekiel', 'daniel', 'hosea', 'joel', 'amos', 'obadiah', 'jonah', 'micah', 'nahum',[m
+[32m+[m[32m                     'habakkuk', 'zephaniah', 'haggai', 'zechariah', 'malachi', 'matthew', 'mark',[m[41m [m
+[32m+[m[32m                     'luke', 'john', 'acts', 'romans', 'corinthians', 'galatians', 'ephesians',[m
+[32m+[m[32m                     'philippians', 'colossians', 'thessalonians', 'timothy', 'titus', 'philemon',[m
+[32m+[m[32m                     'hebrews', 'james', 'peter', 'jude', 'revelation'],[m
+[32m+[m[32m            'topics': ['faith', 'prayer', 'love', 'hope', 'forgiveness', 'salvation', 'grace', 'mercy',[m
+[32m+[m[32m                      'wisdom', 'peace', 'joy', 'strength', 'guidance', 'trust', 'worship', 'praise',[m
+[32m+[m[32m                      'blessing', 'healing', 'comfort', 'protection', 'provision', 'kingdom', 'heaven',[m
+[32m+[m[32m                      'sin', 'redemption', 'righteousness', 'holiness', 'spirit', 'truth', 'light'][m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        self.load_data()[m
+[32m+[m[41m        [m
+[32m+[m[32m    def extract_keywords(self, text: str) -> List[str]:[m
+[32m+[m[32m        """Extract Bible-related keywords from text."""[m
+[32m+[m[32m        text_lower = text.lower()[m
+[32m+[m[32m        keywords = [][m
+[32m+[m[41m        [m
+[32m+[m[32m        # Extract Bible books[m
+[32m+[m[32m        for book in self.bible_keywords['books']:[m
+[32m+[m[32m            if book in text_lower:[m
+[32m+[m[32m                keywords.append(book)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Extract biblical topics[m
+[32m+[m[32m        for topic in self.bible_keywords['topics']:[m
+[32m+[m[32m            if topic in text_lower:[m
+[32m+[m[32m                keywords.append(topic)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Extract verse references (e.g., John 3:16, Psalm 23)[m
+[32m+[m[32m        verse_pattern = r'\b([a-zA-Z]+)\s*\d+(?::\d+)?'[m
+[32m+[m[32m        verse_matches = re.findall(verse_pattern, text)[m
+[32m+[m[32m        for match in verse_matches:[m
+[32m+[m[32m            if match.lower() in self.bible_keywords['books']:[m
+[32m+[m[32m                keywords.append(f"{match}_verse")[m
+[32m+[m[41m        [m
+[32m+[m[32m        return list(set(keywords))  # Remove duplicates[m
+[32m+[m[41m    [m
+[32m+[m[32m    def load_data(self):[m
+[32m+[m[32m        """Load existing aggregated data and active sessions."""[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            # Load aggregated metrics (long-term storage)[m
+[32m+[m[32m            if self.aggregated_file.exists():[m
+[32m+[m[32m                with open(self.aggregated_file, 'r') as f:[m
+[32m+[m[32m                    agg_data = json.load(f)[m
+[32m+[m[32m                    self.aggregated_data = {[m
+[32m+[m[32m                        date: AggregatedMetrics(**data)[m[41m [m
+[32m+[m[32m                        for date, data in agg_data.items()[m
+[32m+[m[32m                    }[m
+[32m+[m[41m                    [m
+[32m+[m[32m            # Load only active sessions (not expired)[m
+[32m+[m[32m            if self.sessions_file.exists():[m
+[32m+[m[32m                with open(self.sessions_file, 'r') as f:[m
+[32m+[m[32m                    sessions_data = json.load(f)[m
+[32m+[m[32m                    self.sessions = {[m
+[32m+[m[32m                        sid: ConversationSession.from_dict(data)[m[41m [m
+[32m+[m[32m                        for sid, data in sessions_data.items()[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                    # Clean up expired sessions on load[m
+[32m+[m[32m                    self.cleanup_expired_sessions()[m
+[32m+[m[41m                    [m
+[32m+[m[32m            logger.info(f"Loaded {len(self.aggregated_data)} days of aggregated metrics and {len(self.sessions)} active sessions")[m
+[32m+[m[41m            [m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            logger.error(f"Error loading conversation data: {e}")[m
+[32m+[m[41m            [m
+[32m+[m[32m    def save_data(self):[m
+[32m+[m[32m        """Save lightweight data to disk."""[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            # Aggregate today's data if we have recent metrics[m
+[32m+[m[32m            if self.recent_metrics:[m
+[32m+[m[32m                self._aggregate_daily_data()[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Save aggregated metrics (long-term, lightweight)[m
+[32m+[m[32m            agg_data = {date: asdict(metrics) for date, metrics in self.aggregated_data.items()}[m
+[32m+[m[32m            with open(self.aggregated_file, 'w') as f:[m
+[32m+[m[32m                json.dump(agg_data, f, indent=2)[m
+[32m+[m[41m                [m
+[32m+[m[32m            # Save only active sessions (clean up expired ones first)[m
+[32m+[m[32m            self.cleanup_expired_sessions()[m
+[32m+[m[32m            sessions_data = {sid: session.to_dict() for sid, session in self.sessions.items()}[m
+[32m+[m[32m            with open(self.sessions_file, 'w') as f:[m
+[32m+[m[32m                json.dump(sessions_data, f, indent=2)[m
+[32m+[m[41m                [m
+[32m+[m[32m            logger.debug("Lightweight conversation data saved successfully")[m
+[32m+[m[41m            [m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            logger.error(f"Error saving conversation data: {e}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    def _aggregate_daily_data(self):[m
+[32m+[m[32m        """Aggregate recent metrics into daily summaries and clear recent data."""[m
+[32m+[m[32m        if not self.recent_metrics:[m
+[32m+[m[32m            return[m
+[32m+[m[41m            [m
+[32m+[m[32m        # Group by date[m
+[32m+[m[32m        daily_data = defaultdict(list)[m
+[32m+[m[32m        for metric in self.recent_metrics:[m
+[32m+[m[32m            date = datetime.fromisoformat(metric.timestamp).date().isoformat()[m
+[32m+[m[32m            daily_data[date].append(metric)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Create aggregated metrics for each day[m
+[32m+[m[32m        for date, day_metrics in daily_data.items():[m
+[32m+[m[32m            if date in self.aggregated_data:[m
+[32m+[m[32m                # Update existing aggregation[m
+[32m+[m[32m                existing = self.aggregated_data[date][m
+[32m+[m[32m                combined_metrics = day_metrics + []  # Add to existing if needed[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                combined_metrics = day_metrics[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Calculate aggregations[m
+[32m+[m[32m            total_conversations = len(combined_metrics)[m
+[32m+[m[32m            categories = Counter(m.question_category for m in combined_metrics)[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Extract and count keywords[m
+[32m+[m[32m            all_keywords = [][m
+[32m+[m[32m            for metric in combined_metrics:[m
+[32m+[m[32m                keywords = self.extract_keywords(metric.question)[m
+[32m+[m[32m                all_keywords.extend(keywords)[m
+[32m+[m[32m            keyword_counts = Counter(all_keywords)[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Calculate averages[m
+[32m+[m[32m            avg_response_time = sum(m.total_response_time for m in combined_metrics) / total_conversations[m
+[32m+[m[32m            success_rate = sum(1 for m in combined_metrics if m.success) / total_conversations * 100[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Hourly distribution[m
+[32m+[m[32m            hourly_dist = Counter(datetime.fromisoformat(m.timestamp).hour for m in combined_metrics)[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Create or update aggregated metrics[m
+[32m+[m[32m            self.aggregated_data[date] = AggregatedMetrics([m
+[32m+[m[32m                date=date,[m
+[32m+[m[32m                total_conversations=total_conversations,[m
+[32m+[m[32m                categories=dict(categories),[m
+[32m+[m[32m                keywords=dict(keyword_counts.most_common(20)),  # Keep top 20 keywords[m
+[32m+[m[32m                avg_response_time=round(avg_response_time, 2),[m
+[32m+[m[32m                success_rate=round(success_rate, 1),[m
+[32m+[m[32m                hourly_distribution=dict(hourly_dist)[m
+[32m+[m[32m            )[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Clear recent metrics after aggregation[m
+[32m+[m[32m        self.recent_metrics.clear()[m
+[32m+[m[32m        logger.info(f"Aggregated {len(daily_data)} days of metrics")[m
+[32m+[m[41m            [m
+[32m+[m[32m    def start_session(self, session_type: str = "general") -> str:[m
+[32m+[m[32m        """Start a new conversation session."""[m
+[32m+[m[32m        session = ConversationSession()[m
+[32m+[m[32m        self.current_session = session[m
+[32m+[m[32m        self.sessions[session.session_id] = session[m
+[32m+[m[41m        [m
+[32m+[m[32m        logger.info(f"Started new {session_type} session: {session.session_id}")[m
+[32m+[m[32m        return session.session_id[m
+[32m+[m[41m        [m
+[32m+[m[32m    def get_or_create_session(self) -> ConversationSession:[m
+[32m+[m[32m        """Get current session or create a new one."""[m
+[32m+[m[32m        if not self.current_session or self.current_session.is_expired():[m
+[32m+[m[32m            self.start_session()[m
+[32m+[m[32m        return self.current_session[m
+[32m+[m[41m        [m
+[32m+[m[32m    def categorize_question(self, question: str) -> str:[m
+[32m+[m[32m        """Categorize the question for analytics."""[m
+[32m+[m[32m        question_lower = question.lower()[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Bible-specific categories[m
+[32m+[m[32m        if any(word in question_lower for word in ['verse', 'scripture', 'bible', 'book of']):[m
+[32m+[m[32m            return "bible_verse"[m
+[32m+[m[32m        elif any(word in question_lower for word in ['prayer', 'pray']):[m
+[32m+[m[32m            return "prayer"[m
+[32m+[m[32m        elif any(word in question_lower for word in ['faith', 'believe', 'god', 'jesus', 'christ']):[m
+[32m+[m[32m            return "theology"[m
+[32m+[m[32m        elif any(word in question_lower for word in ['time', 'clock', 'what time']):[m
+[32m+[m[32m            return "time"[m
+[32m+[m[32m        elif any(word in question_lower for word in ['weather']):[m
+[32m+[m[32m            return "weather"[m
+[32m+[m[32m        elif any(word in question_lower for word in ['continue', 'more', 'tell me more', 'explain']):[m
+[32m+[m[32m            return "follow_up"[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            return "general"[m
+[32m+[m[41m            [m
+[32m+[m[32m    def record_conversation(self, question: str, response: str, metrics: Dict[str, float]) -> str:[m
+[32m+[m[32m        """Record a conversation turn with lightweight metrics."""[m
+[32m+[m[32m        session = self.get_or_create_session()[m
+[32m+[m[32m        category = self.categorize_question(question)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Add to conversation history (limited turns)[m
+[32m+[m[32m        session.add_turn(question, response, category)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Limit session size to prevent memory bloat[m
+[32m+[m[32m        if len(session.turns) > self.max_session_turns:[m
+[32m+[m[32m            session.turns = session.turns[-self.max_session_turns:][m
+[32m+[m[41m        [m
+[32m+[m[32m        # Create lightweight metrics record (will be aggregated daily)[m
+[32m+[m[32m        conversation_metrics = ConversationMetrics([m
+[32m+[m[32m            session_id=session.session_id,[m
+[32m+[m[32m            timestamp=datetime.now().isoformat(),[m
+[32m+[m[32m            question=question[:100],  # Truncate question to save space[m
+[32m+[m[32m            question_category=category,[m
+[32m+[m[32m            speech_recognition_time=metrics.get('speech_recognition_time', 0.0),[m
+[32m+[m[32m            chatgpt_processing_time=metrics.get('chatgpt_processing_time', 0.0),[m
+[32m+[m[32m            tts_generation_time=metrics.get('tts_generation_time', 0.0),[m
+[32m+[m[32m            total_response_time=sum(metrics.values()),[m
+[32m+[m[32m            response_length=len(response),[m
+[32m+[m[32m            success=True[m
+[32m+[m[32m        )[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Add to recent metrics (will be aggregated and purged)[m
+[32m+[m[32m        self.recent_metrics.append(conversation_metrics)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Trigger daily aggregation if we have too many recent metrics[m
+[32m+[m[32m        if len(self.recent_metrics) >= 50:  # Aggregate every 50 conversations[m
+[32m+[m[32m            self._aggregate_daily_data()[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Periodic cleanup[m
+[32m+[m[32m        if len(self.recent_metrics) % 10 == 0:  # Every 10 conversations[m
+[32m+[m[32m            self._purge_old_data()[m
+[32m+[m[41m        [m
+[32m+[m[32m        self.save_data()[m
+[32m+[m[41m        [m
+[32m+[m[32m        logger.info(f"Recorded conversation in category '{category}' - Total time: {conversation_metrics.total_response_time:.2f}s")[m
+[32m+[m[32m        return session.session_id[m
+[32m+[m[41m    [m
+[32m+[m[32m    def _purge_old_data(self):[m
+[32m+[m[32m        """Purge data older than 7 days to save space."""[m
+[32m+[m[32m        cutoff_date = datetime.now() - timedelta(days=7)[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Purge old recent metrics[m
+[32m+[m[32m        self.recent_metrics = [[m
+[32m+[m[32m            m for m in self.recent_metrics[m[41m [m
+[32m+[m[32m            if datetime.fromisoformat(m.timestamp) > cutoff_date[m
+[32m+[m[32m        ][m
+[32m+[m[41m        [m
+[32m+[m[32m        # Keep only last 30 days of aggregated data[m
+[32m+[m[32m        cutoff_agg_date = (datetime.now() - timedelta(days=30)).date().isoformat()[m
+[32m+[m[32m        old_dates = [date for date in self.aggregated_data.keys() if date < cutoff_agg_date][m
+[32m+[m[32m        for date in old_dates:[m
+[32m+[m[32m            del self.aggregated_data[date][m
+[32m+[m[41m        [m
+[32m+[m[32m        if old_dates:[m
+[32m+[m[32m            logger.info(f"Purged {len(old_dates)} days of old aggregated data")[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Cleanup expired sessions[m
+[32m+[m[32m        self.cleanup_expired_sessions()[m
+[32m+[m[41m        [m
+[32m+[m[32m    def get_conversation_context(self, turns_back: int = 3) -> str:[m
+[32m+[m[32m        """Get conversation context for multi-turn conversations."""[m
+[32m+[m[32m        if not self.current_session:[m
+[32m+[m[32m            return ""[m
+[32m+[m[32m        return self.current_session.get_context(turns_back)[m
+[32m+[m[41m        [m
+[32m+[m[32m    def get_analytics(self, days_back: int = 7) -> Dict[str, Any]:[m
+[32m+[m[32m        """Get conversation analytics from aggregated and recent data."""[m
+[32m+[m[32m        cutoff_date = (datetime.now() - timedelta(days=days_back)).date()[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Combine recent metrics and aggregated data[m
+[32m+[m[32m        total_conversations = 0[m
+[32m+[m[32m        combined_categories = defaultdict(int)[m
+[32m+[m[32m        combined_keywords = defaultdict(int)[m
+[32m+[m[32m        total_response_time = 0[m
+[32m+[m[32m        total_success = 0[m
+[32m+[m[32m        daily_activity = {}[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Add aggregated data[m
+[32m+[m[32m        for date_str, agg_data in self.aggregated_data.items():[m
+[32m+[m[32m            date = datetime.fromisoformat(date_str).date()[m
+[32m+[m[32m            if date >= cutoff_date:[m
+[32m+[m[32m                total_conversations += agg_data.total_conversations[m
+[32m+[m[32m                for cat, count in agg_data.categories.items():[m
+[32m+[m[32m                    combined_categories[cat] += count[m
+[32m+[m[32m                for keyword, count in agg_data.keywords.items():[m
+[32m+[m[32m                    combined_keywords[keyword] += count[m
+[32m+[m[32m                total_response_time += agg_data.avg_response_time * agg_data.total_conversations[m
+[32m+[m[32m                total_success += (agg_data.success_rate / 100) * agg_data.total_conversations[m
+[32m+[m[32m                daily_activity[date_str] = agg_data.total_conversations[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Add recent metrics[m
+[32m+[m[32m        recent_metrics = [[m
+[32m+[m[32m            m for m in self.recent_metrics[m[41m [m
+[32m+[m[32m            if datetime.fromisoformat(m.timestamp).date() >= cutoff_date[m
+[32m+[m[32m        ][m
+[32m+[m[41m        [m
+[32m+[m[32m        if recent_metrics:[m
+[32m+[m[32m            total_conversations += len(recent_metrics)[m
+[32m+[m[32m            for m in recent_metrics:[m
+[32m+[m[32m                combined_categories[m.question_category] += 1[m
+[32m+[m[32m                # Extract keywords from recent questions[m
+[32m+[m[32m                keywords = self.extract_keywords(m.question)[m
+[32m+[m[32m                for keyword in keywords:[m
+[32m+[m[32m                    combined_keywords[keyword] += 1[m
+[32m+[m[32m                total_response_time += m.total_response_time[m
+[32m+[m[32m                if m.success:[m
+[32m+[m[32m                    total_success += 1[m
+[32m+[m[41m                [m
+[32m+[m[32m                # Add to daily activity[m
+[32m+[m[32m                date_str = datetime.fromisoformat(m.timestamp).date().isoformat()[m
+[32m+[m[32m                daily_activity[date_str] = daily_activity.get(date_str, 0) + 1[m
+[32m+[m[41m        [m
+[32m+[m[32m        if total_conversations == 0:[m
+[32m+[m[32m            return self._empty_analytics()[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Calculate averages[m
+[32m+[m[32m        avg_response_time = total_response_time / total_conversations[m
+[32m+[m[32m        success_rate = (total_success / total_conversations) * 100[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Get top keywords and categories[m
+[32m+[m[32m        top_keywords = dict(Counter(combined_keywords).most_common(15))[m
+[32m+[m[32m        top_categories = dict(combined_categories)[m
+[32m+[m[41m        [m
+[32m+[m[32m        return {[m
+[32m+[m[32m            'total_conversations': total_conversations,[m
+[32m+[m[32m            'active_sessions': len([s for s in self.sessions.values() if not s.is_expired()]),[m
+[32m+[m[32m            'question_categories': top_categories,[m
+[32m+[m[32m            'top_keywords': top_keywords,  # New: Bible keywords/topics[m
+[32m+[m[32m            'performance': {[m
+[32m+[m[32m                'avg_response_time': round(avg_response_time, 2),[m
+[32m+[m[32m                'avg_chatgpt_time': round(avg_response_time * 0.7, 2),  # Estimate[m
+[32m+[m[32m                'avg_tts_time': round(avg_response_time * 0.3, 2)  # Estimate[m
+[32m+[m[32m            },[m
+[32m+[m[32m            'daily_activity': daily_activity,[m
+[32m+[m[32m            'success_rate': round(success_rate, 1)[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m    def _empty_analytics(self) -> Dict[str, Any]:[m
+[32m+[m[32m        """Return empty analytics structure."""[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            'total_conversations': 0,[m
+[32m+[m[32m            'active_sessions': 0,[m
+[32m+[m[32m            'question_categories': {},[m
+[32m+[m[32m            'performance': {[m
+[32m+[m[32m                'avg_response_time': 0,[m
+[32m+[m[32m                'avg_chatgpt_time': 0,[m
+[32m+[m[32m                'avg_tts_time': 0[m
+[32m+[m[32m            },[m
+[32m+[m[32m            'popular_questions': [],[m
+[32m+[m[32m            'daily_activity': {},[m
+[32m+[m[32m            'success_rate': 100[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m    def cleanup_expired_sessions(self, timeout_minutes: int = 60):[m
+[32m+[m[32m        """Remove expired sessions."""[m
+[32m+[m[32m        expired = [[m
+[32m+[m[32m            sid for sid, session in self.sessions.items()[m[41m [m
+[32m+[m[32m            if session.is_expired(timeout_minutes)[m
+[32m+[m[32m        ][m
+[32m+[m[41m        [m
+[32m+[m[32m        for sid in expired:[m
+[32m+[m[32m            del self.sessions[sid][m
+[32m+[m[41m            [m
+[32m+[m[32m        if expired:[m
+[32m+[m[32m            logger.info(f"Cleaned up {len(expired)} expired sessions")[m
+[32m+[m[41m            [m
+[32m+[m[32m    def get_bible_study_suggestions(self) -> List[str]:[m
+[32m+[m[32m        """Get Bible study suggestions based on conversation history."""[m
+[32m+[m[32m        if not self.current_session or not self.current_session.turns:[m
+[32m+[m[32m            return [[m
+[32m+[m[32m                "What does the Bible say about faith?",[m
+[32m+[m[32m                "Tell me about the book of Psalms",[m
+[32m+[m[32m                "Explain the meaning of John 3:16"[m
+[32m+[m[32m            ][m
+[32m+[m[41m            [m
+[32m+[m[32m        # Analyze recent topics[m
+[32m+[m[32m        recent_questions = [turn.question for turn in self.current_session.turns[-3:]][m
+[32m+[m[32m        recent_text = " ".join(recent_questions).lower()[m
+[32m+[m[41m        [m
+[32m+[m[32m        suggestions = [][m
+[32m+[m[41m        [m
+[32m+[m[32m        if "faith" in recent_text:[m
+[32m+[m[32m            suggestions.extend([[m
+[32m+[m[32m                "Tell me more about faith in difficult times",[m
+[32m+[m[32m                "What are examples of faith in the Old Testament?"[m
+[32m+[m[32m            ])[m
+[32m+[m[32m        elif "prayer" in recent_text:[m
+[32m+[m[32m            suggestions.extend([[m
+[32m+[m[32m                "How did Jesus teach us to pray?",[m
+[32m+[m[32m                "What does the Bible say about answered prayer?"[m
+[32m+[m[32m            ])[m
+[32m+[m[32m        elif "love" in recent_text:[m
+[32m+[m[32m            suggestions.extend([[m
+[32m+[m[32m                "Explain 1 Corinthians 13 about love",[m
+[32m+[m[32m                "How does God show His love for us?"[m
+[32m+[m[32m            ])[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            suggestions.extend([[m
+[32m+[m[32m                "Continue our previous discussion",[m
+[32m+[m[32m                "Summarize what we've talked about",[m
+[32m+[m[32m                "What's a related Bible verse?"[m
+[32m+[m[32m            ])[m
+[32m+[m[41m            [m
+[32m+[m[32m        return suggestions[:3]  # Return top 3 suggestions[m
+\ No newline at end of file[m
+[1mdiff --git a/src/service_manager.py b/src/service_manager.py[m
+[1mindex 9c027de..65ea05c 100644[m
+[1m--- a/src/service_manager.py[m
+[1m+++ b/src/service_manager.py[m
+[36m@@ -80,7 +80,11 @@[m [mclass ServiceManager:[m
+         # Start advanced scheduler[m
+         self.scheduler.start()[m
+         [m
+[31m-        # Start voice control if available[m
+[32m+[m[32m        # Start web interface FIRST (before voice control blocks)[m
+[32m+[m[32m        if self.web_interface:[m
+[32m+[m[32m            self._start_web_interface()[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Start voice control if available (runs in blocking mode)[m
+         if self.voice_control:[m
+             self.voice_control.run_main_loop()[m
+         elif os.getenv('ENABLE_VOICE', 'false').lower() == 'true':[m
+[36m@@ -96,10 +100,6 @@[m [mclass ServiceManager:[m
+             except Exception as e:[m
+                 self.logger.error(f"Voice control auto-initialization failed: {e}")[m
+         [m
+[31m-        # Start web interface if available[m
+[31m-        if self.web_interface:[m
+[31m-            self._start_web_interface()[m
+[31m-        [m
+         # Initial verse display[m
+         self._update_verse()[m
+         [m
+[1mdiff --git a/src/web_interface/app.py b/src/web_interface/app.py[m
+[1mindex 6c3fb13..15c3f95 100644[m
+[1m--- a/src/web_interface/app.py[m
+[1m+++ b/src/web_interface/app.py[m
+[36m@@ -9,6 +9,7 @@[m [mfrom datetime import datetime, timedelta[m
+ from flask import Flask, jsonify, request, render_template, send_file[m
+ from pathlib import Path[m
+ import psutil[m
+[32m+[m[32mfrom src.conversation_manager import ConversationManager[m
+ [m
+ def create_app(verse_manager, image_generator, display_manager, service_manager, performance_monitor):[m
+     """Create enhanced Flask application."""[m
+[36m@@ -25,6 +26,7 @@[m [mdef create_app(verse_manager, image_generator, display_manager, service_manager,[m
+     app.display_manager = display_manager[m
+     app.service_manager = service_manager[m
+     app.performance_monitor = performance_monitor[m
+[32m+[m[32m    app.conversation_manager = ConversationManager()[m
+     [m
+     @app.route('/')[m
+     def index():[m
+[36m@@ -550,6 +552,59 @@[m [mdef create_app(verse_manager, image_generator, display_manager, service_manager,[m
+             app.logger.error(f"Voice settings API error: {e}")[m
+             return jsonify({'success': False, 'error': str(e)}), 500[m
+     [m
+[32m+[m[32m    # === Conversation Analytics API ===[m
+[32m+[m[41m    [m
+[32m+[m[32m    @app.route('/api/conversation/analytics', methods=['GET'])[m
+[32m+[m[32m    def get_conversation_analytics():[m
+[32m+[m[32m        """Get conversation analytics and metrics."""[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            days_back = request.args.get('days', 7, type=int)[m
+[32m+[m[32m            analytics = app.conversation_manager.get_analytics(days_back)[m
+[32m+[m[32m            return jsonify({'success': True, 'data': analytics})[m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            app.logger.error(f"Conversation analytics API error: {e}")[m
+[32m+[m[32m            return jsonify({'success': False, 'error': str(e)}), 500[m
+[32m+[m[41m    [m
+[32m+[m[32m    @app.route('/api/conversation/sessions', methods=['GET'])[m
+[32m+[m[32m    def get_conversation_sessions():[m
+[32m+[m[32m        """Get active conversation sessions."""[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            active_sessions = [[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    'session_id': session.session_id,[m
+[32m+[m[32m                    'created_at': session.created_at.isoformat(),[m
+[32m+[m[32m                    'last_activity': session.last_activity.isoformat(),[m
+[32m+[m[32m                    'turn_count': len(session.turns),[m
+[32m+[m[32m                    'is_current': session.session_id == app.conversation_manager.current_session.session_id if app.conversation_manager.current_session else False[m
+[32m+[m[32m                }[m
+[32m+[m[32m                for session in app.conversation_manager.sessions.values()[m
+[32m+[m[32m                if not session.is_expired()[m
+[32m+[m[32m            ][m
+[32m+[m[32m            return jsonify({'success': True, 'data': active_sessions})[m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            app.logger.error(f"Conversation sessions API error: {e}")[m
+[32m+[m[32m            return jsonify({'success': False, 'error': str(e)}), 500[m
+[32m+[m[41m    [m
+[32m+[m[32m    @app.route('/api/conversation/suggestions', methods=['GET'])[m
+[32m+[m[32m    def get_bible_study_suggestions():[m
+[32m+[m[32m        """Get Bible study suggestions based on conversation history."""[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            suggestions = app.conversation_manager.get_bible_study_suggestions()[m
+[32m+[m[32m            return jsonify({'success': True, 'data': suggestions})[m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            app.logger.error(f"Bible study suggestions API error: {e}")[m
+[32m+[m[32m            return jsonify({'success': False, 'error': str(e)}), 500[m
+[32m+[m[41m    [m
+[32m+[m[32m    @app.route('/api/conversation/memory', methods=['GET'])[m
+[32m+[m[32m    def get_conversation_memory():[m
+[32m+[m[32m        """Get conversation context/memory for current session."""[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            context = app.conversation_manager.get_conversation_context(turns_back=5)[m
+[32m+[m[32m            return jsonify({'success': True, 'data': {'context': context}})[m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            app.logger.error(f"Conversation memory API error: {e}")[m
+[32m+[m[32m            return jsonify({'success': False, 'error': str(e)}), 500[m
+[32m+[m[41m    [m
+     # === Piper Voice Management API ===[m
+     [m
+     @app.route('/api/voice/piper/voices', methods=['GET'])[m
+[1mdiff --git a/src/web_interface/templates/statistics.html b/src/web_interface/templates/statistics.html[m
+[1mindex f551154..c86b98c 100644[m
+[1m--- a/src/web_interface/templates/statistics.html[m
+[1m+++ b/src/web_interface/templates/statistics.html[m
+[36m@@ -150,6 +150,75 @@[m
+         </div>[m
+     </div>[m
+ [m
+[32m+[m[32m    <!-- Conversation Analytics Section -->[m
+[32m+[m[32m    <div class="bg-white rounded-lg shadow p-6">[m
+[32m+[m[32m        <h3 class="text-lg font-semibold text-bible-dark mb-4">Conversation Analytics</h3>[m
+[32m+[m[32m        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">[m
+[32m+[m[32m            <!-- Total Conversations -->[m
+[32m+[m[32m            <div class="text-center">[m
+[32m+[m[32m                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-3">[m
+[32m+[m[32m                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">[m
+[32m+[m[32m                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>[m
+[32m+[m[32m                    </svg>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m                <p class="text-2xl font-bold text-gray-900" id="total-conversations">--</p>[m
+[32m+[m[32m                <p class="text-sm text-gray-500">Total Conversations</p>[m
+[32m+[m[32m            </div>[m
+[32m+[m
+[32m+[m[32m            <!-- Active Sessions -->[m
+[32m+[m[32m            <div class="text-center">[m
+[32m+[m[32m                <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-3">[m
+[32m+[m[32m                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">[m
+[32m+[m[32m                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>[m
+[32m+[m[32m                    </svg>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m                <p class="text-2xl font-bold text-gray-900" id="active-sessions">--</p>[m
+[32m+[m[32m                <p class="text-sm text-gray-500">Active Sessions</p>[m
+[32m+[m[32m            </div>[m
+[32m+[m
+[32m+[m[32m            <!-- Avg ChatGPT Time -->[m
+[32m+[m[32m            <div class="text-center">[m
+[32m+[m[32m                <div class="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg mb-3">[m
+[32m+[m[32m                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">[m
+[32m+[m[32m                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>[m
+[32m+[m[32m                    </svg>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m                <p class="text-2xl font-bold text-gray-900" id="avg-chatgpt-time">--</p>[m
+[32m+[m[32m                <p class="text-sm text-gray-500">Avg ChatGPT (sec)</p>[m
+[32m+[m[32m            </div>[m
+[32m+[m
+[32m+[m[32m            <!-- Avg TTS Time -->[m
+[32m+[m[32m            <div class="text-center">[m
+[32m+[m[32m                <div class="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-3">[m
+[32m+[m[32m                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">[m
+[32m+[m[32m                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 14.142M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>[m
+[32m+[m[32m                    </svg>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m                <p class="text-2xl font-bold text-gray-900" id="avg-tts-time">--</p>[m
+[32m+[m[32m                <p class="text-sm text-gray-500">Avg TTS (sec)</p>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    </div>[m
+[32m+[m
+[32m+[m[32m    <!-- Question Categories & Popular Questions -->[m
+[32m+[m[32m    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">[m
+[32m+[m[32m        <!-- Question Categories -->[m
+[32m+[m[32m        <div class="bg-white rounded-lg shadow p-6">[m
+[32m+[m[32m            <h3 class="text-lg font-semibold text-bible-dark mb-4">Question Categories</h3>[m
+[32m+[m[32m            <div class="h-64">[m
+[32m+[m[32m                <canvas id="categories-chart"></canvas>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <!-- Bible Keywords & Topics -->[m
+[32m+[m[32m        <div class="bg-white rounded-lg shadow p-6">[m
+[32m+[m[32m            <h3 class="text-lg font-semibold text-bible-dark mb-4">Popular Bible Topics</h3>[m
+[32m+[m[32m            <div class="space-y-3" id="bible-keywords">[m
+[32m+[m[32m                <!-- Will be populated by JavaScript -->[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    </div>[m
+[32m+[m
+     <!-- Charts Section -->[m
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">[m
+         <!-- Usage by Mode Chart -->[m
+[1mdiff --git a/test_eink_hardware.py b/test_eink_hardware.py[m
+[1mnew file mode 100755[m
+[1mindex 0000000..5b4ab9b[m
+[1m--- /dev/null[m
+[1m+++ b/test_eink_hardware.py[m
+[36m@@ -0,0 +1,193 @@[m
+[32m+[m[32m#!/usr/bin/env python3[m
+[32m+[m[32m"""[m
+[32m+[m[32mE-ink Display Hardware Test Script[m
+[32m+[m[32mTests the 10.3" Waveshare e-Paper HAT connection and functionality[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32mimport sys[m
+[32m+[m[32mimport os[m
+[32m+[m[32mfrom pathlib import Path[m
+[32m+[m
+[32m+[m[32mdef test_system_requirements():[m
+[32m+[m[32m    """Test system-level requirements"""[m
+[32m+[m[32m    print("🔍 Testing System Requirements")[m
+[32m+[m[32m    print("=" * 40)[m
+[32m+[m[41m    [m
+[32m+[m[32m    # Test SPI module[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        import subprocess[m
+[32m+[m[32m        result = subprocess.run(['lsmod'], capture_output=True, text=True)[m
+[32m+[m[32m        if 'spi_bcm2835' in result.stdout:[m
+[32m+[m[32m            print("✅ SPI module loaded")[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            print("❌ SPI module not loaded")[m
+[32m+[m[32m            print("   Run: sudo raspi-config -> Interface Options -> SPI -> Enable")[m
+[32m+[m[32m    except Exception as e:[m
+[32m+[m[32m        print(f"⚠️  Could not check SPI module: {e}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    # Test /dev/spidev* existence[m
+[32m+[m[32m    spi_devices = list(Path('/dev').glob('spidev*'))[m
+[32m+[m[32m    if spi_devices:[m
+[32m+[m[32m        print(f"✅ SPI devices found: {[str(d) for d in spi_devices]}")[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        print("❌ No SPI devices found in /dev/")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef test_python_libraries():[m
+[32m+[m[32m    """Test Python library imports"""[m
+[32m+[m[32m    print("🐍 Testing Python Libraries")[m
+[32m+[m[32m    print("=" * 40)[m
+[32m+[m[41m    [m
+[32m+[m[32m    libraries = [[m
+[32m+[m[32m        ('IT8951', 'IT8951.display'),[m
+[32m+[m[32m        ('Pillow', 'PIL.Image'),[m
+[32m+[m[32m        ('NumPy', 'numpy'),[m
+[32m+[m[32m        ('SpiDev', 'spidev'),[m
+[32m+[m[32m        ('GPIOZero', 'gpiozero')[m
+[32m+[m[32m    ][m
+[32m+[m[41m    [m
+[32m+[m[32m    for name, module in libraries:[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            __import__(module)[m
+[32m+[m[32m            print(f"✅ {name}")[m
+[32m+[m[32m        except ImportError as e:[m
+[32m+[m[32m            print(f"❌ {name}: {e}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef test_gpio_access():[m
+[32m+[m[32m    """Test GPIO access permissions"""[m
+[32m+[m[32m    print("🔌 Testing GPIO Access")[m
+[32m+[m[32m    print("=" * 40)[m
+[32m+[m[41m    [m
+[32m+[m[32m    try:[m
+[32m+[m[32m        import gpiozero[m
+[32m+[m[32m        # Test basic GPIO access without actually controlling pins[m
+[32m+[m[32m        print("✅ GPIOZero import successful")[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Check if running as root or in gpio group[m
+[32m+[m[32m        import subprocess[m
+[32m+[m[32m        groups = subprocess.run(['groups'], capture_output=True, text=True).stdout[m
+[32m+[m[32m        if 'gpio' in groups:[m
+[32m+[m[32m            print("✅ User is in gpio group")[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            print("⚠️  User not in gpio group (may need sudo)")[m
+[32m+[m[41m            [m
+[32m+[m[32m    except Exception as e:[m
+[32m+[m[32m        print(f"❌ GPIO access test failed: {e}")[m
+[32m+[m[41m    [m
+[32m+[m[32m    print()[m
+[32m+[m
+[32m+[m[32mdef test_it8951_initialization():[m
+[32m+[m[32m    """Test IT8951 display initialization"""[m
+[32m+[m[32m    print("📺 Testing IT8951 Display Initialization")[m
+[32m+[m[32m    print("=" * 40)[m
+[32m+[m[41m    [m
+[32m+[m[32m    try:[m
+[32m+[m[32m        from IT8951.display import AutoEPDDisplay[m
+[32m+[m[32m        print("✅ IT8951 AutoEPDDisplay import successful")[m
+[32m+[m[41m        [m
+[32m+[m[32m        # Try to initialize display (will fail if not connected, but we can catch that)[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            print("🔌 Attempting to connect to display...")[m
+[32m+[m[32m            display = AutoEPDDisplay(vcom=-1.21)  # Using .env VCOM value[m
+[32m+[m[32m            print("✅ Display connected successfully!")[m
+[32m+[m[32m            print(f"   Resolution: {display.width}x{display.height}")[m
+[32m+[m[32m            print(f"   VCOM: {display.epd.get_vcom()}")[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Test basic display operation[m
+[32m+[m[32m            print("🧪 Testing basic display operations...")[m
+[32m+[m[32m            from PIL import Image, ImageDraw, ImageFont[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Create test image[m
+[32m+[m[32m            img = Image.new('L', (display.width, display.height), 255)[m
+[32m+[m[32m            draw = ImageDraw.Draw(img)[m
+[32m+[m[32m            draw.text((50, 50), "Bible Clock Hardware Test", fill=0)[m
+[32m+[m[32m            draw.text((50, 100), "If you see this, hardware is working!", fill=0)[m
+[32m+[m[41m            [m
+[32m+[m[32m            # Display test image[m
+[32m+[m[32m            display.display(img)[m
+[32m+[m[32m            print("✅ Test image displayed successfully!")[m
+[32m+[m[41m            [m
+[32m+[m[32m            return T

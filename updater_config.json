@@ -1,0 +1,17 @@
+{
+  "auto_update_enabled": true,
+  "update_frequency_days": 7,
+  "backup_retention_days": 30,
+  "post_update_hooks": [
+    "systemctl --user restart bible-clock.service 2>/dev/null || true"
+  ],
+  "critical_files": [
+    ".env",
+    "bible_clock_voice_modern.py",
+    "requirements-locked.txt",
+    "src/**/*.py"
+  ],
+  "last_update_check": "2025-06-27T22:23:23.814137",
+  "last_successful_update": null,
+  "pre_update_hooks": []
+}

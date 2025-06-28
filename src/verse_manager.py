@@ -648,7 +648,7 @@ class VerseManager:
                 
                 if verse_text:
                     return {
-                        'reference': data.get('reference', f"{book} {chapter:02d}:{actual_verse:02d}"),
+                        'reference': f"{book} {chapter:02d}:{actual_verse:02d}",
                         'text': verse_text,
                         'book': book,
                         'chapter': chapter,
@@ -916,7 +916,7 @@ class VerseManager:
             return None
         
         return {
-            'reference': data.get('reference', f"{book} {chapter}:{verse}"),
+            'reference': f"{book} {chapter:02d}:{verse:02d}",
             'text': verse_text,
             'book': book,
             'chapter': chapter,
@@ -957,7 +957,7 @@ class VerseManager:
             return None
         
         return {
-            'reference': f"{book} {chapter}:{verse}",
+            'reference': f"{book} {chapter:02d}:{verse:02d}",
             'text': verse_text,
             'book': book,
             'chapter': chapter,
@@ -981,7 +981,7 @@ class VerseManager:
         
         # Return a default verse if all else fails
         return {
-            'reference': f"{book} {chapter}:{verse}",
+            'reference': f"{book} {chapter:02d}:{verse:02d}",
             'text': f"[{translation.upper()} not available] Unable to retrieve verse.",
             'book': book,
             'chapter': chapter,

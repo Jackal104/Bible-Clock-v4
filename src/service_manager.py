@@ -49,6 +49,9 @@ class ServiceManager:
             if report['errors']:  # Only fail on errors, not warnings
                 raise RuntimeError("Configuration validation failed")
         
+        # Set up display manager callback for proper cleanup
+        self.display_manager.set_restore_callback(self._restore_normal_display)
+        
         # Schedule verse updates
         self._schedule_updates()
     
@@ -208,6 +211,21 @@ class ServiceManager:
             self.display_manager.display_image(image, force_refresh=True)
         except Exception as e:
             self.logger.error(f"Force refresh failed: {e}")
+    
+    def _restore_normal_display(self):
+        """Restore normal Bible verse display (called by display manager cleanup)."""
+        try:
+            self.logger.info("Restoring normal display after transient message")
+            verse_data = self.verse_manager.get_current_verse()
+            image = self.image_generator.create_verse_image(verse_data)
+            self.display_manager.display_image(image, force_refresh=True)
+        except Exception as e:
+            self.logger.error(f"Failed to restore normal display: {e}")
+            # Fallback to clearing display
+            try:
+                self.display_manager.clear_display()
+            except Exception as e2:
+                self.logger.error(f"Failed to clear display as fallback: {e2}")
     
     def _cycle_background(self):
         """Automatically cycle background image."""

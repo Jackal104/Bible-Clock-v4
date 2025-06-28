@@ -21,6 +21,7 @@ class DisplayManager:
         self.simulation_mode = os.getenv('SIMULATION_MODE', 'false').lower() == 'true'
         self.width = int(os.getenv('DISPLAY_WIDTH', '1872'))
         self.height = int(os.getenv('DISPLAY_HEIGHT', '1404'))
+        self.restore_callback = None  # Will be set by service manager
         # Convert rotation to IT8951 expected format
         rotation_setting = os.getenv('DISPLAY_ROTATION', '0')
         if rotation_setting == '0':
@@ -42,6 +43,10 @@ class DisplayManager:
         
         if not self.simulation_mode:
             self._initialize_hardware()
+    
+    def set_restore_callback(self, callback):
+        """Set callback function to restore normal display."""
+        self.restore_callback = callback
     
     def _initialize_hardware(self):
         """Initialize the IT8951 e-ink display."""
@@ -197,17 +202,52 @@ class DisplayManager:
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
             
-            # Position in top-left corner with padding
-            x, y = 30, 30
+            # Position based on display transforms: mirror=true + rotation=180 means we need bottom-right initially
+            mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
+            rotation_setting = os.getenv('DISPLAY_PHYSICAL_ROTATION', '0')
             
-            # Draw white rectangle background with black border
-            draw.rectangle((x - 15, y - 15, x + text_width + 30, y + text_height + 30), 
-                          fill=255, outline=0, width=4)
+            if mirror_setting == 'true' and rotation_setting == '180':
+                # Position in bottom-right so after flip + 180° rotation it ends up top-left
+                x = self.width - text_width - 30
+                y = self.height - text_height - 30
+            else:
+                # Default position
+                x, y = 30, 30
             
-            # Draw black text
-            draw.text((x, y), display_text, font=font, fill=0)
+            # Check if we need to rotate the text itself
+            if mirror_setting == 'true' and rotation_setting == '180':
+                # Create a temporary image for the text with some padding
+                text_padding = 20
+                text_img_width = text_width + (text_padding * 2)
+                text_img_height = text_height + (text_padding * 2)
+                text_img = Image.new('L', (text_img_width, text_img_height), 255)
+                text_draw = ImageDraw.Draw(text_img)
+                
+                # Draw text on temporary image
+                text_draw.text((text_padding, text_padding), display_text, font=font, fill=0)
+                
+                # Rotate the text image 180 degrees
+                text_img = text_img.rotate(180)
+                
+                # Draw white rectangle background with black border on main overlay
+                draw.rectangle((x - 15, y - 15, x + text_width + 30, y + text_height + 30), 
+                              fill=255, outline=0, width=4)
+                
+                # Paste the rotated text onto the overlay
+                # Adjust position to account for the rotated text placement
+                paste_x = x - text_padding
+                paste_y = y - text_padding
+                overlay.paste(text_img, (paste_x, paste_y))
+            else:
+                # Draw normally
+                # Draw white rectangle background with black border
+                draw.rectangle((x - 15, y - 15, x + text_width + 30, y + text_height + 30), 
+                              fill=255, outline=0, width=4)
+                
+                # Draw black text
+                draw.text((x, y), display_text, font=font, fill=0)
             
-            # Display the overlay
+            # Display the overlay (transforms will be applied in _display_on_hardware)
             self.display_image(overlay, force_refresh=True)
             
             self.logger.info(f"Showing visual feedback: {state} -> {display_text}")
@@ -217,8 +257,19 @@ class DisplayManager:
                 def restore_display():
                     time.sleep(duration)
                     # Force a display update to clear the message
-                    # The next scheduled update will restore normal content
-                    self.logger.info("Visual feedback expired")
+                    self.logger.info("Visual feedback expired - restoring normal display")
+                    # Use callback to restore display if available
+                    if self.restore_callback:
+                        try:
+                            self.restore_callback()
+                        except Exception as e:
+                            self.logger.error(f"Failed to restore display after visual feedback: {e}")
+                    else:
+                        # Fallback: just clear with a white screen
+                        try:
+                            self.clear_display()
+                        except Exception as e:
+                            self.logger.error(f"Failed to clear display after visual feedback: {e}")
                 
                 timer_thread = threading.Thread(target=restore_display, daemon=True)
                 timer_thread.start()

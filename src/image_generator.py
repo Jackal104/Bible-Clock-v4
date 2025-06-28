@@ -799,5 +799,15 @@ class ImageGenerator:
             x = max(border_margin + 10, x)
             y = max(border_margin + 10, y)
             
+            # Clear the verse reference area to prevent artifacts
+            clear_padding = 10  # Extra padding around text to ensure complete clearing
+            clear_rect = [
+                x - clear_padding,
+                y - clear_padding,
+                x + text_width + clear_padding,
+                y + text_height + clear_padding
+            ]
+            draw.rectangle(clear_rect, fill=255)  # Fill with white to clear any artifacts
+            
             # Draw the reference in bottom-right area
             draw.text((x, y), display_text, fill=0, font=self.reference_font)

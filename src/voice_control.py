@@ -602,6 +602,10 @@ class BibleClockVoiceControl:
             'parallel mode': self._toggle_parallel_mode,
             'chat': self._start_chat_mode,
             'start chat': self._start_chat_mode,
+            'stop chat': self._force_display_restore,
+            'exit chat': self._force_display_restore,
+            'end chat': self._force_display_restore,
+            'clear display': self._force_display_restore,
             'what time is it': self._speak_time,
             'current time': self._speak_time,
             'system status': self._speak_system_status,
@@ -1147,9 +1151,9 @@ class BibleClockVoiceControl:
             # Log what's being spoken (truncated for readability)
             self.logger.info(f"Speaking: {text[:100]}{'...' if len(text) > 100 else ''}")
             
-            # Show speaking status on display
+            # Show speaking status on display with auto-timeout
             if hasattr(self.display_manager, 'show_transient_message'):
-                self.display_manager.show_transient_message("speaking", duration=0)  # No auto-timeout
+                self.display_manager.show_transient_message("speaking", duration=5.0)  # Auto-clear after 5 seconds
             
             # Enhance speech for better clarity
             enhanced_text = self._enhance_speech_text(text)
@@ -1181,11 +1185,26 @@ class BibleClockVoiceControl:
             # Restore normal display after speaking completes
             self._restore_display_after_speech()
             
+            # Start a backup timer to ensure display restoration
+            self._start_display_restore_timer()
+            
         except Exception as e:
             self.logger.error(f"TTS error: {e}")
             self.logger.warning(f"Failed to speak: {text[:100]}{'...' if len(text) > 100 else ''}")
             # Still try to restore display even if speech failed
             self._restore_display_after_speech()
+        finally:
+            # Ensure display restoration happens even if there are unexpected errors
+            try:
+                # Add a small delay to ensure any ongoing operations complete
+                import time
+                time.sleep(0.5)
+                # Force display restoration if not already done
+                if hasattr(self.display_manager, 'show_transient_message'):
+                    # Clear any transient message by showing the normal display
+                    self._refresh_display_silent()
+            except Exception as restore_error:
+                self.logger.error(f"Final display restoration failed: {restore_error}")
     
     def _enhance_speech_text(self, text: str) -> str:
         """Enhance text for better speech synthesis."""
@@ -1434,23 +1453,60 @@ class BibleClockVoiceControl:
             self._speak("Sorry, I couldn't toggle parallel mode.")
     
     def _start_chat_mode(self):
-        """Start interactive chat mode with ChatGPT."""
+        """Start interactive chat mode with ChatGPT - supports continuous conversation."""
         if not self.chatgpt_enabled:
             self._speak("Chat mode is not currently enabled. Please check your Chat GPT configuration.")
             return
         
-        self._speak("Chat mode activated. Ask me any biblical question. Say 'stop chat' when you're done.")
+        self._speak("Chat mode activated. Ask me biblical questions. Say 'stop chat' to end.")
         
-        try:
-            response = self._listen_for_response(timeout=15)
-            if response and response.lower() not in ['stop chat', 'exit chat', 'end chat']:
-                self._process_chatgpt_question(response)
-            else:
-                self._speak("Chat mode ended.")
+        # Continuous chat loop
+        chat_active = True
+        questions_asked = 0
+        max_questions = 10  # Prevent infinite loops
+        
+        while chat_active and questions_asked < max_questions:
+            try:
+                self.logger.info(f"Chat mode: Listening for question {questions_asked + 1}")
                 
-        except Exception as e:
-            self.logger.error(f"Error in chat mode: {e}")
-            self._speak("Chat mode ended due to an error.")
+                # Listen for user question
+                response = self._listen_for_response(timeout=20)
+                
+                if not response:
+                    self._speak("I didn't hear anything. Chat mode ended.")
+                    break
+                
+                response_lower = response.lower().strip()
+                
+                # Check for exit commands
+                exit_commands = ['stop chat', 'exit chat', 'end chat', 'stop', 'exit', 'quit chat']
+                if any(cmd in response_lower for cmd in exit_commands):
+                    self._speak("Chat mode ended. Returning to Bible Clock.")
+                    break
+                
+                # Process the question
+                self.logger.info(f"Chat mode: Processing question: {response}")
+                self._process_chatgpt_question(response)
+                questions_asked += 1
+                
+                # After answering, prompt for next question
+                if questions_asked < max_questions:
+                    # Small delay to ensure display restoration completes
+                    import time
+                    time.sleep(1)
+                    self._speak("Do you have another question? Or say 'stop chat' to end.")
+                else:
+                    self._speak("That's enough questions for now. Chat mode ended.")
+                    break
+                    
+            except Exception as e:
+                self.logger.error(f"Error in chat mode loop: {e}")
+                self._speak("Sorry, there was an error. Chat mode ended.")
+                break
+        
+        # Ensure display is restored when chat ends
+        self.logger.info("Chat mode ended, restoring display")
+        self._restore_display_after_speech()
     
     def _listen_for_response(self, timeout: int = 10) -> Optional[str]:
         """Listen for a voice response with timeout."""
@@ -1495,6 +1551,45 @@ class BibleClockVoiceControl:
             
         except Exception as e:
             self.logger.error(f"Error in silent display refresh: {e}")
+    
+    def _force_display_restore(self):
+        """Force display restoration and clear any stuck status."""
+        try:
+            self.logger.info("Force display restore requested")
+            
+            # Clear any transient messages
+            if hasattr(self.display_manager, 'show_transient_message'):
+                self.display_manager.show_transient_message("ready", duration=0.5)
+            
+            # Restore normal display
+            self._refresh_display_silent()
+            
+            self._speak("Display restored to Bible Clock.")
+            
+        except Exception as e:
+            self.logger.error(f"Error in force display restore: {e}")
+            # Try a basic clear as last resort
+            try:
+                if hasattr(self.display_manager, 'clear_display'):
+                    self.display_manager.clear_display()
+            except:
+                pass
+    
+    def _start_display_restore_timer(self):
+        """Start a backup timer to ensure display gets restored."""
+        def restore_after_delay():
+            import time
+            time.sleep(8)  # Wait 8 seconds then force restore
+            try:
+                self.logger.info("Backup display restore timer triggered")
+                self._refresh_display_silent()
+            except Exception as e:
+                self.logger.error(f"Backup display restore failed: {e}")
+        
+        # Start timer in background thread
+        import threading
+        timer_thread = threading.Thread(target=restore_after_delay, daemon=True)
+        timer_thread.start()
 
 
 # Backward compatibility alias

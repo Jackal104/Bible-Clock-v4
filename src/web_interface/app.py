@@ -351,7 +351,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 
                 if 'background_index' in data:
                     bg_index = data['background_index']
-                    if 0 <= bg_index < len(app.image_generator.backgrounds):
+                    if 0 <= bg_index < len(app.image_generator.background_files):
                         app.image_generator.current_background_index = bg_index
                     else:
                         app.logger.warning(f"Invalid background index: {bg_index}")
@@ -379,6 +379,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 preview_path = Path('src/web_interface/static/preview.png')
                 preview_path.parent.mkdir(exist_ok=True)
                 preview_image.save(preview_path)
+                
+                # Schedule cleanup of old preview images
+                _cleanup_old_preview_images()
                 
                 # Return success with metadata
                 return jsonify({
@@ -1180,3 +1183,36 @@ def _apply_display_transformations(image):
         # If transformation fails, return original image
         print(f"Preview transformation error: {e}")
         return image
+
+def _cleanup_old_preview_images():
+    """Clean up old preview images to prevent accumulation."""
+    try:
+        import time
+        import os
+        from pathlib import Path
+        
+        static_dir = Path('src/web_interface/static')
+        if not static_dir.exists():
+            return
+        
+        # Clean up preview images older than 1 hour
+        max_age = 3600  # 1 hour in seconds
+        current_time = time.time()
+        
+        for preview_file in static_dir.glob('preview*.png'):
+            if preview_file.exists():
+                file_age = current_time - preview_file.stat().st_mtime
+                if file_age > max_age:
+                    preview_file.unlink()
+                    print(f"Cleaned up old preview image: {preview_file.name}")
+        
+        # Also clean up any temporary image files
+        for temp_file in static_dir.glob('temp_*.png'):
+            if temp_file.exists():
+                file_age = current_time - temp_file.stat().st_mtime
+                if file_age > max_age:
+                    temp_file.unlink()
+                    print(f"Cleaned up temp image: {temp_file.name}")
+                    
+    except Exception as e:
+        print(f"Preview cleanup error: {e}")

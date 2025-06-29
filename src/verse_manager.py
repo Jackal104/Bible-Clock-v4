@@ -42,12 +42,18 @@ class VerseManager:
         self.parallel_mode = False  # Enable parallel translation mode
         self.secondary_translation = 'web'  # Secondary translation for parallel mode
         self.time_format = '12'  # '12' for 12-hour format, '24' for 24-hour format
+        # Memory optimization settings
+        self.MAX_DAILY_ACTIVITY_DAYS = 30  # Keep only last 30 days
+        self.MAX_BOOKS_ACCESSED = 50  # Limit books accessed tracking
+        self.MAX_TRANSLATION_USAGE = 20  # Limit translation usage tracking
+        
         self.statistics = {
             'verses_displayed': 0,
             'verses_today': 0,
             'books_accessed': set(),
             'translation_usage': {},
-            'mode_usage': {'time': 0, 'date': 0, 'random': 0}
+            'mode_usage': {'time': 0, 'date': 0, 'random': 0},
+            'daily_activity': {}  # Date -> count mapping for rotation
         }
         self.start_time = datetime.now()
         self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -306,6 +312,13 @@ class VerseManager:
         self.statistics['verses_displayed'] += 1
         self.statistics['verses_today'] += 1
         
+        # Track daily activity with rotation
+        today_str = now.strftime('%Y-%m-%d')
+        self.statistics['daily_activity'][today_str] = self.statistics['daily_activity'].get(today_str, 0) + 1
+        
+        # Rotate old daily activity data to prevent unbounded growth
+        self._rotate_daily_activity()
+        
         if self.display_mode == 'date':
             verse_data = self._get_date_based_verse()
         elif self.display_mode == 'random':
@@ -321,13 +334,17 @@ class VerseManager:
         if self.parallel_mode and verse_data and not verse_data.get('is_summary') and not verse_data.get('is_date_event'):
             verse_data = self._add_parallel_translation(verse_data)
         
-        # Update statistics
+        # Update statistics with rotation
         self.statistics['mode_usage'][self.display_mode] += 1
         if verse_data.get('book'):
             self.statistics['books_accessed'].add(verse_data['book'])
+            # Limit books_accessed set size to prevent memory growth
+            self._rotate_books_accessed()
         
         translation = getattr(self, 'translation', 'kjv')
         self.statistics['translation_usage'][translation] = self.statistics['translation_usage'].get(translation, 0) + 1
+        # Limit translation_usage dict size
+        self._rotate_translation_usage()
         
         return verse_data
     
@@ -992,6 +1009,47 @@ class VerseManager:
     def get_available_translations(self) -> List[str]:
         """Get list of available translations."""
         return list(self.supported_translations.keys())
+    
+    def _rotate_daily_activity(self):
+        """Rotate daily activity data to keep only recent days."""
+        if len(self.statistics['daily_activity']) <= self.MAX_DAILY_ACTIVITY_DAYS:
+            return
+        
+        # Sort dates and keep only the most recent ones
+        sorted_dates = sorted(self.statistics['daily_activity'].keys())
+        excess_count = len(sorted_dates) - self.MAX_DAILY_ACTIVITY_DAYS
+        
+        for old_date in sorted_dates[:excess_count]:
+            del self.statistics['daily_activity'][old_date]
+        
+        self.logger.debug(f"Rotated daily activity: removed {excess_count} old entries")
+    
+    def _rotate_books_accessed(self):
+        """Limit books_accessed set size to prevent memory growth."""
+        if len(self.statistics['books_accessed']) > self.MAX_BOOKS_ACCESSED:
+            # Convert to list, sort, and keep only recent ones
+            # Since it's a set, we'll just trim to the limit
+            books_list = list(self.statistics['books_accessed'])
+            # Keep random subset to maintain variety
+            import random
+            random.shuffle(books_list)
+            self.statistics['books_accessed'] = set(books_list[:self.MAX_BOOKS_ACCESSED])
+            self.logger.debug(f"Rotated books accessed: trimmed to {self.MAX_BOOKS_ACCESSED} entries")
+    
+    def _rotate_translation_usage(self):
+        """Limit translation_usage dict size to prevent memory growth."""
+        if len(self.statistics['translation_usage']) > self.MAX_TRANSLATION_USAGE:
+            # Sort by usage count and keep the most used ones
+            sorted_translations = sorted(
+                self.statistics['translation_usage'].items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+            
+            # Keep only the top translations
+            self.statistics['translation_usage'] = dict(sorted_translations[:self.MAX_TRANSLATION_USAGE])
+            removed_count = len(sorted_translations) - self.MAX_TRANSLATION_USAGE
+            self.logger.debug(f"Rotated translation usage: removed {removed_count} entries")
 
 
 class VerseScheduler:

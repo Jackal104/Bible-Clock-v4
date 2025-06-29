@@ -56,6 +56,10 @@ class VoiceAssistant:
         self.tts_audio_format = os.getenv('TTS_AUDIO_FORMAT', 'wav')
         self.tts_streaming = os.getenv('TTS_STREAMING', 'true').lower() == 'true'
         self.allow_piper_fallback = os.getenv('ALLOW_PIPER_FALLBACK', 'true').lower() == 'true'
+        
+        # Memory optimization settings
+        self.MAX_TTS_QUEUE_SIZE = 3  # Limit TTS queue to prevent memory growth
+        self.MAX_AUDIO_BUFFER_SIZE = 5  # Limit audio buffer accumulation
         self.max_tokens = int(os.getenv('CHATGPT_MAX_TOKENS', '50'))
         self.system_prompt = os.getenv('CHATGPT_SYSTEM_PROMPT', 
             'You are a knowledgeable Bible study assistant. Provide accurate, thoughtful responses about the Bible, Christianity, and faith. Keep responses VERY brief (1-2 sentences max, under 50 words) for voice assistant use. Be concise and direct.')
@@ -592,6 +596,7 @@ class VoiceAssistant:
             
             # Clean up
             os.unlink(temp_path)
+            self._cleanup_audio_buffers()  # Memory cleanup
             return command
             
         except sr.UnknownValueError:
@@ -841,8 +846,22 @@ class VoiceAssistant:
             except Exception as e:
                 logger.error(f"TTS worker error: {e}")
     
+    def _cleanup_audio_buffers(self):
+        """Clean up audio buffers and force garbage collection."""
+        try:
+            import gc
+            # Clean up any lingering audio chunks
+            if hasattr(self, 'audio_chunks'):
+                del self.audio_chunks
+            
+            # Force garbage collection to free memory
+            gc.collect()
+            logger.debug("Audio buffer cleanup completed")
+        except Exception as e:
+            logger.warning(f"Audio buffer cleanup error: {e}")
+    
     def queue_tts(self, text, priority=False):
-        """Queue text for TTS to prevent overlapping speech."""
+        """Queue text for TTS with memory-safe size limits."""
         try:
             if priority:
                 # Clear queue and add this as priority
@@ -851,9 +870,18 @@ class VoiceAssistant:
                         self.tts_queue.get_nowait()
                     except queue.Empty:
                         break
+            else:
+                # Check queue size limit for non-priority items
+                if self.tts_queue.qsize() >= self.MAX_TTS_QUEUE_SIZE:
+                    logger.warning(f"TTS queue full ({self.tts_queue.qsize()}/{self.MAX_TTS_QUEUE_SIZE}), dropping oldest item")
+                    try:
+                        dropped_text = self.tts_queue.get_nowait()
+                        logger.debug(f"Dropped TTS: {dropped_text[:30]}...")
+                    except queue.Empty:
+                        pass
             
             self.tts_queue.put(text)
-            logger.debug(f"Queued TTS: {text[:50]}...")
+            logger.debug(f"Queued TTS ({self.tts_queue.qsize()}/{self.MAX_TTS_QUEUE_SIZE}): {text[:50]}...")
             
         except Exception as e:
             logger.error(f"Error queuing TTS: {e}")

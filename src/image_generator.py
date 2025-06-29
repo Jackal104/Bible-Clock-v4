@@ -94,14 +94,16 @@ class ImageGenerator:
                     self.logger.warning(f"Could not load font {font_file}: {e}")
     
     def _load_backgrounds(self):
-        """Load background images dynamically from images directory."""
-        self.backgrounds = []
+        """Initialize background metadata for lazy loading."""
+        self.background_files = []  # Store file paths instead of loaded images
         self.background_names = []
+        self.background_cache = {}  # LRU cache for loaded backgrounds
+        self.max_cached_backgrounds = 3  # Limit cached backgrounds
         background_dir = Path('images')
         
         if not background_dir.exists():
             self.logger.warning(f"Background directory {background_dir} does not exist")
-            self.backgrounds.append(self._create_default_background())
+            self.background_files.append(None)  # Marker for default background
             self.background_names.append("Default Background")
             return
         
@@ -110,18 +112,14 @@ class ImageGenerator:
         
         if not background_files:
             self.logger.warning("No PNG background files found in images directory")
-            self.backgrounds.append(self._create_default_background())
+            self.background_files.append(None)  # Marker for default background
             self.background_names.append("Default Background")
             return
         
         for bg_path in background_files:
             try:
-                bg_image = Image.open(bg_path)
-                # Resize to display dimensions
-                bg_image = bg_image.resize((self.width, self.height), Image.Resampling.LANCZOS)
-                # Convert to grayscale for e-ink
-                bg_image = bg_image.convert('L')
-                self.backgrounds.append(bg_image)
+                # Just store the path and extract name, don't load image yet
+                self.background_files.append(bg_path)
                 
                 # Extract readable name from filename (remove number prefix and extension)
                 name = bg_path.stem
@@ -132,18 +130,18 @@ class ImageGenerator:
                     name = name.replace('_', ' ')
                 
                 self.background_names.append(name)
-                self.logger.debug(f"Loaded background: {bg_path.name} as '{name}'")
+                self.logger.debug(f"Found background: {bg_path.name} as '{name}'")
                 
             except Exception as e:
-                self.logger.warning(f"Failed to load background {bg_path.name}: {e}")
+                self.logger.warning(f"Failed to read background {bg_path.name}: {e}")
         
-        if not self.backgrounds:
-            # Create a simple default background if none loaded
-            self.backgrounds.append(self._create_default_background())
+        if not self.background_files:
+            # Create a marker for default background if none found
+            self.background_files.append(None)
             self.background_names.append("Default Background")
             self.logger.info("Using default background")
         else:
-            self.logger.info(f"Loaded {len(self.backgrounds)} background images")
+            self.logger.info(f"Found {len(self.background_files)} background images (lazy loading enabled)")
     
     def _create_default_background(self) -> Image.Image:
         """Create a simple default background."""
@@ -159,20 +157,53 @@ class ImageGenerator:
         
         return bg
     
+    def _get_background(self, index: int) -> Image.Image:
+        """Lazy load background image with LRU cache."""
+        if index < 0 or index >= len(self.background_files):
+            self.logger.warning(f"Invalid background index {index}, using default")
+            return self._create_default_background()
+        
+        # Check if already cached
+        if index in self.background_cache:
+            return self.background_cache[index].copy()
+        
+        # Load background
+        bg_file = self.background_files[index]
+        
+        if bg_file is None:
+            # Default background
+            background = self._create_default_background()
+        else:
+            try:
+                bg_image = Image.open(bg_file)
+                # Resize to display dimensions
+                bg_image = bg_image.resize((self.width, self.height), Image.Resampling.LANCZOS)
+                # Convert to grayscale for e-ink
+                background = bg_image.convert('L')
+                self.logger.debug(f"Lazy loaded background: {bg_file.name}")
+            except Exception as e:
+                self.logger.warning(f"Failed to load background {bg_file}: {e}")
+                background = self._create_default_background()
+        
+        # Cache management - remove oldest if cache is full
+        if len(self.background_cache) >= self.max_cached_backgrounds:
+            # Remove the first (oldest) cached background
+            oldest_key = next(iter(self.background_cache))
+            del self.background_cache[oldest_key]
+            self.logger.debug(f"Removed cached background {oldest_key} (cache full)")
+        
+        # Cache the new background
+        self.background_cache[index] = background
+        return background.copy()
+    
     def create_verse_image(self, verse_data: Dict) -> Image.Image:
         """Create an image for a Bible verse."""
-        # Get current background with safe indexing
+        # Get current background using lazy loading
         try:
-            if 0 <= self.current_background_index < len(self.backgrounds):
-                background = self.backgrounds[self.current_background_index].copy()
-            else:
-                self.logger.warning(f"Invalid background index {self.current_background_index}, using index 0")
-                self.current_background_index = 0
-                background = self.backgrounds[0].copy()
+            background = self._get_background(self.current_background_index)
         except Exception as e:
             self.logger.error(f"Error loading background: {e}")
-            # Create a default white background
-            background = Image.new('L', (self.width, self.height), 255)
+            background = self._create_default_background()
         
         # Draw directly on background (like voice system) instead of RGBA overlay
         draw = ImageDraw.Draw(background)
@@ -425,8 +456,8 @@ class ImageGenerator:
     
     def cycle_background(self):
         """Cycle to the next background image."""
-        self.current_background_index = (self.current_background_index + 1) % len(self.backgrounds)
-        self.logger.info(f"Switched to background {self.current_background_index + 1}/{len(self.backgrounds)}")
+        self.current_background_index = (self.current_background_index + 1) % len(self.background_files)
+        self.logger.info(f"Switched to background {self.current_background_index + 1}/{len(self.background_files)}")
     
     def get_current_background_info(self) -> Dict:
         """Get information about current background."""
@@ -437,7 +468,7 @@ class ImageGenerator:
             
         return {
             'current_index': self.current_background_index,
-            'total_backgrounds': len(self.backgrounds),
+            'total_backgrounds': len(self.background_files),
             'current_name': current_name
         }
     
@@ -487,7 +518,7 @@ class ImageGenerator:
     def get_available_backgrounds(self) -> List[Dict]:
         """Get available backgrounds with metadata and thumbnails."""
         bg_info = []
-        for i, bg in enumerate(self.backgrounds):
+        for i in range(len(self.background_files)):
             if hasattr(self, 'background_names') and self.background_names and i < len(self.background_names):
                 name = self.background_names[i]
             else:
@@ -507,7 +538,7 @@ class ImageGenerator:
     
     def set_background(self, index: int):
         """Set background by index."""
-        if 0 <= index < len(self.backgrounds):
+        if 0 <= index < len(self.background_files):
             self.current_background_index = index
             self.logger.info(f"Background changed to index: {index}")
         else:
@@ -517,7 +548,7 @@ class ImageGenerator:
         """Get detailed background information."""
         return {
             'current_index': self.current_background_index,
-            'total_count': len(self.backgrounds),
+            'total_count': len(self.background_files),
             'backgrounds': self.get_available_backgrounds()
         }
     
@@ -531,7 +562,7 @@ class ImageGenerator:
         return {
             'index': self.current_background_index,
             'name': name,
-            'total': len(self.backgrounds)
+            'total': len(self.background_files)
         }
     
     def set_background_cycling(self, enabled: bool, interval_minutes: int = 30):
@@ -607,18 +638,13 @@ class ImageGenerator:
             'reference_size': self.reference_size
         }
     
-    def cycle_background(self):
-        """Cycle to next background."""
-        self.current_background_index = (self.current_background_index + 1) % len(self.backgrounds)
-        self.logger.info(f"Background cycled to index: {self.current_background_index}")
-    
     def randomize_background(self):
         """Set random background."""
-        if len(self.backgrounds) > 1:
+        if len(self.background_files) > 1:
             # Ensure we don't select the same background
             old_index = self.current_background_index
             while self.current_background_index == old_index:
-                self.current_background_index = random.randint(0, len(self.backgrounds) - 1)
+                self.current_background_index = random.randint(0, len(self.background_files) - 1)
             self.logger.info(f"Background randomized to index: {self.current_background_index}")
     
     def get_font_info(self) -> Dict:

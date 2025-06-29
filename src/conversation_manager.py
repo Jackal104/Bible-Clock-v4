@@ -134,9 +134,15 @@ class ConversationSession:
 class ConversationManager:
     """Manages conversations, metrics, and Bible study sessions."""
     
-    def __init__(self, data_dir: str = "data", max_session_turns: int = 5):
+    def __init__(self, data_dir: str = "data", max_session_turns: int = 3):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
+        
+        # Memory optimization settings
+        self.MAX_ACTIVE_SESSIONS = 5  # Limit active sessions
+        self.MAX_RECENT_METRICS = 30  # Limit recent metrics storage  
+        self.SESSION_TIMEOUT_MINUTES = 30  # Shorter session timeout
+        self.MAX_TEXT_LENGTH = 200  # Compress long text
         
         # Lightweight storage files
         self.aggregated_file = self.data_dir / "aggregated_metrics.json"
@@ -337,8 +343,10 @@ class ConversationManager:
         session = self.get_or_create_session()
         category = self.categorize_question(question)
         
-        # Add to conversation history (limited turns)
-        session.add_turn(question, response, category)
+        # Add to conversation history (limited turns) with compression
+        compressed_question = self._compress_text(question)
+        compressed_response = self._compress_text(response)
+        session.add_turn(compressed_question, compressed_response, category)
         
         # Limit session size to prevent memory bloat
         if len(session.turns) > self.max_session_turns:
@@ -348,7 +356,7 @@ class ConversationManager:
         conversation_metrics = ConversationMetrics(
             session_id=session.session_id,
             timestamp=datetime.now().isoformat(),
-            question=question[:100],  # Truncate question to save space
+            question=self._compress_text(question),  # Use compression method
             question_category=category,
             speech_recognition_time=metrics.get('speech_recognition_time', 0.0),
             chatgpt_processing_time=metrics.get('chatgpt_processing_time', 0.0),
@@ -362,12 +370,13 @@ class ConversationManager:
         self.recent_metrics.append(conversation_metrics)
         
         # Trigger daily aggregation if we have too many recent metrics
-        if len(self.recent_metrics) >= 50:  # Aggregate every 50 conversations
+        if len(self.recent_metrics) >= self.MAX_RECENT_METRICS:  # Use configurable limit
             self._aggregate_daily_data()
         
         # Periodic cleanup
         if len(self.recent_metrics) % 10 == 0:  # Every 10 conversations
             self._purge_old_data()
+            self._cleanup_sessions()  # Add session cleanup
         
         self.save_data()
         
@@ -395,6 +404,36 @@ class ConversationManager:
         
         # Cleanup expired sessions
         self.cleanup_expired_sessions()
+        
+    def _cleanup_sessions(self):
+        """Enhanced session cleanup with memory limits."""
+        # Remove expired sessions
+        self.cleanup_expired_sessions()
+        
+        # If we have too many active sessions, remove oldest ones
+        if len(self.sessions) > self.MAX_ACTIVE_SESSIONS:
+            # Sort sessions by last activity (oldest first)
+            sorted_sessions = sorted(
+                self.sessions.items(),
+                key=lambda x: x[1].last_activity
+            )
+            
+            # Remove excess sessions
+            excess_count = len(self.sessions) - self.MAX_ACTIVE_SESSIONS
+            for session_id, session in sorted_sessions[:excess_count]:
+                del self.sessions[session_id]
+                logger.info(f"Removed old session {session_id} due to memory limits")
+        
+        # If current session is expired, clear it
+        if (self.current_session and 
+            self.current_session.is_expired(self.SESSION_TIMEOUT_MINUTES)):
+            self.current_session = None
+            
+    def _compress_text(self, text: str) -> str:
+        """Compress text to save memory."""
+        if len(text) <= self.MAX_TEXT_LENGTH:
+            return text
+        return text[:self.MAX_TEXT_LENGTH] + "..."
         
     def get_conversation_context(self, turns_back: int = 3) -> str:
         """Get conversation context for multi-turn conversations."""

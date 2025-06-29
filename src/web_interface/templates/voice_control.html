@@ -103,8 +103,8 @@
                         <span class="text-blue-600">Switch background</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-600">"Bible Clock, cycle mode"</span>
-                        <span class="text-blue-600">Change translation</span>
+                        <span class="text-gray-600">"Bible Clock, change mode"</span>
+                        <span class="text-blue-600">Switch display mode</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">"Bible Clock, time mode"</span>
@@ -118,6 +118,10 @@
                         <span class="text-gray-600">"Bible Clock, random mode"</span>
                         <span class="text-blue-600">Switch to random mode</span>
                     </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">"Bible Clock, parallel mode"</span>
+                        <span class="text-blue-600">Switch to parallel mode</span>
+                    </div>
                 </div>
             </div>
             
@@ -129,24 +133,32 @@
                         <span class="text-blue-600">Complete help guide</span>
                     </div>
                     <div class="flex justify-between">
+                        <span class="text-gray-600">"Bible Clock, chat"</span>
+                        <span class="text-blue-600">Start ChatGPT conversation</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">"Bible Clock, change translation to ESV"</span>
+                        <span class="text-blue-600">Switch translation</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">"Bible Clock, change translation to KJV"</span>
+                        <span class="text-blue-600">Switch to King James</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">"Bible Clock, change translation to AMP"</span>
+                        <span class="text-blue-600">Switch to Amplified</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">"Bible Clock, change translation to NASB"</span>
+                        <span class="text-blue-600">Switch to New American</span>
+                    </div>
+                    <div class="flex justify-between">
                         <span class="text-gray-600">"Bible Clock, what time is it"</span>
                         <span class="text-blue-600">Current time</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">"Bible Clock, system status"</span>
                         <span class="text-blue-600">System health</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">"Bible Clock, current mode"</span>
-                        <span class="text-blue-600">Display mode info</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">"Bible Clock, current verse"</span>
-                        <span class="text-blue-600">Verse information</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">"Bible Clock, help questions"</span>
-                        <span class="text-blue-600">AI question examples</span>
                     </div>
                 </div>
             </div>
@@ -160,20 +172,31 @@
             <div class="space-y-3">
                 <h4 class="font-medium text-gray-800">Example Questions</h4>
                 <div class="space-y-1 text-sm">
-                    <div class="text-gray-600">"Bible Clock, what does this verse mean?"</div>
-                    <div class="text-gray-600">"Bible Clock, who was King David?"</div>
-                    <div class="text-gray-600">"Bible Clock, explain the parable of..."</div>
-                    <div class="text-gray-600">"Bible Clock, what happened in Exodus?"</div>
-                    <div class="text-gray-600">"Bible Clock, help me understand..."</div>
-                    <div class="text-gray-600">"Bible Clock, tell me about biblical love"</div>
-                    <div class="text-gray-600">"Bible Clock, why is this important?"</div>
-                    <div class="text-gray-600">"Bible Clock, how should I pray?"</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "What does this verse mean?"</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "Who was King David?"</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "Explain the parable of..."</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "What happened in Exodus?"</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "Help me understand..."</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "Tell me about biblical love"</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "Why is this important?"</div>
+                    <div class="text-gray-600">"Bible Clock, chat" → "How should I pray?"</div>
+                </div>
+                <div class="mt-3 p-2 bg-yellow-50 rounded border border-yellow-200">
+                    <p class="text-xs text-yellow-800">
+                        <strong>Chat Mode:</strong> Say "Bible Clock, chat" to start, then ask up to 10 questions without repeating the wake word!
+                    </p>
                 </div>
             </div>
             
             <div class="space-y-3">
                 <h4 class="font-medium text-gray-800">AI Features</h4>
                 <div class="space-y-2">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-sm">Continuous chat mode (up to 10 questions)</span>
+                    </div>
                     <div class="flex items-center">
                         <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -190,7 +213,13 @@
                         <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
-                        <span class="text-sm">Conversation memory</span>
+                        <span class="text-sm">Multi-translation support (KJV, ESV, AMP, NASB, CEV)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-sm">Automatic display restoration after speaking</span>
                     </div>
                     <div class="flex items-center">
                         <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,15 +304,16 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Voice Selection</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">OpenAI TTS Voice Selection</label>
                         <select id="voice-selection" class="form-select">
-                            <option value="default">Default System Voice</option>
-                            <option value="female">Female Voice (Legacy)</option>
-                            <option value="male">Male Voice (Legacy)</option>
-                            <option value="calm">Calm & Soothing (Legacy)</option>
-                            <option value="clear">Clear & Articulate (Legacy)</option>
+                            <option value="alloy">Alloy - Neutral, balanced voice</option>
+                            <option value="echo">Echo - Male, clear and articulate</option>
+                            <option value="fable">Fable - British accent, expressive</option>
+                            <option value="onyx">Onyx - Deep male voice, authoritative</option>
+                            <option value="nova">Nova - Young female voice (Current Default)</option>
+                            <option value="shimmer">Shimmer - Soft female voice, gentle</option>
                         </select>
-                        <p class="text-sm text-gray-500 mt-1">Choose voice style for text-to-speech</p>
+                        <p class="text-sm text-gray-500 mt-1">Choose from OpenAI's high-quality TTS voices</p>
                     </div>
                     
                     <!-- Piper TTS Voice Selection -->
@@ -470,7 +500,7 @@ function updateVoiceStatusUI(status) {
     document.getElementById('voice-volume').value = status.voice_volume || 0.8;
     document.getElementById('chatgpt-enabled').checked = status.chatgpt_enabled || false;
     document.getElementById('help-enabled').checked = status.help_enabled !== false;
-    document.getElementById('voice-selection').value = status.voice_selection || 'default';
+    document.getElementById('voice-selection').value = status.voice_selection || status.tts_voice || 'nova';
     document.getElementById('voice-control-enabled').checked = status.enabled !== false;
     document.getElementById('chatgpt-api-key').value = status.chatgpt_api_key ? '•'.repeat(20) : '';
     

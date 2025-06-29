@@ -372,10 +372,13 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 verse_data = app.verse_manager.get_current_verse()
                 image = app.image_generator.create_verse_image(verse_data)
                 
+                # Apply same transformations as actual display for accurate preview
+                preview_image = _apply_display_transformations(image)
+                
                 # Save preview image
                 preview_path = Path('src/web_interface/static/preview.png')
                 preview_path.parent.mkdir(exist_ok=True)
-                image.save(preview_path)
+                preview_image.save(preview_path)
                 
                 # Return success with metadata
                 return jsonify({
@@ -515,11 +518,46 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             
             if 'voice_selection' in data:
                 voice_control.voice_selection = data['voice_selection']
-                # Apply voice selection if TTS engine is available
-                if voice_control.tts_engine:
+                selection = data['voice_selection']
+                
+                # For OpenAI TTS, update the voice directly
+                if hasattr(voice_control, 'tts_voice') and selection in ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']:
+                    voice_control.tts_voice = selection
+                    app.logger.info(f"OpenAI TTS voice updated to: {selection}")
+                    
+                    # Update environment variable for persistence
+                    import os
+                    os.environ['TTS_VOICE'] = selection
+                    
+                    # Update .env file for persistence across restarts
+                    try:
+                        env_file_path = '/home/admin/Bible-Clock-v3/.env'
+                        if os.path.exists(env_file_path):
+                            with open(env_file_path, 'r') as f:
+                                lines = f.readlines()
+                            
+                            # Update or add TTS_VOICE line
+                            updated = False
+                            for i, line in enumerate(lines):
+                                if line.startswith('TTS_VOICE='):
+                                    lines[i] = f'TTS_VOICE={selection}\n'
+                                    updated = True
+                                    break
+                            
+                            if not updated:
+                                lines.append(f'TTS_VOICE={selection}\n')
+                            
+                            with open(env_file_path, 'w') as f:
+                                f.writelines(lines)
+                            
+                            app.logger.info(f"Updated .env file with TTS_VOICE={selection}")
+                    except Exception as e:
+                        app.logger.warning(f"Could not update .env file: {e}")
+                
+                # Legacy system TTS fallback (for compatibility)
+                elif voice_control.tts_engine:
                     voices = voice_control.tts_engine.getProperty('voices')
                     if voices:
-                        selection = data['voice_selection']
                         if selection == 'female':
                             female_voices = [v for v in voices if 'female' in v.name.lower() or 'woman' in v.name.lower()]
                             if female_voices:
@@ -528,23 +566,6 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                             male_voices = [v for v in voices if 'male' in v.name.lower() or 'man' in v.name.lower()]
                             if male_voices:
                                 voice_control.tts_engine.setProperty('voice', male_voices[0].id)
-                        elif selection == 'calm':
-                            # Look for voices with calm/soothing in name, fallback to first female
-                            calm_voices = [v for v in voices if any(word in v.name.lower() for word in ['calm', 'sooth', 'gentle'])]
-                            if calm_voices:
-                                voice_control.tts_engine.setProperty('voice', calm_voices[0].id)
-                            else:
-                                female_voices = [v for v in voices if 'female' in v.name.lower()]
-                                if female_voices:
-                                    voice_control.tts_engine.setProperty('voice', female_voices[0].id)
-                        elif selection == 'clear':
-                            # Look for voices with clear/articulate in name
-                            clear_voices = [v for v in voices if any(word in v.name.lower() for word in ['clear', 'articulate', 'crisp'])]
-                            if clear_voices:
-                                voice_control.tts_engine.setProperty('voice', clear_voices[0].id)
-                            elif len(voices) > 1:
-                                voice_control.tts_engine.setProperty('voice', voices[1].id)
-                        # 'default' uses system default (no change needed)
             
             return jsonify({'success': True, 'message': 'Voice settings updated successfully'})
             
@@ -1130,3 +1151,32 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         }
     
     return app
+
+def _apply_display_transformations(image):
+    """Apply the same transformations to preview that are applied to actual display."""
+    try:
+        from PIL import Image as PILImage
+        
+        # Create a copy to avoid modifying the original
+        transformed_image = image.copy()
+        
+        # Apply mirroring if needed (same logic as display_manager._display_on_hardware)
+        mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
+        if mirror_setting == 'true':
+            transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
+        elif mirror_setting == 'vertical':
+            transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
+        elif mirror_setting == 'both':
+            transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
+            transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
+        
+        # Apply software rotation for precise control (same logic as display_manager)
+        if os.getenv('DISPLAY_PHYSICAL_ROTATION', '180') == '180':
+            transformed_image = transformed_image.rotate(180)
+        
+        return transformed_image
+        
+    except Exception as e:
+        # If transformation fails, return original image
+        print(f"Preview transformation error: {e}")
+        return image

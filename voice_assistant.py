@@ -611,6 +611,38 @@ class VoiceAssistant:
         """Get current performance metrics."""
         return self.metrics.copy()
     
+    def get_voice_status(self):
+        """Get comprehensive voice control status for web interface compatibility."""
+        return {
+            'enabled': self.enabled,
+            'listening': hasattr(self, 'listening') and getattr(self, 'listening', False),
+            'wake_word': self.wake_word,
+            'chatgpt_enabled': self.enabled and bool(self.openai_api_key),
+            'help_enabled': True,  # Basic help is always available
+            'respeaker_enabled': False,  # VoiceAssistant doesn't use ReSpeaker
+            'voice_rate': 150,  # Default rate for compatibility
+            'voice_volume': 0.8,  # Default volume for compatibility
+            'voice_selection': getattr(self, 'voice_selection', self.tts_voice),
+            'tts_voice': self.tts_voice,
+            'tts_engine': self.tts_engine,
+            'tts_model': self.tts_model,
+            'conversation_length': len(self.conversation_manager.conversation_history) if hasattr(self.conversation_manager, 'conversation_history') else 0,
+            'available_commands': ['chat', 'help', 'status'],  # Basic commands
+            'chatgpt_api_key': bool(self.openai_api_key),
+            # Audio input/output controls
+            'audio_input_enabled': True,
+            'audio_output_enabled': True,
+            'force_respeaker_output': False,
+            # ReSpeaker settings (not used but needed for compatibility)
+            'respeaker_channels': 6,
+            'respeaker_sample_rate': 16000,
+            'respeaker_chunk_size': 1024,
+            # Additional voice settings
+            'voice_timeout': self.voice_timeout,
+            'phrase_limit': 15,  # Default for compatibility
+            'help_section_pause': 2  # Default for compatibility
+        }
+    
     def run_main_loop(self):
         """Main voice interaction loop."""
         try:

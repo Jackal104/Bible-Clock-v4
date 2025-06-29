@@ -114,6 +114,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'available_fonts': app.image_generator.get_available_fonts(),
                 'current_font': app.image_generator.get_current_font(),
                 'font_sizes': app.image_generator.get_font_sizes(),
+                'reference_position': app.image_generator.get_reference_position_info(),
                 'voice_enabled': getattr(app.verse_manager, 'voice_enabled', False),
                 'web_enabled': True,
                 'auto_refresh': int(os.getenv('FORCE_REFRESH_INTERVAL', '60')),
@@ -156,15 +157,20 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 app.verse_manager.secondary_translation = data['secondary_translation']
                 app.logger.info(f"Secondary translation: {data['secondary_translation']}")
             
+            # Track if we need to update the display
+            needs_display_update = False
+            
             # Update background
             if 'background_index' in data:
                 app.image_generator.set_background(data['background_index'])
                 app.logger.info(f"Background changed to index: {data['background_index']}")
+                needs_display_update = True  # Background changes need immediate update
             
             # Update font
             if 'font' in data:
                 app.image_generator.set_font(data['font'])
                 app.logger.info(f"Font changed to: {data['font']}")
+                needs_display_update = True  # Font changes need immediate update
             
             # Update font sizes
             if any(key in data for key in ['verse_size', 'reference_size']):
@@ -173,6 +179,18 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     reference_size=data.get('reference_size')
                 )
                 app.logger.info("Font sizes updated")
+                needs_display_update = True  # Font size changes need immediate update
+            
+            # Update reference positioning
+            if any(key in data for key in ['reference_position', 'reference_x_offset', 'reference_y_offset', 'reference_margin']):
+                app.image_generator.set_reference_position(
+                    position=data.get('reference_position', app.image_generator.reference_position),
+                    x_offset=data.get('reference_x_offset', app.image_generator.reference_x_offset),
+                    y_offset=data.get('reference_y_offset', app.image_generator.reference_y_offset),
+                    margin=data.get('reference_margin', app.image_generator.reference_margin)
+                )
+                app.logger.info("Reference position updated")
+                needs_display_update = True  # Position changes need immediate update
             
             # Update hardware mode
             if 'hardware_mode' in data:
@@ -182,11 +200,12 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 app.display_manager.simulation_mode = not data['hardware_mode']
                 app.logger.info(f"Hardware mode: {'enabled' if data['hardware_mode'] else 'disabled (simulation)'}")
             
-            # Force display update
-            if data.get('update_display', False):
+            # Force display update if requested OR if visual changes were made
+            if data.get('update_display', False) or needs_display_update:
                 verse_data = app.verse_manager.get_current_verse()
                 image = app.image_generator.create_verse_image(verse_data)
                 app.display_manager.display_image(image, force_refresh=True)
+                app.logger.info("Display updated immediately due to visual changes")
             
             return jsonify({'success': True, 'message': 'Settings updated successfully'})
             

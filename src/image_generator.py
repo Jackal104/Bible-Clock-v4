@@ -41,6 +41,12 @@ class ImageGenerator:
         
         # Current background index for cycling
         self.current_background_index = 0
+        
+        # Reference positioning settings (configurable via web interface)
+        self.reference_position = 'bottom-right'  # Options: 'bottom-right', 'bottom-left', 'top-right', 'top-left', 'custom'
+        self.reference_x_offset = 0  # Custom X offset from calculated position
+        self.reference_y_offset = 0  # Custom Y offset from calculated position
+        self.reference_margin = 20   # Margin from edges
     
     def _load_fonts(self):
         """Load fonts for text rendering."""
@@ -205,7 +211,8 @@ class ImageGenerator:
             self.logger.error(f"Error loading background: {e}")
             background = self._create_default_background()
         
-        # Draw directly on background (like voice system) instead of RGBA overlay
+        # Create a fresh copy to avoid artifacts from previous renders
+        background = background.copy()
         draw = ImageDraw.Draw(background)
         
         # Define text areas
@@ -647,6 +654,29 @@ class ImageGenerator:
                 self.current_background_index = random.randint(0, len(self.background_files) - 1)
             self.logger.info(f"Background randomized to index: {self.current_background_index}")
     
+    def set_reference_position(self, position: str, x_offset: int = 0, y_offset: int = 0, margin: int = None):
+        """Set verse reference position and offsets."""
+        valid_positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'custom']
+        if position in valid_positions:
+            self.reference_position = position
+            self.reference_x_offset = x_offset
+            self.reference_y_offset = y_offset
+            if margin is not None:
+                self.reference_margin = margin
+            self.logger.info(f"Reference position set to: {position} with offsets ({x_offset}, {y_offset})")
+        else:
+            raise ValueError(f"Invalid position. Must be one of: {valid_positions}")
+    
+    def get_reference_position_info(self) -> Dict:
+        """Get current reference position settings."""
+        return {
+            'position': self.reference_position,
+            'x_offset': self.reference_x_offset,
+            'y_offset': self.reference_y_offset,
+            'margin': self.reference_margin,
+            'available_positions': ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'custom']
+        }
+    
     def get_font_info(self) -> Dict:
         """Get detailed font information."""
         return {
@@ -808,32 +838,74 @@ class ImageGenerator:
         
         # Use reference font for the verse reference display  
         if self.reference_font:
-            # Position in bottom-right area, moved up more from bottom
-            border_margin = 20  # Border thickness from edge
-            content_margin = 120  # Move it even higher from bottom
-            
-            # Calculate text dimensions
+            # Calculate text dimensions first
             ref_bbox = draw.textbbox((0, 0), display_text, font=self.reference_font)
             text_width = ref_bbox[2] - ref_bbox[0]
             text_height = ref_bbox[3] - ref_bbox[1]
             
-            # Position in bottom-right area, moved up from bottom
-            x = self.width - text_width - content_margin - border_margin
-            y = self.height - text_height - content_margin - border_margin
+            # Smart margin calculation based on border presence
+            has_decorative_border = self.current_background_index > 0
+            base_margin = self.reference_margin
+            if has_decorative_border:
+                base_margin = max(base_margin, 60)  # Ensure at least 60px margin for decorative borders
             
-            # Ensure minimum spacing from edges
-            x = max(border_margin + 10, x)
-            y = max(border_margin + 10, y)
+            # Calculate position based on reference_position setting
+            if self.reference_position == 'bottom-right':
+                x = self.width - text_width - base_margin
+                y = self.height - text_height - base_margin
+            elif self.reference_position == 'bottom-left':
+                x = base_margin
+                y = self.height - text_height - base_margin
+            elif self.reference_position == 'top-right':
+                x = self.width - text_width - base_margin
+                y = base_margin
+            elif self.reference_position == 'top-left':
+                x = base_margin
+                y = base_margin
+            else:  # custom or fallback to bottom-right
+                x = self.width - text_width - base_margin
+                y = self.height - text_height - base_margin
             
-            # Clear the verse reference area to prevent artifacts
-            clear_padding = 10  # Extra padding around text to ensure complete clearing
-            clear_rect = [
-                x - clear_padding,
-                y - clear_padding,
-                x + text_width + clear_padding,
-                y + text_height + clear_padding
-            ]
-            draw.rectangle(clear_rect, fill=255)  # Fill with white to clear any artifacts
+            # Apply custom offsets
+            x += self.reference_x_offset
+            y += self.reference_y_offset
+            
+            # Ensure text stays within bounds
+            x = max(base_margin, min(x, self.width - text_width - base_margin))
+            y = max(base_margin, min(y, self.height - text_height - base_margin))
+            
+            # Clear the reference area based on position to prevent artifacts
+            clear_padding = 30  # Generous padding to ensure complete clearing
+            
+            # Calculate clear area based on current position
+            if self.reference_position in ['bottom-right', 'bottom-left']:
+                # Clear bottom area
+                clear_rect = [
+                    0 if self.reference_position == 'bottom-left' else max(0, x - clear_padding),
+                    max(0, y - clear_padding),
+                    self.width if self.reference_position == 'bottom-left' else min(self.width, x + text_width + clear_padding),
+                    self.height
+                ]
+            elif self.reference_position in ['top-right', 'top-left']:
+                # Clear top area
+                clear_rect = [
+                    0 if self.reference_position == 'top-left' else max(0, x - clear_padding),
+                    0,
+                    self.width if self.reference_position == 'top-left' else min(self.width, x + text_width + clear_padding),
+                    min(self.height, y + text_height + clear_padding)
+                ]
+            else:
+                # Default to clearing around current position
+                clear_rect = [
+                    max(0, x - clear_padding),
+                    max(0, y - clear_padding),
+                    min(self.width, x + text_width + clear_padding),
+                    min(self.height, y + text_height + clear_padding)
+                ]
+            
+            # Fill with background color to clear any artifacts
+            bg_color = 255  # White background for clearing
+            draw.rectangle(clear_rect, fill=bg_color)
             
             # Draw the reference in bottom-right area
             draw.text((x, y), display_text, fill=0, font=self.reference_font)

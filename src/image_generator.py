@@ -24,7 +24,7 @@ class ImageGenerator:
         # Font sizes (configurable)
         self.title_size = int(os.getenv('TITLE_FONT_SIZE', '48'))
         self.verse_size = int(os.getenv('VERSE_FONT_SIZE', '80'))  # Larger default
-        self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '32'))
+        self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '48'))  # Make reference larger
         
         # Background cycling settings
         self.background_cycling_enabled = False
@@ -41,9 +41,10 @@ class ImageGenerator:
         
         # Current background index for cycling
         self.current_background_index = 0
+        self.last_background_index = 0  # Track background changes
         
         # Reference positioning settings (configurable via web interface)
-        self.reference_position = 'bottom-right'  # Options: 'bottom-right', 'bottom-left', 'top-right', 'top-left', 'custom'
+        self.reference_position = 'center-top'  # Center-top positioning
         self.reference_x_offset = 0  # Custom X offset from calculated position
         self.reference_y_offset = 0  # Custom Y offset from calculated position
         self.reference_margin = 20   # Margin from edges
@@ -204,6 +205,9 @@ class ImageGenerator:
     
     def create_verse_image(self, verse_data: Dict) -> Image.Image:
         """Create an image for a Bible verse."""
+        # Track background changes for display refresh optimization
+        self.last_background_index = self.current_background_index
+        
         # Get current background using lazy loading
         try:
             background = self._get_background(self.current_background_index)
@@ -253,8 +257,9 @@ class ImageGenerator:
         wrapped_text = self._wrap_text(verse_text, content_width, optimal_font)
         total_text_height = len(wrapped_text) * (optimal_font.size + 20) - 20  # Remove extra spacing from last line
         
-        # Center vertically (leaving space for bottom reference)
         available_height = self.height - (2 * margin) - 120  # Reserve space for bottom-right reference
+        
+        # Center vertically (leaving space for bottom-right reference)
         y_position = margin + (available_height - total_text_height) // 2
         
         # Ensure minimum top margin
@@ -274,18 +279,9 @@ class ImageGenerator:
     
     def _draw_book_summary(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
         """Draw a book summary."""
-        y_position = margin
+        y_position = margin + 60  # Start lower since no title
         
-        # Draw title
-        title = f"Book of {verse_data['book']}"
-        if self.title_font:
-            title_bbox = draw.textbbox((0, 0), title, font=self.title_font)
-            title_width = title_bbox[2] - title_bbox[0]
-            title_x = (self.width - title_width) // 2
-            draw.text((title_x, y_position), title, fill=0, font=self.title_font)
-            y_position += title_bbox[3] - title_bbox[1] + 60
-        
-        # Draw summary text (wrapped)
+        # Draw summary text (wrapped) - no redundant title since time/reference is shown via _add_verse_reference_display
         summary_text = verse_data['text']
         wrapped_text = self._wrap_text(summary_text, content_width, self.verse_font)
         
@@ -297,7 +293,7 @@ class ImageGenerator:
                 draw.text((line_x, y_position), line, fill=0, font=self.verse_font)
                 y_position += line_bbox[3] - line_bbox[1] + 25
         
-        # Add verse reference in bottom-right corner
+        # Add verse reference display (will show current time for summaries)
         self._add_verse_reference_display(draw, verse_data)
     
     def _get_optimal_font_size(self, text: str, content_width: int, margin: int) -> ImageFont.ImageFont:
@@ -465,6 +461,10 @@ class ImageGenerator:
         """Cycle to the next background image."""
         self.current_background_index = (self.current_background_index + 1) % len(self.background_files)
         self.logger.info(f"Switched to background {self.current_background_index + 1}/{len(self.background_files)}")
+    
+    def background_changed_since_last_render(self) -> bool:
+        """Check if background has changed since last render."""
+        return self.current_background_index != self.last_background_index
     
     def get_current_background_info(self) -> Dict:
         """Get information about current background."""
@@ -656,7 +656,7 @@ class ImageGenerator:
     
     def set_reference_position(self, position: str, x_offset: int = 0, y_offset: int = 0, margin: int = None):
         """Set verse reference position and offsets."""
-        valid_positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'custom']
+        valid_positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'center-top', 'center-bottom', 'top-center-right', 'custom']
         if position in valid_positions:
             self.reference_position = position
             self.reference_x_offset = x_offset
@@ -674,7 +674,7 @@ class ImageGenerator:
             'x_offset': self.reference_x_offset,
             'y_offset': self.reference_y_offset,
             'margin': self.reference_margin,
-            'available_positions': ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'custom']
+            'available_positions': ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'center-top', 'center-bottom', 'top-center-right', 'custom']
         }
     
     def get_font_info(self) -> Dict:
@@ -832,6 +832,10 @@ class ImageGenerator:
             # Show the actual date instead of reference for date-based mode
             now = datetime.now()
             display_text = now.strftime('%B %d, %Y')
+        elif verse_data.get('is_summary'):
+            # For book summaries, show current time (like 10:54, 10:55) instead of reference
+            now = datetime.now()
+            display_text = now.strftime('%H:%M')
         else:
             # Regular verse mode - show reference (this is the main time component!)
             display_text = verse_data.get('reference', 'Unknown')
@@ -847,7 +851,7 @@ class ImageGenerator:
             has_decorative_border = self.current_background_index > 0
             base_margin = self.reference_margin
             if has_decorative_border:
-                base_margin = max(base_margin, 60)  # Ensure at least 60px margin for decorative borders
+                base_margin = max(base_margin, 80)  # Ensure enough margin for decorative borders and transformations
             
             # Calculate position based on reference_position setting
             if self.reference_position == 'bottom-right':
@@ -862,6 +866,17 @@ class ImageGenerator:
             elif self.reference_position == 'top-left':
                 x = base_margin
                 y = base_margin
+            elif self.reference_position == 'center-top':
+                x = (self.width - text_width) // 2
+                y = base_margin * 3  # Lower position for top-middle appearance
+            elif self.reference_position == 'center-bottom':
+                x = (self.width - text_width) // 2
+                # Position lower than very bottom - about 80% down for top-middle appearance after rotation
+                y = self.height - text_height - (base_margin * 4)
+            elif self.reference_position == 'top-center-right':
+                # Position in upper area, centered horizontally but offset to the right
+                x = (self.width // 2) + (text_width // 2)  # Center + half text width to shift right
+                y = base_margin
             else:  # custom or fallback to bottom-right
                 x = self.width - text_width - base_margin
                 y = self.height - text_height - base_margin
@@ -874,38 +889,8 @@ class ImageGenerator:
             x = max(base_margin, min(x, self.width - text_width - base_margin))
             y = max(base_margin, min(y, self.height - text_height - base_margin))
             
-            # Clear the reference area based on position to prevent artifacts
-            clear_padding = 30  # Generous padding to ensure complete clearing
-            
-            # Calculate clear area based on current position
-            if self.reference_position in ['bottom-right', 'bottom-left']:
-                # Clear bottom area
-                clear_rect = [
-                    0 if self.reference_position == 'bottom-left' else max(0, x - clear_padding),
-                    max(0, y - clear_padding),
-                    self.width if self.reference_position == 'bottom-left' else min(self.width, x + text_width + clear_padding),
-                    self.height
-                ]
-            elif self.reference_position in ['top-right', 'top-left']:
-                # Clear top area
-                clear_rect = [
-                    0 if self.reference_position == 'top-left' else max(0, x - clear_padding),
-                    0,
-                    self.width if self.reference_position == 'top-left' else min(self.width, x + text_width + clear_padding),
-                    min(self.height, y + text_height + clear_padding)
-                ]
-            else:
-                # Default to clearing around current position
-                clear_rect = [
-                    max(0, x - clear_padding),
-                    max(0, y - clear_padding),
-                    min(self.width, x + text_width + clear_padding),
-                    min(self.height, y + text_height + clear_padding)
-                ]
-            
-            # Fill with background color to clear any artifacts
-            bg_color = 255  # White background for clearing
-            draw.rectangle(clear_rect, fill=bg_color)
+            # Note: Frame buffer clearing is now handled in display_manager.py
+            # No need for local clearing that can create white rectangles on backgrounds
             
             # Draw the reference in bottom-right area
             draw.text((x, y), display_text, fill=0, font=self.reference_font)

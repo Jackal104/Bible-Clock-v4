@@ -114,7 +114,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'available_fonts': app.image_generator.get_available_fonts(),
                 'current_font': app.image_generator.get_current_font(),
                 'font_sizes': app.image_generator.get_font_sizes(),
-                'reference_position': app.image_generator.get_reference_position_info(),
+                'reference_position_info': app.image_generator.get_reference_position_info(),
                 'voice_enabled': getattr(app.verse_manager, 'voice_enabled', False),
                 'web_enabled': True,
                 'auto_refresh': int(os.getenv('FORCE_REFRESH_INTERVAL', '60')),
@@ -160,10 +160,13 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             # Track if we need to update the display
             needs_display_update = False
             
-            # Update background
+            # Update background with smart refresh detection
+            background_changed = False
             if 'background_index' in data:
+                old_bg_index = app.image_generator.current_background_index
                 app.image_generator.set_background(data['background_index'])
-                app.logger.info(f"Background changed to index: {data['background_index']}")
+                background_changed = (old_bg_index != app.image_generator.current_background_index)
+                app.logger.info(f"Background changed to index: {data['background_index']} (changed: {background_changed})")
                 needs_display_update = True  # Background changes need immediate update
             
             # Update font
@@ -200,12 +203,17 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 app.display_manager.simulation_mode = not data['hardware_mode']
                 app.logger.info(f"Hardware mode: {'enabled' if data['hardware_mode'] else 'disabled (simulation)'}")
             
-            # Force display update if requested OR if visual changes were made
+            # Smart display update if requested OR if visual changes were made
             if data.get('update_display', False) or needs_display_update:
                 verse_data = app.verse_manager.get_current_verse()
                 image = app.image_generator.create_verse_image(verse_data)
-                app.display_manager.display_image(image, force_refresh=True)
-                app.logger.info("Display updated immediately due to visual changes")
+                
+                # Use smart refresh: full refresh only for background changes
+                force_refresh = background_changed if 'background_changed' in locals() else False
+                app.display_manager.display_image(image, force_refresh=force_refresh)
+                
+                refresh_type = "full (background change)" if force_refresh else "partial (settings change)"
+                app.logger.info(f"Display updated immediately with {refresh_type}")
             
             return jsonify({'success': True, 'message': 'Settings updated successfully'})
             
@@ -280,15 +288,16 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     
     @app.route('/api/background/cycle', methods=['POST'])
     def cycle_background():
-        """Cycle to next background."""
+        """Cycle to next background with smart refresh."""
         try:
             app.image_generator.cycle_background()
             
-            # Update display if requested
+            # Update display if requested - always use full refresh for background changes
             if request.get_json() and request.get_json().get('update_display', False):
                 verse_data = app.verse_manager.get_current_verse()
                 image = app.image_generator.create_verse_image(verse_data)
                 app.display_manager.display_image(image, force_refresh=True)
+                app.logger.info("Background cycled with full refresh")
             
             return jsonify({
                 'success': True, 
@@ -301,15 +310,16 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     
     @app.route('/api/background/randomize', methods=['POST'])
     def randomize_background():
-        """Randomize background."""
+        """Randomize background with smart refresh."""
         try:
             app.image_generator.randomize_background()
             
-            # Update display if requested
+            # Update display if requested - always use full refresh for background changes
             if request.get_json() and request.get_json().get('update_display', False):
                 verse_data = app.verse_manager.get_current_verse()
                 image = app.image_generator.create_verse_image(verse_data)
                 app.display_manager.display_image(image, force_refresh=True)
+                app.logger.info("Background randomized with full refresh")
             
             return jsonify({
                 'success': True, 

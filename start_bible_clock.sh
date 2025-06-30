@@ -33,6 +33,7 @@ export ENABLE_VOICE=true
 export DISPLAY_WIDTH=1872
 export DISPLAY_HEIGHT=1404
 export BIBLE_API_URL=https://bible-api.com
+export DISPLAY_MIRROR=true
 
 # Start Bible Clock with voice control enabled
 echo "🚀 Launching Bible Clock with voice control..."

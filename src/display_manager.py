@@ -35,7 +35,7 @@ class DisplayManager:
         else:
             self.rotation = None
         self.vcom_voltage = float(os.getenv('DISPLAY_VCOM', '-1.21'))
-        self.force_refresh_interval = int(os.getenv('FORCE_REFRESH_INTERVAL', '60'))
+        self.force_refresh_interval = int(os.getenv('FORCE_REFRESH_INTERVAL', '360'))  # 6 hours instead of 1 hour
         
         self.last_image_hash = None
         self.last_full_refresh = time.time()
@@ -133,18 +133,24 @@ class DisplayManager:
             image = image.rotate(180)
         
         # Use our local display constants instead of IT8951 constants
-        # Determine refresh mode
+        # Aggressively clear frame buffer to prevent overlapping artifacts
+        white_image = Image.new('L', (self.width, self.height), 255)
+        self.display_device.frame_buf.paste(white_image, (0, 0))
+        # Double clear for stubborn artifacts
+        self.display_device.frame_buf.paste(white_image, (0, 0))
+        
+        # Smart refresh mode - full refresh only when needed
         if force_refresh or self._should_force_refresh():
-            # Full refresh for better quality
+            # Full refresh for background changes or scheduled refreshes
             self.display_device.frame_buf.paste(image, (0, 0))
             self.display_device.draw_full(DisplayModes.GC16)
             self.last_full_refresh = time.time()
-            self.logger.debug("Full display refresh")
+            self.logger.debug("Full display refresh (background change or scheduled)")
         else:
-            # Fast partial refresh
+            # Smooth partial refresh for regular verse updates
             self.display_device.frame_buf.paste(image, (0, 0))
             self.display_device.draw_partial(DisplayModes.DU)
-            self.logger.debug("Partial display refresh")
+            self.logger.debug("Partial display refresh (verse update)")
     
     def _should_force_refresh(self) -> bool:
         """Check if a full refresh is needed based on time interval."""

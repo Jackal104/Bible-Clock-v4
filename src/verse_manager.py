@@ -653,8 +653,8 @@ class VerseManager:
             actual_verse = selected_book_data['verse']
             
             url = f"{self.api_url}/{book} {chapter}:{actual_verse}"
-            if self.translation != 'kjv':
-                url += f"?translation={self.translation}"
+            # Always add translation parameter - bible-api.com default is NOT KJV
+            url += f"?translation={self.translation}"
             
             try:
                 response = requests.get(url, timeout=self.timeout)
@@ -850,8 +850,8 @@ class VerseManager:
             
             # Try to get the same verse in secondary translation
             url = f"{self.api_url}/{book} {chapter}:{verse}"
-            if self.secondary_translation != 'kjv':
-                url += f"?translation={self.secondary_translation}"
+            # Always add translation parameter - bible-api.com default is NOT KJV
+            url += f"?translation={self.secondary_translation}"
             
             response = requests.get(url, timeout=self.timeout)
             response.raise_for_status()
@@ -920,8 +920,8 @@ class VerseManager:
     def _fetch_from_bible_api(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
         """Fetch verse from bible-api.com."""
         url = f"{self.api_url}/{book} {chapter}:{verse}"
-        if translation_code != 'kjv':
-            url += f"?translation={translation_code}"
+        # Always add translation parameter - bible-api.com default is NOT KJV
+        url += f"?translation={translation_code}"
         
         response = requests.get(url, timeout=self.timeout)
         response.raise_for_status()

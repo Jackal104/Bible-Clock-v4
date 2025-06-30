@@ -148,8 +148,13 @@ class ServiceManager:
                 # Generate image
                 image = self.image_generator.create_verse_image(verse_data)
                 
-                # Display image
-                self.display_manager.display_image(image)
+                # Check if background changed and force refresh only for background changes
+                background_changed = self.image_generator.background_changed_since_last_render()
+                if background_changed:
+                    self.logger.info("Background changed - forcing full refresh")
+                
+                # Display image with smart refresh logic
+                self.display_manager.display_image(image, force_refresh=background_changed)
                 
                 # Update tracking
                 self.last_update = datetime.now()

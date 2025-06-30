@@ -1,0 +1,17 @@
+[Unit]
+Description=Bible Clock Memory Monitor
+After=network.target bible-clock.service
+Wants=bible-clock.service
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+ExecStart=/home/admin/Bible-Clock-v3/scripts/memory_monitor.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

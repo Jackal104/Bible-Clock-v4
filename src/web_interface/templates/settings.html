@@ -183,6 +183,55 @@
                     </div>
                 </div>
 
+                <!-- Reference Position Settings -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Verse Reference Position
+                        <span class="text-xs text-gray-500 ml-1">(Time Display Location)</span>
+                    </label>
+                    <div class="space-y-4">
+                        <!-- Position Selector -->
+                        <div>
+                            <select id="reference-position" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-bible-gold focus:border-transparent">
+                                <option value="bottom-right">Bottom Right</option>
+                                <option value="bottom-left">Bottom Left</option>
+                                <option value="top-right">Top Right</option>
+                                <option value="top-left">Top Left</option>
+                                <option value="center-top">Center Top</option>
+                                <option value="center-bottom">Center Bottom</option>
+                                <option value="custom">Custom Position</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Custom Offsets -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">X Offset</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="range" id="reference-x-offset" min="-100" max="100" value="0" class="flex-1">
+                                    <span id="reference-x-offset-value" class="text-sm text-gray-600 w-12">0px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Y Offset</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="range" id="reference-y-offset" min="-100" max="100" value="0" class="flex-1">
+                                    <span id="reference-y-offset-value" class="text-sm text-gray-600 w-12">0px</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Margin Setting -->
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Margin from Edge</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="reference-margin" min="10" max="100" value="20" class="flex-1">
+                                <span id="reference-margin-value" class="text-sm text-gray-600 w-12">20px</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Font Size Preview -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Font Preview</label>
@@ -413,6 +462,19 @@ function populateSettingsForm(settings) {
         
         updateFontSizePreview();
     }
+    
+    // Reference position settings
+    if (settings.reference_position_info) {
+        document.getElementById('reference-position').value = settings.reference_position_info.position || 'bottom-right';
+        document.getElementById('reference-x-offset').value = settings.reference_position_info.x_offset || 0;
+        document.getElementById('reference-y-offset').value = settings.reference_position_info.y_offset || 0;
+        document.getElementById('reference-margin').value = settings.reference_position_info.margin || 20;
+        
+        updateReferencePositionPreview();
+    }
+    
+    // Set up event listeners for reference position controls
+    setupReferencePositionListeners();
 }
 
 function updateSecondaryTranslationOptions() {
@@ -937,6 +999,81 @@ function updateFontSizePreview() {
     // Update preview styles (scaled down for web display)
     document.getElementById('verse-preview').style.fontSize = (verseSize * 0.4) + 'px';
     document.getElementById('reference-preview').style.fontSize = (referenceSize * 0.4) + 'px';
+}
+
+function setupReferencePositionListeners() {
+    // Position dropdown
+    document.getElementById('reference-position').addEventListener('change', function() {
+        updateReferencePositionSetting();
+    });
+    
+    // X offset slider
+    document.getElementById('reference-x-offset').addEventListener('input', function() {
+        updateReferencePositionPreview();
+    });
+    
+    document.getElementById('reference-x-offset').addEventListener('change', function() {
+        updateReferencePositionSetting();
+    });
+    
+    // Y offset slider
+    document.getElementById('reference-y-offset').addEventListener('input', function() {
+        updateReferencePositionPreview();
+    });
+    
+    document.getElementById('reference-y-offset').addEventListener('change', function() {
+        updateReferencePositionSetting();
+    });
+    
+    // Margin slider
+    document.getElementById('reference-margin').addEventListener('input', function() {
+        updateReferencePositionPreview();
+    });
+    
+    document.getElementById('reference-margin').addEventListener('change', function() {
+        updateReferencePositionSetting();
+    });
+}
+
+function updateReferencePositionPreview() {
+    const xOffset = document.getElementById('reference-x-offset').value;
+    const yOffset = document.getElementById('reference-y-offset').value;
+    const margin = document.getElementById('reference-margin').value;
+    
+    // Update display values
+    document.getElementById('reference-x-offset-value').textContent = xOffset + 'px';
+    document.getElementById('reference-y-offset-value').textContent = yOffset + 'px';
+    document.getElementById('reference-margin-value').textContent = margin + 'px';
+}
+
+function updateReferencePositionSetting() {
+    const position = document.getElementById('reference-position').value;
+    const xOffset = parseInt(document.getElementById('reference-x-offset').value);
+    const yOffset = parseInt(document.getElementById('reference-y-offset').value);
+    const margin = parseInt(document.getElementById('reference-margin').value);
+    
+    const data = {
+        reference_position: position,
+        reference_x_offset: xOffset,
+        reference_y_offset: yOffset,
+        reference_margin: margin,
+        update_display: true
+    };
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('Reference position updated and display refreshed');
+        } else {
+            showError('Failed to update reference position');
+        }
+    })
+    .catch(error => showError('Network error updating reference position'));
 }
 
 function showError(message) {

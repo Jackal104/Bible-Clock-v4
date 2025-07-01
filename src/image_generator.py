@@ -46,7 +46,7 @@ class ImageGenerator:
         # Reference positioning settings (configurable via web interface)
         self.reference_position = 'center-top'  # Always keep at center-top
         self.reference_x_offset = 0  # Custom X offset from calculated position
-        self.reference_y_offset = 20  # Push reference down 20 pixels from top
+        self.reference_y_offset = 30  # Push reference down 30 pixels from top (was 20)
         self.reference_margin = 20   # Margin from edges
     
     def _load_fonts(self):

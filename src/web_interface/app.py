@@ -1455,6 +1455,9 @@ def _apply_display_transformations(image):
     """Apply the same transformations to preview that are applied to actual display."""
     try:
         from PIL import Image as PILImage
+        import logging
+        
+        logger = logging.getLogger(__name__)
         
         # Create a copy to avoid modifying the original
         transformed_image = image.copy()
@@ -1463,23 +1466,35 @@ def _apply_display_transformations(image):
         
         # Step 1: Apply mirroring if needed (fixes backwards text)
         mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
+        logger.info(f"Preview transformation - Mirror setting: {mirror_setting}")
+        
         if mirror_setting == 'true':
             transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
+            logger.info("Applied horizontal flip to preview")
         elif mirror_setting == 'vertical':
             transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
+            logger.info("Applied vertical flip to preview")
         elif mirror_setting == 'both':
             transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
             transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
+            logger.info("Applied both horizontal and vertical flip to preview")
         
         # Step 2: Apply software rotation for precise control
         # This matches display_manager.py line 134-135 exactly
-        if os.getenv('DISPLAY_PHYSICAL_ROTATION', '180') == '180':
+        rotation_setting = os.getenv('DISPLAY_PHYSICAL_ROTATION', '180')
+        logger.info(f"Preview transformation - Rotation setting: {rotation_setting}")
+        
+        if rotation_setting == '180':
             transformed_image = transformed_image.rotate(180)
+            logger.info("Applied 180-degree rotation to preview")
         
         return transformed_image
         
     except Exception as e:
         # If transformation fails, return original image
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Preview transformation error: {e}")
         return image
 
 def _cleanup_old_preview_images():

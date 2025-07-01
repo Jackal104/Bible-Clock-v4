@@ -24,7 +24,7 @@ class ImageGenerator:
         # Font sizes (configurable)
         self.title_size = int(os.getenv('TITLE_FONT_SIZE', '48'))
         self.verse_size = int(os.getenv('VERSE_FONT_SIZE', '80'))  # Larger default
-        self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '48'))  # Make reference larger
+        self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '72'))  # Make reference larger
         
         # Background cycling settings
         self.background_cycling_enabled = False
@@ -44,7 +44,7 @@ class ImageGenerator:
         self.last_background_index = 0  # Track background changes
         
         # Reference positioning settings (configurable via web interface)
-        self.reference_position = 'center-top'  # Center-top positioning
+        self.reference_position = 'center-top'  # Always keep at center-top
         self.reference_x_offset = 0  # Custom X offset from calculated position
         self.reference_y_offset = 0  # Custom Y offset from calculated position
         self.reference_margin = 20   # Margin from edges
@@ -257,10 +257,27 @@ class ImageGenerator:
         wrapped_text = self._wrap_text(verse_text, content_width, optimal_font)
         total_text_height = len(wrapped_text) * (optimal_font.size + 20) - 20  # Remove extra spacing from last line
         
-        available_height = self.height - (2 * margin) - 120  # Reserve space for bottom-right reference
+        # Calculate reference position and reserve space accordingly
+        ref_bbox = draw.textbbox((0, 0), verse_data.get('reference', 'Unknown'), font=self.reference_font) if self.reference_font else (0, 0, 0, 100)
+        ref_height = ref_bbox[3] - ref_bbox[1]
         
-        # Center vertically (leaving space for bottom-right reference)
-        y_position = margin + (available_height - total_text_height) // 2
+        # Get margin based on decorative border presence
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        # Center verse vertically with minimal spacing from reference
+        # Calculate actual reference Y position to ensure proper spacing
+        ref_y = (base_margin * 2) + 20  # Match the reference positioning
+        min_gap = 40  # Minimum gap between reference and verse text
+        reference_bottom = ref_y + ref_height + min_gap
+        
+        # Calculate available space for verse centering
+        available_height = self.height - reference_bottom - margin
+        
+        # Center verse vertically in the remaining space
+        y_position = reference_bottom + (available_height - total_text_height) // 2
         
         # Ensure minimum top margin
         y_position = max(margin, y_position)
@@ -868,7 +885,7 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                y = base_margin * 3  # Lower position for top-middle appearance
+                y = (base_margin * 2) + 20  # Move down 20 pixels as requested
             elif self.reference_position == 'center-bottom':
                 x = (self.width - text_width) // 2
                 # Position lower than very bottom - about 80% down for top-middle appearance after rotation

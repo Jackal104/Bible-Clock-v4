@@ -295,13 +295,56 @@ class ImageGenerator:
         self._add_verse_reference_display(draw, verse_data)
     
     def _draw_book_summary(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
-        """Draw a book summary."""
-        y_position = margin + 60  # Start lower since no title
+        """Draw a book summary with proper vertical centering."""
         
-        # Draw summary text (wrapped) - no redundant title since time/reference is shown via _add_verse_reference_display
+        # Get book name for the title
+        book_name = verse_data.get('book', 'Unknown Book')
+        
+        # Calculate reference position and reserve space (same logic as _draw_verse)
+        ref_bbox = draw.textbbox((0, 0), verse_data.get('reference', 'Unknown'), font=self.reference_font) if self.reference_font else (0, 0, 0, 100)
+        ref_height = ref_bbox[3] - ref_bbox[1]
+        
+        # Get margin based on decorative border presence
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        # Calculate actual reference Y position to ensure proper spacing
+        ref_y = base_margin + self.reference_y_offset  # Match the reference positioning exactly
+        min_gap = 40  # Minimum gap between reference and content
+        reference_bottom = ref_y + ref_height + min_gap
+        
+        # Draw book title
+        book_title = f"Book of {book_name}"
+        if self.title_font:
+            title_bbox = draw.textbbox((0, 0), book_title, font=self.title_font)
+            title_width = title_bbox[2] - title_bbox[0]
+            title_height = title_bbox[3] - title_bbox[1]
+            title_x = (self.width - title_width) // 2
+            title_y = reference_bottom
+            draw.text((title_x, title_y), book_title, fill=0, font=self.title_font)
+            
+            # Update starting position for summary text
+            content_start_y = title_y + title_height + 30  # 30px gap after title
+        else:
+            content_start_y = reference_bottom
+        
+        # Prepare summary text
         summary_text = verse_data['text']
         wrapped_text = self._wrap_text(summary_text, content_width, self.verse_font)
         
+        # Calculate total text height for centering
+        total_text_height = len(wrapped_text) * (self.verse_font.size + 25) - 25 if wrapped_text else 0
+        
+        # Calculate available space for centering the summary
+        available_height = self.height - content_start_y - margin
+        
+        # Center the summary text vertically in remaining space
+        y_position = content_start_y + (available_height - total_text_height) // 2
+        y_position = max(content_start_y, y_position)  # Don't go above content start
+        
+        # Draw summary text (wrapped and centered)
         for line in wrapped_text:
             if self.verse_font:
                 line_bbox = draw.textbbox((0, 0), line, font=self.verse_font)
@@ -850,9 +893,13 @@ class ImageGenerator:
             now = datetime.now()
             display_text = now.strftime('%B %d, %Y')
         elif verse_data.get('is_summary'):
-            # For book summaries, show current time (like 10:54, 10:55) instead of reference
+            # For book summaries, show current time in the preferred format
             now = datetime.now()
-            display_text = now.strftime('%H:%M')
+            time_format = verse_data.get('time_format', '12')
+            if time_format == '12':
+                display_text = now.strftime('%I:%M').lstrip('0')  # Remove leading zero from hour
+            else:
+                display_text = now.strftime('%H:%M')
         else:
             # Regular verse mode - show reference (this is the main time component!)
             display_text = verse_data.get('reference', 'Unknown')

@@ -330,6 +330,10 @@ class VerseManager:
         if verse_data and not verse_data.get('translation'):
             verse_data['translation'] = self.translation.upper()
         
+        # Add time format information for the image generator
+        if verse_data:
+            verse_data['time_format'] = self.time_format
+        
         # Add parallel translation if enabled (for all modes)
         if self.parallel_mode and verse_data and not verse_data.get('is_summary') and not verse_data.get('is_date_event'):
             verse_data = self._add_parallel_translation(verse_data)
@@ -438,13 +442,14 @@ class VerseManager:
             time_display = now.strftime('%H:%M')
         
         return {
-            'reference': f'{book} - Book Summary',
+            'reference': time_display,  # Show current time instead of book name
             'text': summary['summary'],
             'book': book,
             'chapter': 0,  # 0 indicates summary
             'verse': 0,    # 0 indicates summary
             'is_summary': True,
             'is_time_based_summary': True,
+            'summary_type': 'fallback',
             'requested_time': f'{chapter:02d}:{verse:02d}',
             'current_time': time_display,
             'summary_reason': f'No Bible book contains Chapter {chapter:02d}, Verse {verse:02d}',
@@ -611,13 +616,19 @@ class VerseManager:
                 'summary': f'{book} is a book of the Bible containing wisdom and spiritual guidance.'
             }
         
+        # For time-based display, the reference will show current time
+        now = datetime.now()
+        time_display = now.strftime('%H:%M')
+        
         return {
-            'reference': f'{book} - Book Summary',
+            'reference': time_display,  # Show current time instead of book name
             'text': summary['summary'],
             'book': book,
             'chapter': 0,
             'verse': 0,
-            'is_summary': True
+            'is_summary': True,
+            'summary_type': 'random',
+            'current_time': time_display
         }
     
     def _get_verse_from_api(self, chapter: int, verse: int) -> Optional[Dict]:

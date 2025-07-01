@@ -28,6 +28,33 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     app.performance_monitor = performance_monitor
     app.conversation_manager = ConversationManager()
     
+    # Activity tracking for recent activity log
+    app.recent_activities = []
+    
+    # Add initial activity
+    def _track_activity(action: str, details: str = None):
+        """Track activity for recent activity log."""
+        try:
+            activity = {
+                'timestamp': datetime.now().isoformat(),
+                'action': action,
+                'details': details or '',
+                'type': 'system'
+            }
+            app.recent_activities.append(activity)
+            
+            # Keep only last 100 activities to prevent memory growth
+            if len(app.recent_activities) > 100:
+                app.recent_activities = app.recent_activities[-100:]
+                
+        except Exception as e:
+            app.logger.error(f"Activity tracking error: {e}")
+    
+    # Initial activity and test activities
+    _track_activity("Web interface started", "Bible Clock web interface initialized")
+    _track_activity("System startup", "Bible Clock system started successfully")
+    _track_activity("Display initialized", "E-ink display ready for verse display")
+    
     @app.route('/')
     def index():
         """Main dashboard."""
@@ -86,7 +113,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     'memory_percent': psutil.virtual_memory().percent,
                     'disk_percent': psutil.disk_usage('/').percent,
                     'cpu_temperature': _get_cpu_temperature(),
-                    'uptime': _get_uptime()
+                    'uptime': _get_uptime(),
+                    'health_status': _get_system_health_status(),
+                    'health_details': _get_health_details()
                 }
             }
             
@@ -132,20 +161,52 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         try:
             data = request.get_json()
             
-            # Update translation
+            # Track if we need to update the display
+            needs_display_update = False
+            
+            # Update translation with validation
             if 'translation' in data:
-                app.verse_manager.translation = data['translation']
-                app.logger.info(f"Translation changed to: {data['translation']}")
+                translation = data['translation']
+                try:
+                    available_translations = app.verse_manager.get_available_translations()
+                    if translation in available_translations:
+                        app.verse_manager.translation = translation
+                        app.logger.info(f"Translation changed to: {translation}")
+                        needs_display_update = True
+                    else:
+                        app.logger.error(f"Invalid translation: {translation}. Available: {available_translations}")
+                        return jsonify({'success': False, 'error': f'Invalid translation: {translation}. Available translations: {", ".join(available_translations)}'}), 400
+                except Exception as e:
+                    app.logger.error(f"Translation validation error: {e}")
+                    return jsonify({'success': False, 'error': f'Translation validation failed: {str(e)}'}), 500
             
-            # Update display mode
+            # Update display mode with validation
             if 'display_mode' in data:
-                app.verse_manager.display_mode = data['display_mode']
-                app.logger.info(f"Display mode changed to: {data['display_mode']}")
+                mode = data['display_mode']
+                valid_modes = ['time', 'date', 'random']
+                try:
+                    if mode in valid_modes:
+                        app.verse_manager.display_mode = mode
+                        app.logger.info(f"Display mode changed to: {mode}")
+                        needs_display_update = True
+                    else:
+                        app.logger.error(f"Invalid display mode: {mode}. Valid modes: {valid_modes}")
+                        return jsonify({'success': False, 'error': f'Invalid display mode: {mode}. Valid modes: {", ".join(valid_modes)}'}), 400
+                except Exception as e:
+                    app.logger.error(f"Display mode validation error: {e}")
+                    return jsonify({'success': False, 'error': f'Display mode update failed: {str(e)}'}), 500
             
-            # Update time format
+            # Update time format with validation
             if 'time_format' in data:
-                app.verse_manager.time_format = data['time_format']
-                app.logger.info(f"Time format changed to: {data['time_format']}")
+                time_format = data['time_format']
+                valid_formats = ['12', '24']
+                if time_format in valid_formats:
+                    app.verse_manager.time_format = time_format
+                    app.logger.info(f"Time format changed to: {time_format}")
+                    needs_display_update = True
+                else:
+                    app.logger.error(f"Invalid time format: {time_format}. Valid formats: {valid_formats}")
+                    return jsonify({'success': False, 'error': f'Invalid time format: {time_format}'}), 400
             
             # Update parallel mode
             if 'parallel_mode' in data:
@@ -157,9 +218,6 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 app.verse_manager.secondary_translation = data['secondary_translation']
                 app.logger.info(f"Secondary translation: {data['secondary_translation']}")
             
-            # Track if we need to update the display
-            needs_display_update = False
-            
             # Update background with smart refresh detection
             background_changed = False
             if 'background_index' in data:
@@ -169,11 +227,25 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 app.logger.info(f"Background changed to index: {data['background_index']} (changed: {background_changed})")
                 needs_display_update = True  # Background changes need immediate update
             
-            # Update font
+            # Update font with validation
             if 'font' in data:
-                app.image_generator.set_font(data['font'])
-                app.logger.info(f"Font changed to: {data['font']}")
-                needs_display_update = True  # Font changes need immediate update
+                font_name = data['font']
+                try:
+                    available_fonts = app.image_generator.get_available_fonts()
+                    # available_fonts is a List[str] from get_available_fonts()
+                    font_names = available_fonts if isinstance(available_fonts, list) else list(available_fonts)
+                    
+                    if font_name in font_names or font_name == 'default':
+                        app.image_generator.set_font(font_name)
+                        app.logger.info(f"Font changed to: {font_name}")
+                        needs_display_update = True
+                    else:
+                        app.logger.error(f"Invalid font: {font_name}. Available: {font_names}")
+                        return jsonify({'success': False, 'error': f'Invalid font: {font_name}. Available fonts: {", ".join(font_names)}'}), 400
+                        
+                except Exception as e:
+                    app.logger.error(f"Font validation error: {e}")
+                    return jsonify({'success': False, 'error': f'Font update failed: {str(e)}'}), 500
             
             # Update font sizes
             if any(key in data for key in ['verse_size', 'reference_size']):
@@ -203,17 +275,33 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 app.display_manager.simulation_mode = not data['hardware_mode']
                 app.logger.info(f"Hardware mode: {'enabled' if data['hardware_mode'] else 'disabled (simulation)'}")
             
-            # Smart display update if requested OR if visual changes were made
-            if data.get('update_display', False) or needs_display_update:
-                verse_data = app.verse_manager.get_current_verse()
-                image = app.image_generator.create_verse_image(verse_data)
-                
-                # Use smart refresh: full refresh only for background changes
-                force_refresh = background_changed if 'background_changed' in locals() else False
-                app.display_manager.display_image(image, force_refresh=force_refresh)
-                
-                refresh_type = "full (background change)" if force_refresh else "partial (settings change)"
-                app.logger.info(f"Display updated immediately with {refresh_type}")
+            # Consolidated display update logic - update if requested OR if visual changes were made
+            should_update_display = (
+                data.get('update_display', False) or 
+                needs_display_update or
+                'background_index' in data or 
+                'font' in data or 
+                any(key in data for key in ['verse_size', 'reference_size', 'reference_position', 'reference_x_offset', 'reference_y_offset', 'reference_margin'])
+            )
+            
+            if should_update_display:
+                try:
+                    verse_data = app.verse_manager.get_current_verse()
+                    image = app.image_generator.create_verse_image(verse_data)
+                    
+                    # Determine refresh type: full refresh for background changes, partial for other settings
+                    force_refresh = 'background_index' in data or background_changed
+                    app.display_manager.display_image(image, force_refresh=force_refresh)
+                    
+                    refresh_type = "full (background change)" if force_refresh else "partial (settings change)"
+                    app.logger.info(f"Display updated immediately with {refresh_type}")
+                    
+                    # Track activity for recent activity log
+                    _track_activity("Settings updated", f"Updated settings: {', '.join(data.keys())}")
+                    
+                except Exception as display_error:
+                    app.logger.error(f"Display update failed: {display_error}")
+                    # Don't fail the entire settings update for display issues
             
             return jsonify({'success': True, 'message': 'Settings updated successfully'})
             
@@ -281,6 +369,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             image = app.image_generator.create_verse_image(verse_data)
             app.display_manager.display_image(image, force_refresh=True)
             
+            _track_activity("Display refreshed", f"Manual refresh triggered for {verse_data.get('reference', 'Unknown')}")
             return jsonify({'success': True, 'message': 'Display refreshed'})
         except Exception as e:
             app.logger.error(f"Refresh error: {e}")
@@ -298,6 +387,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 image = app.image_generator.create_verse_image(verse_data)
                 app.display_manager.display_image(image, force_refresh=True)
                 app.logger.info("Background cycled with full refresh")
+                _track_activity("Background cycled", f"Background changed to index {app.image_generator.current_background_index}")
             
             return jsonify({
                 'success': True, 
@@ -546,6 +636,10 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             if 'audio_output_enabled' in data:
                 voice_control.audio_output_enabled = data['audio_output_enabled']
                 app.logger.info(f"Audio output: {'enabled' if data['audio_output_enabled'] else 'disabled'}")
+            
+            if 'screen_display_enabled' in data:
+                voice_control.screen_display_enabled = data['screen_display_enabled']
+                app.logger.info(f"Screen display: {'enabled' if data['screen_display_enabled'] else 'disabled'}")
             
             
             if 'voice_selection' in data:
@@ -1115,6 +1209,10 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 if not volume_set:
                     results.append(f"Could not set microphone volume - no compatible audio controls found")
             
+            # Track volume changes
+            if results:
+                _track_activity("Volume adjusted", '; '.join(results))
+            
             return jsonify({
                 'success': True,
                 'message': '; '.join(results) if results else 'No volume changes applied'
@@ -1122,6 +1220,17 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             
         except Exception as e:
             app.logger.error(f"Audio volume API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/activities', methods=['GET'])
+    def get_recent_activities():
+        """Get recent activity log."""
+        try:
+            # Limit to last 50 activities
+            recent = app.recent_activities[-50:] if len(app.recent_activities) > 50 else app.recent_activities
+            return jsonify({'success': True, 'data': recent})
+        except Exception as e:
+            app.logger.error(f"Activities API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/health')
@@ -1172,6 +1281,164 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             
             return None
     
+    def _get_system_health_status():
+        """Get overall system health status."""
+        try:
+            # Check various system metrics
+            cpu_percent = psutil.cpu_percent()
+            memory_percent = psutil.virtual_memory().percent
+            disk_percent = psutil.disk_usage('/').percent
+            cpu_temp = _get_cpu_temperature()
+            
+            issues = []
+            
+            # Check CPU usage
+            if cpu_percent > 90:
+                issues.append("High CPU usage")
+            
+            # Check memory usage
+            if memory_percent > 85:
+                issues.append("High memory usage")
+            
+            # Check disk usage
+            if disk_percent > 90:
+                issues.append("Low disk space")
+            
+            # Check temperature
+            if cpu_temp and cpu_temp > 80:
+                issues.append("High CPU temperature")
+            
+            # Check if display manager is responding
+            if not hasattr(app.display_manager, 'last_image_hash'):
+                issues.append("Display manager not responding")
+            
+            # Check API connectivity
+            try:
+                test_verse = app.verse_manager.get_current_verse()
+                if not test_verse or 'error' in test_verse:
+                    issues.append("Bible API connectivity issues")
+            except Exception:
+                issues.append("Bible API connectivity issues")
+            
+            # Check free disk space (warn earlier)
+            if disk_percent > 85:
+                issues.append("Low disk space warning")
+            
+            # Check if voice control is functioning (if enabled)
+            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
+                try:
+                    voice_status = app.service_manager.voice_control.get_voice_status()
+                    if not voice_status.get('enabled', False):
+                        issues.append("Voice control disabled")
+                except Exception:
+                    issues.append("Voice control not responding")
+            
+            # Return status
+            if not issues:
+                return "healthy"
+            elif len(issues) == 1:
+                return "warning"
+            else:
+                return "critical"
+                
+        except Exception:
+            return "unknown"
+    
+    def _get_health_details():
+        """Get detailed health information."""
+        try:
+            cpu_percent = psutil.cpu_percent()
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            cpu_temp = _get_cpu_temperature()
+            
+            details = {
+                "purpose": "System health monitoring helps ensure optimal Bible Clock performance",
+                "metrics": {
+                    "cpu": {
+                        "value": cpu_percent,
+                        "status": "good" if cpu_percent < 70 else "warning" if cpu_percent < 90 else "critical",
+                        "description": "CPU usage percentage - lower is better for smooth operation"
+                    },
+                    "memory": {
+                        "value": memory.percent,
+                        "status": "good" if memory.percent < 70 else "warning" if memory.percent < 85 else "critical",
+                        "description": "RAM usage percentage - high usage can cause performance issues"
+                    },
+                    "disk": {
+                        "value": disk.percent,
+                        "status": "good" if disk.percent < 80 else "warning" if disk.percent < 90 else "critical",
+                        "description": "Storage usage percentage - low space can prevent updates and logging"
+                    },
+                    "temperature": {
+                        "value": cpu_temp,
+                        "status": "good" if (cpu_temp and cpu_temp < 65) else "warning" if (cpu_temp and cpu_temp < 80) else "critical",
+                        "description": "CPU temperature in Celsius - high temps can cause system instability"
+                    },
+                    "api_connectivity": {
+                        "value": _check_api_connectivity(),
+                        "status": "good" if _check_api_connectivity() else "critical",
+                        "description": "Bible API connectivity - essential for verse retrieval"
+                    },
+                    "voice_control": {
+                        "value": _check_voice_control_status(),
+                        "status": "good" if _check_voice_control_status() == "active" else "warning" if _check_voice_control_status() == "disabled" else "critical",
+                        "description": "Voice control system status - enables voice commands and AI features"
+                    }
+                },
+                "uptime": _get_uptime(),
+                "last_updated": datetime.now().isoformat(),
+                "recommendations": _get_health_recommendations(cpu_percent, memory.percent, disk.percent, cpu_temp)
+            }
+            
+            return details
+            
+        except Exception as e:
+            return {"error": str(e), "purpose": "System health monitoring helps ensure optimal performance"}
+    
+    def _get_health_recommendations(cpu_percent, memory_percent, disk_percent, cpu_temp):
+        """Get health recommendations based on current metrics."""
+        recommendations = []
+        
+        if cpu_percent > 80:
+            recommendations.append("Consider reducing background processes or upgrading hardware")
+        
+        if memory_percent > 80:
+            recommendations.append("Free up memory by closing unused applications or restarting the system")
+        
+        if disk_percent > 85:
+            recommendations.append("Clean up old files, logs, or consider expanding storage")
+        
+        if cpu_temp and cpu_temp > 75:
+            recommendations.append("Improve cooling or reduce system load to prevent overheating")
+        
+        if not recommendations:
+            recommendations.append("System is running optimally - no action needed")
+        
+        return recommendations
+    
+    def _check_api_connectivity():
+        """Check if Bible API is accessible."""
+        try:
+            # Quick test of verse retrieval
+            test_verse = app.verse_manager.get_current_verse()
+            return bool(test_verse and 'error' not in test_verse and test_verse.get('text'))
+        except Exception:
+            return False
+    
+    def _check_voice_control_status():
+        """Check voice control system status."""
+        try:
+            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
+                voice_status = app.service_manager.voice_control.get_voice_status()
+                if voice_status.get('enabled', False):
+                    return "active"
+                else:
+                    return "disabled"
+            return "not_available"
+        except Exception:
+            return "error"
+    
     def _generate_basic_statistics():
         """Generate basic statistics."""
         return {
@@ -1192,7 +1459,9 @@ def _apply_display_transformations(image):
         # Create a copy to avoid modifying the original
         transformed_image = image.copy()
         
-        # Apply mirroring if needed (same logic as display_manager._display_on_hardware)
+        # Apply EXACT same transformations as display_manager._display_on_hardware()
+        
+        # Step 1: Apply mirroring if needed (fixes backwards text)
         mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
         if mirror_setting == 'true':
             transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
@@ -1202,7 +1471,8 @@ def _apply_display_transformations(image):
             transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
             transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
         
-        # Apply software rotation for precise control (same logic as display_manager)
+        # Step 2: Apply software rotation for precise control
+        # This matches display_manager.py line 134-135 exactly
         if os.getenv('DISPLAY_PHYSICAL_ROTATION', '180') == '180':
             transformed_image = transformed_image.rotate(180)
         
@@ -1210,7 +1480,6 @@ def _apply_display_transformations(image):
         
     except Exception as e:
         # If transformation fails, return original image
-        print(f"Preview transformation error: {e}")
         return image
 
 def _cleanup_old_preview_images():

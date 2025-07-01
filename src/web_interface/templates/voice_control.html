@@ -273,12 +273,22 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Volume</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Speaker Volume</label>
                         <input type="range" id="voice-volume" min="0" max="1" step="0.1" value="0.8" class="w-full">
                         <div class="flex justify-between text-xs text-gray-500">
                             <span>Quiet</span>
                             <span>Loud</span>
                         </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Microphone Volume</label>
+                        <input type="range" id="mic-volume" min="0" max="100" step="5" value="75" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Low</span>
+                            <span>High</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Recommended: 75% for optimal voice recognition</p>
                     </div>
                 </div>
             </div>
@@ -394,6 +404,18 @@
                         </label>
                     </div>
                     
+                    <!-- Screen Updates Toggle -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Response Display Mode</label>
+                            <p class="text-sm text-gray-500">Show AI responses on screen instead of audio</p>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="screen-display-enabled">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -422,12 +444,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up event listeners for existing elements
     document.getElementById('voice-rate').addEventListener('change', updateVoiceSettings);
     document.getElementById('voice-volume').addEventListener('change', updateVoiceSettings);
+    document.getElementById('mic-volume').addEventListener('change', updateMicrophoneVolume);
     document.getElementById('chatgpt-enabled').addEventListener('change', updateVoiceSettings);
     document.getElementById('help-enabled').addEventListener('change', updateVoiceSettings);
     document.getElementById('voice-selection').addEventListener('change', updateVoiceSettings);
     document.getElementById('voice-control-enabled').addEventListener('change', updateVoiceSettings);
     document.getElementById('audio-input-enabled').addEventListener('change', updateVoiceSettings);
     document.getElementById('audio-output-enabled').addEventListener('change', updateVoiceSettings);
+    document.getElementById('screen-display-enabled').addEventListener('change', updateVoiceSettings);
     
     // Add ReSpeaker event listeners only if elements exist (legacy support)
     const respeakerEnabled = document.getElementById('respeaker-enabled');
@@ -507,6 +531,7 @@ function updateVoiceStatusUI(status) {
     // Update audio controls
     document.getElementById('audio-input-enabled').checked = status.audio_input_enabled !== false;
     document.getElementById('audio-output-enabled').checked = status.audio_output_enabled !== false;
+    document.getElementById('screen-display-enabled').checked = status.screen_display_enabled === true;
     
     // Update ReSpeaker controls only if they exist (legacy support)
     const respeakerEnabled = document.getElementById('respeaker-enabled');
@@ -602,6 +627,7 @@ function updateVoiceSettings() {
         voice_selection: document.getElementById('voice-selection').value,
         audio_input_enabled: document.getElementById('audio-input-enabled').checked,
         audio_output_enabled: document.getElementById('audio-output-enabled').checked,
+        screen_display_enabled: document.getElementById('screen-display-enabled').checked,
     };
     
     fetch('/api/voice/settings', {
@@ -646,6 +672,7 @@ function applyVoiceSettings() {
         voice_control_enabled: document.getElementById('voice-control-enabled').checked,
         audio_input_enabled: document.getElementById('audio-input-enabled').checked,
         audio_output_enabled: document.getElementById('audio-output-enabled').checked,
+        screen_display_enabled: document.getElementById('screen-display-enabled').checked,
     };
     
     // Include API key only if it's new (not masked)
@@ -930,6 +957,32 @@ function setSelectedVoice() {
 function refreshPiperVoices() {
     showNotification('Refreshing voice list...', 'info');
     loadPiperVoices();
+}
+
+function updateMicrophoneVolume() {
+    const micVolume = parseInt(document.getElementById('mic-volume').value);
+    
+    const data = {
+        mic_volume: micVolume
+    };
+    
+    fetch('/api/audio/volume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification(`Microphone volume set to ${micVolume}%`, 'success');
+        } else {
+            showNotification('Failed to update microphone volume: ' + (result.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Microphone volume update error:', error);
+        showNotification('Failed to update microphone volume', 'error');
+    });
 }
 </script>
 {% endblock %}

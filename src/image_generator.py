@@ -24,7 +24,7 @@ class ImageGenerator:
         # Font sizes (configurable)
         self.title_size = int(os.getenv('TITLE_FONT_SIZE', '48'))
         self.verse_size = int(os.getenv('VERSE_FONT_SIZE', '80'))  # Larger default
-        self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '72'))  # Make reference larger
+        self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '84'))  # Make reference larger and more prominent
         
         # Background cycling settings
         self.background_cycling_enabled = False
@@ -46,7 +46,7 @@ class ImageGenerator:
         # Reference positioning settings (configurable via web interface)
         self.reference_position = 'center-top'  # Always keep at center-top
         self.reference_x_offset = 0  # Custom X offset from calculated position
-        self.reference_y_offset = 0  # Custom Y offset from calculated position
+        self.reference_y_offset = 20  # Push reference down 20 pixels from top
         self.reference_margin = 20   # Margin from edges
     
     def _load_fonts(self):
@@ -268,8 +268,8 @@ class ImageGenerator:
             base_margin = max(base_margin, 80)
         
         # Center verse vertically with minimal spacing from reference
-        # Calculate actual reference Y position to ensure proper spacing
-        ref_y = (base_margin * 2) + 20  # Match the reference positioning
+        # Calculate actual reference Y position to ensure proper spacing (match _add_verse_reference_display logic)
+        ref_y = base_margin + self.reference_y_offset  # Match the reference positioning exactly
         min_gap = 40  # Minimum gap between reference and verse text
         reference_bottom = ref_y + ref_height + min_gap
         
@@ -648,7 +648,7 @@ class ImageGenerator:
         if verse_size is not None:
             self.verse_size = max(12, min(120, verse_size))  # Clamp between 12-120 for larger text
         if reference_size is not None:
-            self.reference_size = max(12, min(48, reference_size))  # Clamp between 12-48
+            self.reference_size = max(12, min(120, reference_size))  # Clamp between 12-120 for larger, more prominent reference
         
         # Reload fonts with new sizes
         self._load_fonts()
@@ -843,7 +843,7 @@ class ImageGenerator:
         self._add_verse_reference_display(draw, verse_data)
     
     def _add_verse_reference_display(self, draw: ImageDraw.Draw, verse_data: Dict):
-        """Add verse reference prominently below the border - this is the main time display."""
+        """Add verse reference prominently at the configured position - this is the main time display."""
         # Check if this is date-based mode
         if verse_data.get('is_date_event'):
             # Show the actual date instead of reference for date-based mode
@@ -885,7 +885,7 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                y = (base_margin * 2) + 20  # Move down 20 pixels as requested
+                y = base_margin + self.reference_y_offset  # Use the y_offset setting (20 pixels from top)
             elif self.reference_position == 'center-bottom':
                 x = (self.width - text_width) // 2
                 # Position lower than very bottom - about 80% down for top-middle appearance after rotation
@@ -909,5 +909,5 @@ class ImageGenerator:
             # Note: Frame buffer clearing is now handled in display_manager.py
             # No need for local clearing that can create white rectangles on backgrounds
             
-            # Draw the reference in bottom-right area
+            # Draw the reference at the configured position (prominently at top for center-top)
             draw.text((x, y), display_text, fill=0, font=self.reference_font)

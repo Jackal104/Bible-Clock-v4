@@ -41,6 +41,7 @@ class BibleClockVoiceControl:
         # Audio input/output controls
         self.audio_input_enabled = os.getenv('AUDIO_INPUT_ENABLED', 'true').lower() == 'true'
         self.audio_output_enabled = os.getenv('AUDIO_OUTPUT_ENABLED', 'true').lower() == 'true'
+        self.screen_display_enabled = os.getenv('SCREEN_DISPLAY_ENABLED', 'false').lower() == 'true'
         
         # ReSpeaker HAT settings (legacy support, disabled by default)
         self.respeaker_enabled = os.getenv('RESPEAKER_ENABLED', 'false').lower() == 'true'
@@ -348,6 +349,8 @@ class BibleClockVoiceControl:
                     "random mode": "I will switch to random verse inspiration",
                     "parallel mode": "I will toggle parallel translation mode showing two translations",
                     "change translation to [name]": "I will switch to a specific translation like King James or Amplified",
+                    "explain this verse": "I will explain the current verse displayed on screen",
+                    "what does this verse mean": "I will provide the meaning of the current verse",
                     "chat": "I will start interactive chat mode for biblical questions"
                 }
             },
@@ -365,6 +368,7 @@ class BibleClockVoiceControl:
                 "title": "Biblical Questions and AI Assistant",
                 "content": "I can answer any biblical questions using artificial intelligence. Simply ask naturally after saying 'Bible Clock'. Here are examples:",
                 "examples": [
+                    "Explain this verse",
                     "What does this verse mean?",
                     "Who was King David?", 
                     "Explain the parable of the prodigal son",
@@ -503,13 +507,17 @@ class BibleClockVoiceControl:
             wake_word_index = initial_text.find(self.wake_word)
             initial_command = initial_text[wake_word_index + len(self.wake_word):].strip()
             
-            if initial_command:
-                # We have the full command already
+            if initial_command and len(initial_command.split()) >= 3:
+                # We have a substantial command already - use it
                 full_command = initial_command
                 self.logger.info(f"Complete command captured: {full_command}")
             else:
-                # Listen for the actual command
-                self._speak("Yes? How may I help you?")
+                # Command is too short or missing - listen for more
+                if initial_command:
+                    self.logger.info(f"Partial command detected: '{initial_command}' - listening for more")
+                    self._speak("I heard something. Please continue with your full request.")
+                else:
+                    self._speak("Yes? How may I help you?")
                 full_command = self._listen_for_command()
             
             if full_command:
@@ -630,10 +638,32 @@ class BibleClockVoiceControl:
         if command_executed:
             return
         
+        # Check for verse explanation commands first
+        verse_explanation_phrases = ['explain this verse', 'explain verse', 'what does this mean', 'explain this', 'what does this verse mean']
+        if any(phrase in text_lower for phrase in verse_explanation_phrases):
+            if self.chatgpt_enabled:
+                try:
+                    current_verse = self.verse_manager.get_current_verse()
+                    if current_verse:
+                        explanation_query = f"Explain this Bible verse: {current_verse.get('reference', '')} - {current_verse.get('text', '')}"
+                        self.logger.info(f"Verse explanation request for: {current_verse.get('reference', '')}")
+                        self._process_chatgpt_question(explanation_query)
+                        return
+                    else:
+                        self._speak("No verse is currently displayed to explain.")
+                        return
+                except Exception as e:
+                    self.logger.error(f"Error getting current verse for explanation: {e}")
+                    self._speak("Sorry, I couldn't access the current verse.")
+                    return
+            else:
+                self._speak("Biblical explanations are not currently enabled. Please check your ChatGPT configuration.")
+                return
+        
         # Check for ChatGPT question indicators
         question_indicators = [
             'what does', 'what is', 'who is', 'who was', 'explain', 'tell me about',
-            'what does this mean', 'why', 'how', 'where', 'when', 'help me understand',
+            'why', 'how', 'where', 'when', 'help me understand',
             'what happened', 'can you explain', 'question about', 'meaning of',
             'significance of', 'importance of', 'teach me', 'show me'
         ]
@@ -1138,6 +1168,11 @@ class BibleClockVoiceControl:
     
     def _speak(self, text: str):
         """Speak text using TTS with enhanced voice settings and display management."""
+        # Check if screen display is enabled instead of audio output
+        if self.screen_display_enabled:
+            self._display_response_on_screen(text)
+            return
+        
         # Check if audio output is enabled
         if not self.audio_output_enabled:
             self.logger.debug(f"Audio output disabled - would speak: {text[:100]}{'...' if len(text) > 100 else ''}")
@@ -1205,6 +1240,25 @@ class BibleClockVoiceControl:
                     self._refresh_display_silent()
             except Exception as restore_error:
                 self.logger.error(f"Final display restoration failed: {restore_error}")
+    
+    def _display_response_on_screen(self, text: str, duration: float = 15.0):
+        """Display AI response on e-ink screen instead of speaking."""
+        try:
+            self.logger.info(f"Displaying response on screen: {text[:100]}{'...' if len(text) > 100 else ''}")
+            
+            # Use the display manager's transient message system
+            if hasattr(self.display_manager, 'show_transient_message'):
+                self.display_manager.show_transient_message("ai_response", text, duration)
+            else:
+                # Fallback: log the text if display manager not available
+                self.logger.warning("Display manager not available for screen response")
+                self.logger.info(f"AI Response: {text}")
+                
+        except Exception as e:
+            self.logger.error(f"Error displaying response on screen: {e}")
+            # Don't fallback to speaking here to avoid infinite loops
+            # Just log the response
+            self.logger.info(f"Failed to display - AI Response: {text}")
     
     def _enhance_speech_text(self, text: str) -> str:
         """Enhance text for better speech synthesis."""
@@ -1274,6 +1328,7 @@ class BibleClockVoiceControl:
             # Audio input/output controls
             'audio_input_enabled': self.audio_input_enabled,
             'audio_output_enabled': self.audio_output_enabled,
+            'screen_display_enabled': self.screen_display_enabled,
             'force_respeaker_output': self.force_respeaker_output,
             # ReSpeaker settings
             'respeaker_channels': self.respeaker_channels,
@@ -1438,7 +1493,7 @@ class BibleClockVoiceControl:
             
             if self.verse_manager.parallel_mode:
                 primary = self.verse_manager.translation.upper()
-                secondary = getattr(self.verse_manager, 'secondary_translation', 'web').upper()
+                secondary = getattr(self.verse_manager, 'secondary_translation', 'amp').upper()
                 self._speak(f"Parallel mode enabled. Showing {primary} and {secondary} translations side by side.")
             else:
                 self._speak("Parallel mode disabled. Showing single translation.")

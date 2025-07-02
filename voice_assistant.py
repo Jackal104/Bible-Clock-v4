@@ -58,8 +58,8 @@ class VoiceAssistant:
         self.allow_piper_fallback = os.getenv('ALLOW_PIPER_FALLBACK', 'true').lower() == 'true'
         
         # Memory optimization settings
-        self.MAX_TTS_QUEUE_SIZE = 3  # Limit TTS queue to prevent memory growth
-        self.MAX_AUDIO_BUFFER_SIZE = 5  # Limit audio buffer accumulation
+        self.MAX_TTS_QUEUE_SIZE = 2  # Limit TTS queue to prevent memory growth
+        self.MAX_AUDIO_BUFFER_SIZE = 3  # Limit audio buffer accumulation
         self.max_tokens = int(os.getenv('CHATGPT_MAX_TOKENS', '50'))
         self.system_prompt = os.getenv('CHATGPT_SYSTEM_PROMPT', 
             'You are a knowledgeable Bible study assistant. Provide accurate, thoughtful responses about the Bible, Christianity, and faith. Keep responses VERY brief (1-2 sentences max, under 50 words) for voice assistant use. Be concise and direct.')
@@ -128,6 +128,29 @@ class VoiceAssistant:
                 self.visual_feedback(state, message)
             except Exception as e:
                 logger.warning(f"Visual feedback error: {e}")
+    
+    def _restore_display_after_tts(self):
+        """Restore display to normal after TTS completion."""
+        def delayed_restore():
+            try:
+                # Wait a moment to ensure TTS has fully completed
+                time_module.sleep(1.0)
+                logger.info("🔄 Restoring display after TTS completion")
+                self._update_visual_state("ready", "✅ Ready")
+                # Additional delay then clear the ready message
+                time_module.sleep(2.0)
+                # Trigger full display restoration to Bible verse
+                logger.info("🔄 Triggering final display restoration to Bible verse")
+                if self.visual_feedback:
+                    self.visual_feedback("restore", None)
+                else:
+                    logger.warning("No visual feedback callback available for restoration")
+            except Exception as e:
+                logger.error(f"Display restoration failed: {e}")
+        
+        # Run restoration in background thread
+        import threading
+        threading.Thread(target=delayed_restore, daemon=True).start()
     
     def _initialize_components(self):
         """Initialize all voice control components with error handling."""
@@ -500,8 +523,8 @@ class VoiceAssistant:
             target_sample_rate = 16000  # For speech recognition
             chunk_size = 1024
             silence_threshold = 500
-            min_silence_duration = 0.4  # Reduced from 0.8s for faster response
-            max_recording_duration = 10
+            min_silence_duration = 1.2  # Increased to allow natural speech pauses
+            max_recording_duration = 15  # Increased to allow longer questions
             
             audio_chunks = []
             silence_chunks = 0
@@ -523,33 +546,54 @@ class VoiceAssistant:
             logger.info("Recording with VAD - speak now...")
             recording_started = False
             
-            while total_chunks < max_chunks:
-                # Read audio chunk
-                audio_data = stream.read(chunk_size, exception_on_overflow=False)
-                audio_chunk = np.frombuffer(audio_data, dtype=np.int16)
-                
-                # Detect if this chunk contains speech
-                is_silent = self._detect_silence(audio_chunk, silence_threshold)
-                
-                if not is_silent:
-                    # Speech detected
-                    recording_started = True
-                    silence_chunks = 0
-                    audio_chunks.append(audio_data)
-                elif recording_started:
-                    # Silence after speech started
-                    silence_chunks += 1
-                    audio_chunks.append(audio_data)
-                    
-                    # Check if we've had enough silence to end recording
-                    if silence_chunks >= silence_chunks_needed:
-                        logger.info("Silence detected, ending recording")
-                        break
-                
-                total_chunks += 1
+            # Add timeout timer to prevent stuck recording state
+            def timeout_handler():
+                if stream:
+                    try:
+                        stream.stop_stream()
+                        stream.close()
+                    except:
+                        pass
+                self._update_visual_state("timeout", "Recording timeout")
+                threading.Timer(2.0, lambda: self._update_visual_state("ready", "Ready")).start()
             
-            stream.stop_stream()
-            stream.close()
+            timeout_timer = threading.Timer(max_recording_duration + 2, timeout_handler)
+            timeout_timer.start()
+            
+            try:
+                while total_chunks < max_chunks:
+                    # Read audio chunk
+                    audio_data = stream.read(chunk_size, exception_on_overflow=False)
+                    audio_chunk = np.frombuffer(audio_data, dtype=np.int16)
+                    
+                    # Detect if this chunk contains speech
+                    is_silent = self._detect_silence(audio_chunk, silence_threshold)
+                    
+                    if not is_silent:
+                        # Speech detected
+                        recording_started = True
+                        silence_chunks = 0
+                        audio_chunks.append(audio_data)
+                    elif recording_started:
+                        # Silence after speech started
+                        silence_chunks += 1
+                        audio_chunks.append(audio_data)
+                        
+                        # Check if we've had enough silence to end recording
+                        if silence_chunks >= silence_chunks_needed:
+                            logger.info("Silence detected, ending recording")
+                            break
+                    
+                    total_chunks += 1
+            
+            finally:
+                # Cancel timeout timer and clean up stream
+                timeout_timer.cancel()
+                try:
+                    stream.stop_stream()
+                    stream.close()
+                except:
+                    pass
             
             if not audio_chunks:
                 self._update_visual_state("error", "No speech detected")
@@ -600,16 +644,28 @@ class VoiceAssistant:
             return command
             
         except sr.UnknownValueError:
+            error_msg = "Couldn't understand speech - try speaking more clearly"
             self._update_visual_state("error", "Couldn't understand")
-            print("❓ Couldn't understand - try speaking more clearly")
+            logger.warning(f"❓ {error_msg}")
+            print(f"❓ {error_msg}")
+            # Clear recording state after a delay
+            threading.Timer(3.0, lambda: self._update_visual_state("ready", "Ready")).start()
             return None
         except sr.RequestError as e:
-            self._update_visual_state("error", f"Recognition error: {str(e)}")
-            print(f"❌ Recognition error: {e}")
+            error_msg = f"Speech recognition service error: {str(e)}"
+            self._update_visual_state("error", "Recognition service error")
+            logger.error(f"❌ {error_msg}")
+            print(f"❌ {error_msg}")
+            # Clear recording state after a delay
+            threading.Timer(3.0, lambda: self._update_visual_state("ready", "Ready")).start()
             return None
         except Exception as e:
-            self._update_visual_state("error", f"Error: {str(e)}")
-            print(f"❌ Error: {e}")
+            error_msg = f"Speech processing error: {str(e)}"
+            self._update_visual_state("error", "Processing error")
+            logger.error(f"❌ {error_msg}")
+            print(f"❌ {error_msg}")
+            # Clear recording state after a delay
+            threading.Timer(3.0, lambda: self._update_visual_state("ready", "Ready")).start()
             return None
     
     def get_current_metrics(self):
@@ -921,8 +977,13 @@ class VoiceAssistant:
             # Clean up
             os.unlink(temp_path)
             
+            # ✅ RESTORE display after Piper TTS completion
+            self._restore_display_after_tts()
+            
         except Exception as e:
             logger.error(f"Speech synthesis error: {e}")
+            # Restore display even if TTS failed
+            self._restore_display_after_tts()
     
     def speak_with_amy(self, text, priority=False):
         """Queue text for TTS to prevent overlapping speech."""
@@ -1005,6 +1066,9 @@ class VoiceAssistant:
                 logger.info("🎙️ Resumed audio input after playback")
             except Exception as resume_err:
                 logger.warning(f"Failed to restart mic: {resume_err}")
+            
+            # ✅ RESTORE display after TTS completion
+            self._restore_display_after_tts()
                 
         except Exception as e:
             logger.error(f"OpenAI TTS playback failed: {e}")
@@ -1014,6 +1078,8 @@ class VoiceAssistant:
                 self.queue_tts(text)
             else:
                 logger.warning("❌ Skipping TTS: OpenAI failed and Piper fallback is disabled (ALLOW_PIPER_FALLBACK=false)")
+                # Restore display even if TTS failed
+                self._restore_display_after_tts()
 
     
     def query_chatgpt(self, question):
@@ -1068,8 +1134,19 @@ For follow-up questions like "continue", "tell me more", or "explain further", r
                 full_response = ""
                 word_count = 0
                 early_tts_sent = False
+                stream_start_time = time_module.time()
+                stream_timeout = 30  # 30 second timeout for streaming
                 
                 for chunk in response_stream:
+                    # Check for timeout
+                    if time_module.time() - stream_start_time > stream_timeout:
+                        logger.warning(f"⏰ ChatGPT streaming timeout after {stream_timeout}s")
+                        if full_response.strip():
+                            logger.info("🔄 Using partial response due to timeout")
+                            break
+                        else:
+                            logger.error("❌ No response received before timeout")
+                            return "Sorry, I'm having trouble processing your request. Please try again."
                     if chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         full_response += content

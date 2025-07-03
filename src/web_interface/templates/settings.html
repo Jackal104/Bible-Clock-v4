@@ -430,6 +430,12 @@ function loadSettings() {
 }
 
 function populateSettingsForm(settings) {
+    // Store settings globally so updateSecondaryTranslationOptions can access them
+    window.currentSettings = settings;
+    
+    // Populate primary translation dropdown dynamically
+    populatePrimaryTranslations(settings);
+    
     // Handle parallel mode display
     if (settings.parallel_mode) {
         document.getElementById('display-mode').value = 'parallel';
@@ -450,7 +456,7 @@ function populateSettingsForm(settings) {
     
     // Populate secondary translation options and set value
     updateSecondaryTranslationOptions();
-    document.getElementById('secondary-translation').value = settings.secondary_translation || 'web';
+    document.getElementById('secondary-translation').value = settings.secondary_translation || 'amp';
     
     // Font sizes
     if (settings.font_sizes) {
@@ -477,39 +483,82 @@ function populateSettingsForm(settings) {
     setupReferencePositionListeners();
 }
 
+function populatePrimaryTranslations(settings) {
+    const primarySelect = document.getElementById('translation');
+    const currentPrimary = settings.translation || 'kjv';
+    
+    if (settings.available_translations && settings.translation_display_names) {
+        const availableTranslations = settings.available_translations;
+        const translationNames = settings.translation_display_names;
+        
+        // Clear current options
+        primarySelect.innerHTML = '';
+        
+        // Add all available translations
+        availableTranslations.forEach(trans => {
+            const option = document.createElement('option');
+            option.value = trans;
+            option.textContent = translationNames[trans] || trans.toUpperCase();
+            option.selected = trans === currentPrimary;
+            primarySelect.appendChild(option);
+        });
+    }
+}
+
 function updateSecondaryTranslationOptions() {
     const primaryTranslation = document.getElementById('translation').value;
     const secondarySelect = document.getElementById('secondary-translation');
     const currentSecondary = secondarySelect.value;
     
-    // All available translations (only working ones)
-    const allTranslations = [
-        { value: 'kjv', label: 'King James Version (KJV)' },
-        { value: 'esv', label: 'English Standard Version (ESV)' },
-        { value: 'niv', label: 'New International Version (NIV)' },
-        { value: 'nasb', label: 'New American Standard Bible (NASB)' },
-        { value: 'amp', label: 'Amplified Bible (AMP)' },
-        { value: 'nlt', label: 'New Living Translation (NLT)' },
-        { value: 'msg', label: 'The Message (MSG)' },
-        { value: 'web', label: 'World English Bible (WEB)' },
-        { value: 'asv', label: 'American Standard Version (ASV)' },
-        { value: 'bbe', label: 'Bible in Basic English (BBE)' },
-        { value: 'ylt', label: 'Young\'s Literal Translation (YLT)' }
-    ];
-    
-    // Clear current options
-    secondarySelect.innerHTML = '';
-    
-    // Add options except the primary translation
-    allTranslations.forEach(trans => {
-        if (trans.value !== primaryTranslation) {
-            const option = document.createElement('option');
-            option.value = trans.value;
-            option.textContent = trans.label;
-            option.selected = trans.value === currentSecondary;
-            secondarySelect.appendChild(option);
-        }
-    });
+    // Get available translations from backend settings data
+    if (window.currentSettings && window.currentSettings.available_translations) {
+        const availableTranslations = window.currentSettings.available_translations;
+        const translationNames = window.currentSettings.translation_display_names || {};
+        
+        // Clear current options
+        secondarySelect.innerHTML = '';
+        
+        // Add options except the primary translation
+        availableTranslations.forEach(trans => {
+            if (trans !== primaryTranslation) {
+                const option = document.createElement('option');
+                option.value = trans;
+                option.textContent = translationNames[trans] || trans.toUpperCase();
+                option.selected = trans === currentSecondary;
+                secondarySelect.appendChild(option);
+            }
+        });
+    } else {
+        // Fallback to hardcoded list if backend data not available
+        console.warn('Backend translation data not available, using fallback');
+        
+        const fallbackTranslations = [
+            { value: 'kjv', label: 'King James Version (KJV)' },
+            { value: 'web', label: 'World English Bible (WEB)' },
+            { value: 'asv', label: 'American Standard Version (ASV)' },
+            { value: 'bbe', label: 'Bible in Basic English (BBE)' },
+            { value: 'ylt', label: 'Young\'s Literal Translation (YLT)' },
+            { value: 'darby', label: 'Darby Translation' },
+            { value: 'esv', label: 'English Standard Version (ESV)' },
+            { value: 'amp', label: 'Amplified Bible (AMP)' },
+            { value: 'nasb', label: 'New American Standard Bible (NASB)' },
+            { value: 'cev', label: 'Contemporary English Version (CEV)' }
+        ];
+        
+        // Clear current options
+        secondarySelect.innerHTML = '';
+        
+        // Add options except the primary translation
+        fallbackTranslations.forEach(trans => {
+            if (trans.value !== primaryTranslation) {
+                const option = document.createElement('option');
+                option.value = trans.value;
+                option.textContent = trans.label;
+                option.selected = trans.value === currentSecondary;
+                secondarySelect.appendChild(option);
+            }
+        });
+    }
 }
 
 function updateDisplayMode() {
@@ -752,6 +801,14 @@ function updateSetting(key, valueOverride = null) {
     const data = {};
     data[key] = value;
     
+    // Special handling for display_mode to prevent "parallel" from being sent
+    if (key === 'display_mode' && value === 'parallel') {
+        // When setting to parallel mode, set display_mode to time and parallel_mode to true
+        data['display_mode'] = 'time';
+        data['parallel_mode'] = true;
+        delete data[key]; // Remove the original key
+    }
+    
     // Force display update for visual changes (background, font, etc.)
     if (['background_index', 'font', 'verse_size', 'reference_size', 'time_format'].includes(key)) {
         data.update_display = true;
@@ -843,9 +900,12 @@ function applySettings() {
         return;
     }
     
+    const displayMode = document.getElementById('display-mode').value;
     const settings = {
-        display_mode: document.getElementById('display-mode').value,
+        display_mode: displayMode === 'parallel' ? 'time' : displayMode,
+        parallel_mode: displayMode === 'parallel',
         translation: document.getElementById('translation').value,
+        secondary_translation: document.getElementById('secondary-translation').value,
         font: document.getElementById('font-family').value,
         auto_refresh: parseInt(document.getElementById('auto-refresh').value),
         voice_enabled: document.getElementById('voice-enabled').checked,

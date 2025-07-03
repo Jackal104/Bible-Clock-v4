@@ -153,8 +153,17 @@ class ServiceManager:
                 if background_changed:
                     self.logger.info("Background changed - forcing full refresh")
                 
+                # Check if parallel mode changed (to prevent artifacts)
+                current_parallel_mode = verse_data.get('parallel_mode', False)
+                parallel_mode_changed = getattr(self, 'last_parallel_mode', None) != current_parallel_mode
+                if parallel_mode_changed:
+                    self.logger.info(f"Parallel mode changed to {current_parallel_mode} - forcing full refresh to prevent artifacts")
+                    self.last_parallel_mode = current_parallel_mode
+                
                 # Display image with smart refresh logic
-                self.display_manager.display_image(image, force_refresh=background_changed)
+                # Force full refresh for parallel mode to prevent artifacts
+                force_refresh = background_changed or parallel_mode_changed or current_parallel_mode
+                self.display_manager.display_image(image, force_refresh=force_refresh)
                 
                 # Update tracking
                 self.last_update = datetime.now()

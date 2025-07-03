@@ -230,11 +230,17 @@ class ImageGenerator:
         
         if is_date_event:
             self._draw_date_event(draw, verse_data, margin, content_width)
-        elif is_summary:
+        elif is_parallel and is_summary:
+            # Special case: book summary in parallel mode - show single summary spanning both columns
             self._draw_book_summary(draw, verse_data, margin, content_width)
         elif is_parallel:
+            # Regular parallel mode - split verse translations
             self._draw_parallel_verse(draw, verse_data, margin, content_width)
+        elif is_summary:
+            # Regular summary mode 
+            self._draw_book_summary(draw, verse_data, margin, content_width)
         else:
+            # Regular single verse mode
             self._draw_verse(draw, verse_data, margin, content_width)
         
         # Apply mirroring directly here if needed
@@ -833,23 +839,12 @@ class ImageGenerator:
         # Use smaller auto-scale for parallel mode
         optimal_font = self._get_optimal_font_size_parallel(primary_text, secondary_text, column_width, margin)
         
-        # Draw translation labels at top
+        # Get translation labels for bottom display
         primary_label = verse_data.get('primary_translation', 'KJV')
         secondary_label = verse_data.get('secondary_translation', 'AMP')
         
+        # Start from top margin (no top labels)
         y_position = margin
-        if self.reference_font:
-            # Left label
-            left_bbox = draw.textbbox((0, 0), primary_label, font=self.reference_font)
-            left_x = left_margin + (column_width // 2) - ((left_bbox[2] - left_bbox[0]) // 2)
-            draw.text((left_x, y_position), primary_label, fill=64, font=self.reference_font)
-            
-            # Right label
-            right_bbox = draw.textbbox((0, 0), secondary_label, font=self.reference_font)
-            right_x = right_margin + (column_width // 2) - ((right_bbox[2] - right_bbox[0]) // 2)
-            draw.text((right_x, y_position), secondary_label, fill=64, font=self.reference_font)
-            
-            y_position += left_bbox[3] - left_bbox[1] + 30
         
         # Calculate vertical centering for text content
         wrapped_primary = self._wrap_text(primary_text, column_width, optimal_font)
@@ -857,7 +852,7 @@ class ImageGenerator:
         
         max_lines = max(len(wrapped_primary), len(wrapped_secondary))
         total_text_height = max_lines * (optimal_font.size + 15)
-        available_height = self.height - y_position - margin - 120  # Reserve space for bottom-right reference
+        available_height = self.height - y_position - margin - 120  # Reserve space for bottom-right reference and bottom labels
         
         text_start_y = y_position + (available_height - total_text_height) // 2
         text_start_y = max(y_position, text_start_y)
@@ -881,6 +876,37 @@ class ImageGenerator:
         separator_start_y = text_start_y - 10
         separator_end_y = current_y + 10
         draw.line([(separator_x, separator_start_y), (separator_x, separator_end_y)], fill=128, width=1)
+        
+        # Add translation labels at the bottom of each column (same size as verse text)
+        bottom_label_y = current_y + 15  # Position closer to verse text to ensure visibility
+        
+        # Ensure we stay within display bounds
+        if bottom_label_y + 50 > self.height:  # If labels would be too low
+            bottom_label_y = self.height - 80  # Position higher to stay visible
+        
+        # Use optimal_font if available, otherwise use verse_font as fallback
+        label_font = optimal_font if optimal_font else self.verse_font
+        
+        if label_font:
+            self.logger.debug(f"Drawing translation labels at y={bottom_label_y}, display height={self.height}")
+            
+            # Left column label (primary translation) - same font size as verse text
+            left_label = f"({primary_label})"
+            left_label_bbox = draw.textbbox((0, 0), left_label, font=label_font)
+            left_label_width = left_label_bbox[2] - left_label_bbox[0]
+            left_label_x = left_margin + (column_width // 2) - (left_label_width // 2)
+            draw.text((left_label_x, bottom_label_y), left_label, fill=0, font=label_font)  # Black fill for maximum visibility
+            
+            # Right column label (secondary translation) - same font size as verse text
+            right_label = f"({secondary_label})"
+            right_label_bbox = draw.textbbox((0, 0), right_label, font=label_font)
+            right_label_width = right_label_bbox[2] - right_label_bbox[0]
+            right_label_x = right_margin + (column_width // 2) - (right_label_width // 2)
+            draw.text((right_label_x, bottom_label_y), right_label, fill=0, font=label_font)  # Black fill for maximum visibility
+            
+            self.logger.debug(f"Drew translation labels: '{left_label}' at ({left_label_x}, {bottom_label_y}), '{right_label}' at ({right_label_x}, {bottom_label_y})")
+        else:
+            self.logger.warning("No font available for translation labels - labels not drawn")
         
         # Add verse reference in bottom-right corner for parallel mode too
         self._add_verse_reference_display(draw, verse_data)

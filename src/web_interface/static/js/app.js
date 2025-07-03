@@ -10,6 +10,7 @@ const BibleClock = {
         status: '/api/status',
         settings: '/api/settings',
         statistics: '/api/statistics',
+        storage: '/api/storage',
         backgrounds: '/api/backgrounds',
         fonts: '/api/fonts',
         refresh: '/api/refresh',

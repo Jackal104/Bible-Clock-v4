@@ -5,7 +5,7 @@
 {% block content %}
 <div class="space-y-6">
     <!-- System Status Cards - Top Priority -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <!-- System Health -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center">
@@ -92,6 +92,21 @@
                 <div class="ml-4">
                     <h4 class="text-sm font-medium text-gray-500">Verses Today</h4>
                     <p class="text-2xl font-semibold text-gray-900" id="verses-today">--</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disk Storage -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-emerald-100 rounded-lg">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="text-sm font-medium text-gray-500">Storage</h4>
+                    <p class="text-2xl font-semibold text-gray-900" id="storage-usage">--%</p>
                 </div>
             </div>
         </div>
@@ -245,18 +260,8 @@
                         <!-- Primary Translation -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Primary Bible Translation</label>
-                            <select id="translation" class="form-select" onchange="updateTranslation()">
-                                <option value="kjv">King James Version (KJV)</option>
-                                <option value="esv">English Standard Version (ESV)</option>
-                                <option value="niv">New International Version (NIV)</option>
-                                <option value="nasb">New American Standard Bible (NASB)</option>
-                                <option value="amp">Amplified Bible (AMP)</option>
-                                <option value="nlt">New Living Translation (NLT)</option>
-                                <option value="msg">The Message (MSG)</option>
-                                <option value="web">World English Bible (WEB)</option>
-                                <option value="asv">American Standard Version (ASV)</option>
-                                <option value="bbe">Bible in Basic English (BBE)</option>
-                                <option value="ylt">Young's Literal Translation (YLT)</option>
+                            <select id="translation" class="form-select" onchange="updateTranslation(); updateSecondaryTranslationOptions();">
+                                <!-- Options populated dynamically from backend -->
                             </select>
                         </div>
 
@@ -357,15 +362,70 @@
         </div>
     </div>
 
-    <!-- Recent Activity -->
+    <!-- Activity & Translation Status -->
     <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-bible-dark mb-4">Recent Activity</h3>
-        <div id="activity-log" class="space-y-3">
-            <div class="text-center text-gray-500 py-8">
-                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p>Activity log will appear here</p>
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8">
+                <button id="activity-tab" 
+                        onclick="switchTab('activity')" 
+                        class="tab-button active whitespace-nowrap py-2 px-1 border-b-2 border-bible-accent font-medium text-sm text-bible-accent">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Recent Activity
+                </button>
+                <button id="translations-tab" 
+                        onclick="switchTab('translations')" 
+                        class="tab-button whitespace-nowrap py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    Translation Completion
+                </button>
+            </nav>
+        </div>
+
+        <!-- Activity Tab Content -->
+        <div id="activity-content" class="tab-content">
+            <div id="activity-log" class="space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p>Activity log will appear here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translation Completion Tab Content -->
+        <div id="translations-content" class="tab-content hidden">
+            <div class="space-y-4">
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-green-600" id="complete-count">-</div>
+                        <div class="text-sm text-gray-600">Complete</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-yellow-600" id="progress-count">-</div>
+                        <div class="text-sm text-gray-600">In Progress</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-gray-600" id="pending-count">-</div>
+                        <div class="text-sm text-gray-600">Pending</div>
+                    </div>
+                </div>
+
+                <!-- Translation Progress List -->
+                <div id="translation-progress" class="space-y-3">
+                    <div class="text-center text-gray-500 py-8">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                        </svg>
+                        <p>Loading translation completion status...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -384,6 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
     loadCurrentVolume();
     loadActivities();
+    loadTranslationCompletion();
     startAutoRefresh();
     
     // Start verse reference display updates
@@ -464,6 +525,56 @@ function loadSystemStatus() {
             console.warn('Status loading failed (non-critical):', error);
             // Don't show error toast for status loading failures
         });
+    
+    // Also load storage stats
+    loadStorageStats();
+}
+
+function loadStorageStats() {
+    fetch('/api/storage')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStorageStats(data.data);
+            }
+        })
+        .catch(error => {
+            console.warn('Storage stats loading failed (non-critical):', error);
+        });
+}
+
+function updateStorageStats(storageData) {
+    const storageElement = document.getElementById('storage-usage');
+    if (storageElement && storageData.disk) {
+        const usedPercent = Math.round(storageData.disk.used_percent);
+        const freePercent = Math.round(storageData.disk.free_percent);
+        const usedGB = storageData.disk.used_gb;
+        const freeGB = storageData.disk.free_gb;
+        const totalGB = storageData.disk.total_gb;
+        
+        storageElement.textContent = usedPercent + '%';
+        
+        // Add color coding based on disk usage percentage
+        const parentDiv = storageElement.closest('.bg-white');
+        const iconDiv = parentDiv.querySelector('.p-2');
+        
+        if (usedPercent >= 90) {
+            // High usage - red (warning)
+            iconDiv.className = 'p-2 bg-red-100 rounded-lg';
+            iconDiv.querySelector('svg').className = 'w-6 h-6 text-red-600';
+        } else if (usedPercent >= 75) {
+            // Medium usage - yellow (caution)
+            iconDiv.className = 'p-2 bg-yellow-100 rounded-lg';
+            iconDiv.querySelector('svg').className = 'w-6 h-6 text-yellow-600';
+        } else {
+            // Low usage - green (good)
+            iconDiv.className = 'p-2 bg-emerald-100 rounded-lg';
+            iconDiv.querySelector('svg').className = 'w-6 h-6 text-emerald-600';
+        }
+        
+        // Update tooltip with detailed disk info
+        storageElement.title = `${usedGB} GB used / ${totalGB} GB total (${freeGB} GB free)`;
+    }
 }
 
 function updateSystemStatus(status) {
@@ -521,6 +632,9 @@ function loadSettings() {
 }
 
 function updateSettingsUI(settings) {
+    // Store settings globally for use by other functions
+    window.currentSettings = settings;
+    
     // Handle parallel mode display
     if (settings.parallel_mode) {
         document.getElementById('display-mode').value = 'parallel';
@@ -530,11 +644,13 @@ function updateSettingsUI(settings) {
         document.getElementById('parallel-settings').classList.add('hidden');
     }
     
+    // Update primary translation options from backend
+    updatePrimaryTranslationOptions(settings);
     document.getElementById('translation').value = settings.translation || 'kjv';
     
     // Update secondary translation options and set value
     updateSecondaryTranslationOptions();
-    document.getElementById('secondary-translation').value = settings.secondary_translation || 'web';
+    document.getElementById('secondary-translation').value = settings.secondary_translation || 'amp';
     
     // Update background options
     const backgroundSelect = document.getElementById('background');
@@ -704,6 +820,14 @@ function updateBackground() {
 function updateSetting(key, value) {
     const data = {};
     data[key] = value;
+    
+    // Special handling for display_mode to prevent "parallel" from being sent
+    if (key === 'display_mode' && value === 'parallel') {
+        // When setting to parallel mode, set display_mode to time and parallel_mode to true
+        data['display_mode'] = 'time';
+        data['parallel_mode'] = true;
+        delete data[key]; // Remove the original key
+    }
     
     fetch('/api/settings', {
         method: 'POST',
@@ -886,7 +1010,7 @@ function updateUnifiedPreview() {
                 display_mode: currentSettings.display_mode || 'time',
                 parallel_mode: currentSettings.parallel_mode || false,
                 translation: currentSettings.translation || 'kjv',
-                secondary_translation: currentSettings.secondary_translation || 'web',
+                secondary_translation: currentSettings.secondary_translation || 'amp',
                 font: currentSettings.current_font || 'default',
                 background_index: currentSettings.background_index || 0,
                 font_sizes: currentSettings.font_sizes || {
@@ -1083,15 +1207,21 @@ function startAutoRefresh() {
     if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(() => {
         if (autoRefreshEnabled) {
-            // Reduce API calls by cycling between verse, status, and activities
+            // Reduce API calls by cycling between verse, status, activities, and translations
             const now = Date.now();
-            const cycle = Math.floor(now / 30000) % 3;
+            const cycle = Math.floor(now / 30000) % 4;
             if (cycle === 0) {
                 loadCurrentVerse();
             } else if (cycle === 1) {
                 loadSystemStatus();
-            } else {
+            } else if (cycle === 2) {
                 loadActivities();
+            } else {
+                // Only refresh translation data if we're viewing that tab
+                const translationsTab = document.getElementById('translations-content');
+                if (translationsTab && !translationsTab.classList.contains('hidden')) {
+                    loadTranslationCompletion();
+                }
             }
         }
     }, 30000); // 30 seconds
@@ -1304,6 +1434,199 @@ function formatTimestamp(timestamp) {
     } catch (e) {
         return 'Unknown time';
     }
+}
+
+function updatePrimaryTranslationOptions(settings) {
+    const translationSelect = document.getElementById('translation');
+    const currentTranslation = translationSelect.value;
+    
+    if (settings && settings.available_translations) {
+        const translationNames = settings.translation_display_names || {};
+        
+        // Clear current options
+        translationSelect.innerHTML = '';
+        
+        // Add options from backend
+        settings.available_translations.forEach(trans => {
+            const option = document.createElement('option');
+            option.value = trans;
+            option.textContent = translationNames[trans] || trans.toUpperCase();
+            option.selected = trans === currentTranslation;
+            translationSelect.appendChild(option);
+        });
+    }
+}
+
+function updateSecondaryTranslationOptions() {
+    const primaryTranslation = document.getElementById('translation').value;
+    const secondarySelect = document.getElementById('secondary-translation');
+    const currentSecondary = secondarySelect.value;
+    
+    if (window.currentSettings && window.currentSettings.available_translations) {
+        const translationNames = window.currentSettings.translation_display_names || {};
+        
+        // Clear current options
+        secondarySelect.innerHTML = '';
+        
+        // Add options except the primary translation
+        window.currentSettings.available_translations.forEach(trans => {
+            if (trans !== primaryTranslation) {
+                const option = document.createElement('option');
+                option.value = trans;
+                option.textContent = translationNames[trans] || trans.toUpperCase();
+                option.selected = trans === currentSecondary;
+                secondarySelect.appendChild(option);
+            }
+        });
+    }
+}
+
+// Tab switching functionality
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active', 'border-bible-accent', 'text-bible-accent');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Activate selected tab
+    const activeButton = document.getElementById(tabName + '-tab');
+    const activeContent = document.getElementById(tabName + '-content');
+    
+    if (activeButton && activeContent) {
+        activeButton.classList.add('active', 'border-bible-accent', 'text-bible-accent');
+        activeButton.classList.remove('border-transparent', 'text-gray-500');
+        activeContent.classList.remove('hidden');
+        
+        // Load data for translation completion tab when switched to
+        if (tabName === 'translations') {
+            loadTranslationCompletion();
+        }
+    }
+}
+
+// Load translation completion data
+function loadTranslationCompletion() {
+    fetch('/api/translation-completion')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayTranslationCompletion(data.data);
+            } else {
+                showTranslationError('Failed to load translation completion data');
+            }
+        })
+        .catch(error => {
+            console.warn('Translation completion loading failed:', error);
+            showTranslationError('Network error loading translation data');
+        });
+}
+
+function displayTranslationCompletion(completionData) {
+    // Extract translations data from API response
+    const translations = completionData.translations || completionData;
+    
+    // Update summary statistics
+    let complete = 0, inProgress = 0, pending = 0;
+    
+    Object.values(translations).forEach(translation => {
+        if (translation.completion_percentage >= 100) {
+            complete++;
+        } else if (translation.completion_percentage > 0) {
+            inProgress++;
+        } else {
+            pending++;
+        }
+    });
+    
+    document.getElementById('complete-count').textContent = complete;
+    document.getElementById('progress-count').textContent = inProgress;
+    document.getElementById('pending-count').textContent = pending;
+    
+    // Create translation progress items
+    const progressContainer = document.getElementById('translation-progress');
+    const sortedTranslations = Object.entries(translations).sort((a, b) => 
+        b[1].completion_percentage - a[1].completion_percentage
+    );
+    
+    progressContainer.innerHTML = sortedTranslations.map(([translation, data]) => {
+        const percentage = Math.round(data.completion_percentage * 10) / 10;
+        const verses = data.cached_verses || 0;
+        const estimatedTotal = data.total_verses || 31100;
+        
+        // Determine status color and icon
+        let statusColor, statusIcon, statusText;
+        if (percentage >= 100) {
+            statusColor = 'text-green-600 bg-green-100';
+            statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            statusText = 'Complete';
+        } else if (percentage > 0) {
+            statusColor = 'text-yellow-600 bg-yellow-100';
+            statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            statusText = 'In Progress';
+        } else {
+            statusColor = 'text-gray-600 bg-gray-100';
+            statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>`;
+            statusText = 'Pending';
+        }
+        
+        return `
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 ${statusColor} rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 ${statusColor.split(' ')[0]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                ${statusIcon}
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">${translation.toUpperCase()}</h4>
+                            <p class="text-sm text-gray-600">${data.display_name || translation}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-semibold text-gray-900">${percentage}%</div>
+                        <div class="text-xs text-gray-500">${statusText}</div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                    <div class="bg-bible-accent h-2 rounded-full transition-all duration-300" 
+                         style="width: ${Math.min(percentage, 100)}%"></div>
+                </div>
+                
+                <!-- Verse Count -->
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>${verses.toLocaleString()} verses cached</span>
+                    <span>${estimatedTotal.toLocaleString()} total</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showTranslationError(message) {
+    const progressContainer = document.getElementById('translation-progress');
+    progressContainer.innerHTML = `
+        <div class="text-center text-red-500 py-8">
+            <svg class="w-12 h-12 mx-auto mb-4 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p>${message}</p>
+            <button onclick="loadTranslationCompletion()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">Try Again</button>
+        </div>
+    `;
+    
+    // Reset summary counts
+    document.getElementById('complete-count').textContent = '-';
+    document.getElementById('progress-count').textContent = '-';
+    document.getElementById('pending-count').textContent = '-';
 }
 </script>
 {% endblock %}

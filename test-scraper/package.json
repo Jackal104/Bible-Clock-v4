@@ -1,0 +1,7 @@
+{
+  "name": "bible-scraper-test",
+  "version": "1.0.0",
+  "dependencies": {
+    "bible-scraper": "latest"
+  }
+}

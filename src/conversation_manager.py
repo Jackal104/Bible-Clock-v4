@@ -139,10 +139,10 @@ class ConversationManager:
         self.data_dir.mkdir(exist_ok=True)
         
         # Memory optimization settings
-        self.MAX_ACTIVE_SESSIONS = 5  # Limit active sessions
-        self.MAX_RECENT_METRICS = 30  # Limit recent metrics storage  
-        self.SESSION_TIMEOUT_MINUTES = 30  # Shorter session timeout
-        self.MAX_TEXT_LENGTH = 200  # Compress long text
+        self.MAX_ACTIVE_SESSIONS = 3  # Limit active sessions
+        self.MAX_RECENT_METRICS = 20  # Limit recent metrics storage  
+        self.SESSION_TIMEOUT_MINUTES = 20  # Shorter session timeout
+        self.MAX_TEXT_LENGTH = 150  # Compress long text
         
         # Lightweight storage files
         self.aggregated_file = self.data_dir / "aggregated_metrics.json"

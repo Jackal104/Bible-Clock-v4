@@ -21,26 +21,28 @@ class VerseManager:
         
         # Multiple API support for different translations
         self.esv_api_key = os.getenv('ESV_API_KEY', '')  # From https://api.esv.org
+        self.scripture_api_key = os.getenv('SCRIPTURE_API_KEY', '')  # From https://scripture.api.bible
+        self.biblegateway_username = os.getenv('BIBLEGATEWAY_USERNAME', '')  # Bible Gateway username
+        self.biblegateway_password = os.getenv('BIBLEGATEWAY_PASSWORD', '')  # Bible Gateway password
+        self.biblegateway_token = None  # Will be obtained dynamically
         self.supported_translations = {
-            # bible-api.com translations (confirmed working)
+            # Primary translation - bible-api.com (free, no API key needed)
             'kjv': {'api': 'bible-api', 'code': 'kjv'},
-            'web': {'api': 'bible-api', 'code': 'web'},
-            'asv': {'api': 'bible-api', 'code': 'asv'},
-            'bbe': {'api': 'bible-api', 'code': 'bbe'},
+            # Young's Literal Translation - bible-api.com (free, no API key needed)
             'ylt': {'api': 'bible-api', 'code': 'ylt'},
-            'darby': {'api': 'bible-api', 'code': 'darby'},
             # ESV API (requires API key from https://api.esv.org)
             'esv': {'api': 'esv', 'code': 'esv'},
-            # Popular translations (fallback to KJV with note until sources found)
-            'amp': {'api': 'fallback', 'code': 'amp'},
-            'nasb': {'api': 'fallback', 'code': 'nasb'},
-            'cev': {'api': 'fallback', 'code': 'cev'}
+            # Bible Gateway API translations (requires username/password from https://www.biblegateway.com)
+            'amp': {'api': 'biblegateway', 'code': 'AMP', 'name': 'Amplified Bible'},
+            'nlt': {'api': 'biblegateway', 'code': 'NLT', 'name': 'New Living Translation'},
+            'msg': {'api': 'biblegateway', 'code': 'MSG', 'name': 'The Message'},
+            'nasb': {'api': 'biblegateway', 'code': 'NASB1995', 'name': 'New American Standard Bible 1995'}
         }
         
         # Enhanced features
         self.display_mode = 'time'  # 'time', 'date', 'random'
-        self.parallel_mode = False  # Enable parallel translation mode
-        self.secondary_translation = 'web'  # Secondary translation for parallel mode
+        self.parallel_mode = False  # Parallel mode off by default - user can enable
+        self.secondary_translation = 'amp'  # Default secondary translation when parallel mode enabled
         self.time_format = '12'  # '12' for 12-hour format, '24' for 24-hour format
         # Memory optimization settings
         self.MAX_DAILY_ACTIVITY_DAYS = 30  # Keep only last 30 days
@@ -62,12 +64,19 @@ class VerseManager:
         self._load_fallback_verses()
         self._load_book_summaries()
         self._load_kjv_bible()
+        self._load_amp_bible()
+        self._load_all_translation_caches()
         self._load_biblical_calendar()
         self._load_bible_structure()
         
-        # All available Bible books (will be populated from local data)
+        # All available Bible books (must be populated before completion calculation)
         self.available_books = []
         self._populate_available_books()
+        
+        # Verse caching system for building complete translations
+        self.translation_cache_enabled = True
+        self.translation_completion = self._calculate_all_translation_completion()
+        self.logger.info(f"Translation cache completion: {self._format_completion_summary()}")
     
     def _load_fallback_verses(self):
         """Load fallback verses from JSON file."""
@@ -101,6 +110,46 @@ class VerseManager:
         except Exception as e:
             self.logger.error(f"Failed to load KJV Bible: {e}")
             self.kjv_bible = {}
+    
+    def _load_amp_bible(self):
+        """Load complete AMP Bible for offline use."""
+        try:
+            amp_path = Path('data/translations/bible_amp.json')
+            with open(amp_path, 'r') as f:
+                self.amp_bible = json.load(f)
+            self.logger.info("Loaded complete AMP Bible")
+        except Exception as e:
+            self.logger.warning(f"AMP Bible not found: {e}. Will use API or fallback methods.")
+            self.amp_bible = {}
+    
+    def _load_all_translation_caches(self):
+        """Load all cached translation files."""
+        try:
+            # Initialize translation caches dictionary
+            self.translation_caches = {}
+            
+            # List of supported translations that can be cached
+            cacheable_translations = ['kjv', 'ylt', 'esv', 'amp', 'nlt', 'msg', 'nasb']
+            
+            for translation in cacheable_translations:
+                cache_path = Path(f'data/translations/bible_{translation}.json')
+                try:
+                    if cache_path.exists():
+                        with open(cache_path, 'r') as f:
+                            self.translation_caches[translation] = json.load(f)
+                        self.logger.debug(f"Loaded {translation.upper()} translation cache")
+                    else:
+                        self.translation_caches[translation] = {}
+                        self.logger.debug(f"Initialized empty cache for {translation.upper()}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to load {translation} cache: {e}")
+                    self.translation_caches[translation] = {}
+            
+            self.logger.info(f"Loaded translation caches for {len(self.translation_caches)} translations")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize translation caches: {e}")
+            self.translation_caches = {}
     
     def _load_biblical_calendar(self):
         """Load biblical events calendar."""
@@ -334,8 +383,8 @@ class VerseManager:
         if verse_data:
             verse_data['time_format'] = self.time_format
         
-        # Add parallel translation if enabled (for all modes)
-        if self.parallel_mode and verse_data and not verse_data.get('is_summary') and not verse_data.get('is_date_event'):
+        # Add parallel translation if enabled (for all modes except date events)
+        if self.parallel_mode and verse_data and not verse_data.get('is_date_event'):
             verse_data = self._add_parallel_translation(verse_data)
         
         # Update statistics with rotation
@@ -549,32 +598,6 @@ class VerseManager:
         
         return fallback
     
-    def _add_parallel_translation(self, verse_data: Dict) -> Dict:
-        """Add parallel translation to verse data."""
-        try:
-            book = verse_data.get('book')
-            chapter = verse_data.get('chapter')
-            verse = verse_data.get('verse')
-            
-            if not all([book, chapter, verse]):
-                return verse_data
-            
-            # Try to get secondary translation using multi-API system
-            secondary_verse = self._fetch_verse_from_multi_api(
-                book, chapter, verse, self.secondary_translation
-            )
-            
-            if secondary_verse:
-                verse_data['parallel_mode'] = True
-                verse_data['primary_translation'] = self.translation.upper()
-                verse_data['secondary_translation'] = self.secondary_translation.upper()
-                verse_data['secondary_text'] = secondary_verse['text']
-            
-            return verse_data
-            
-        except Exception as e:
-            self.logger.warning(f"Failed to get parallel translation: {e}")
-            return verse_data
     
     def _get_verse_from_api_with_translation(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
         """Get verse from API with specific translation and validation."""
@@ -854,25 +877,28 @@ class VerseManager:
             return verse_data
         
         try:
+            # Handle book summaries differently
+            if verse_data.get('is_summary'):
+                # For book summaries, we'll show the same summary but with different translation labels
+                # This allows parallel mode to work for summaries too
+                verse_data['parallel_mode'] = True
+                verse_data['secondary_text'] = verse_data['text']  # Same summary text for both columns
+                verse_data['primary_translation'] = self.translation.upper()
+                verse_data['secondary_translation'] = self.secondary_translation.upper()
+                self.logger.info(f"Added parallel mode for book summary: {verse_data['book']}")
+                return verse_data
+            
             # Extract book, chapter, verse from primary verse
             book = verse_data['book']
             chapter = verse_data['chapter']
             verse = verse_data['verse']
             
-            # Try to get the same verse in secondary translation
-            url = f"{self.api_url}/{book} {chapter}:{verse}"
-            # Always add translation parameter - bible-api.com default is NOT KJV
-            url += f"?translation={self.secondary_translation}"
+            # Use the multi-API system to get the secondary translation
+            secondary_verse = self._fetch_verse_from_multi_api(book, chapter, verse, self.secondary_translation)
             
-            response = requests.get(url, timeout=self.timeout)
-            response.raise_for_status()
-            
-            secondary_data = response.json()
-            secondary_text = secondary_data.get('text', '').strip()
-            
-            if secondary_text:
+            if secondary_verse and secondary_verse.get('text'):
                 verse_data['parallel_mode'] = True
-                verse_data['secondary_text'] = secondary_text
+                verse_data['secondary_text'] = secondary_verse['text']
                 verse_data['primary_translation'] = self.translation.upper()
                 verse_data['secondary_translation'] = self.secondary_translation.upper()
                 self.logger.info(f"Added parallel translation: {self.secondary_translation}")
@@ -880,8 +906,42 @@ class VerseManager:
                 self.logger.warning(f"Empty secondary translation for {book} {chapter}:{verse}")
                 
         except Exception as e:
-            self.logger.warning(f"Failed to get parallel translation: {e}")
-            # Continue with single translation
+            self.logger.warning(f"Failed to get parallel translation {self.secondary_translation}: {e}")
+            
+            # For translations marked as 'fallback', try KJV as fallback
+            secondary_config = self.supported_translations.get(self.secondary_translation, {})
+            if secondary_config.get('api') == 'fallback':
+                try:
+                    self.logger.info(f"Trying KJV fallback for {self.secondary_translation}")
+                    kjv_verse = self._fetch_verse_from_multi_api(book, chapter, verse, 'kjv')
+                    if kjv_verse and kjv_verse.get('text'):
+                        verse_data['parallel_mode'] = True
+                        verse_data['secondary_text'] = kjv_verse['text']
+                        verse_data['primary_translation'] = self.translation.upper()
+                        verse_data['secondary_translation'] = self.secondary_translation.upper()
+                        self.logger.info(f"Using KJV text as fallback for {self.secondary_translation}")
+                        return verse_data
+                except Exception as kjv_error:
+                    self.logger.warning(f"Failed to get KJV fallback for {self.secondary_translation}: {kjv_error}")
+            
+            # Always enable parallel mode with fallback text when API fails
+            # This ensures parallel mode stays consistent even with API issues
+            verse_data['parallel_mode'] = True
+            
+            if "429" in str(e) or "Too Many Requests" in str(e):
+                # For rate limiting, show a temporary message
+                verse_data['secondary_text'] = f"[{self.secondary_translation.upper()} - API Rate Limited - Please Wait]"
+            elif "404" in str(e) or "Not Found" in str(e):
+                # For complete translations like AMP, this likely means the API doesn't support it yet
+                verse_data['secondary_text'] = f"[{self.secondary_translation.upper()} translation requires different API - currently using bible-api.com which only supports: KJV, WEB, ASV, BBE, YLT, Darby]"
+                self.logger.info(f"404 error for {self.secondary_translation} - bible-api.com doesn't support this translation")
+            else:
+                # Generic network/server errors
+                verse_data['secondary_text'] = f"[{self.secondary_translation.upper()} - Network Error]"
+            
+            verse_data['primary_translation'] = self.translation.upper()
+            verse_data['secondary_translation'] = self.secondary_translation.upper()
+            self.logger.info(f"Parallel mode enabled with fallback due to API issue: {verse_data['secondary_text'][:40]}...")
             
         return verse_data
 
@@ -905,28 +965,416 @@ class VerseManager:
 
 
     def _fetch_verse_from_multi_api(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
-        """Fetch verse using multiple API sources based on translation."""
+        """Fetch verse using hierarchical fallback system for maximum reliability."""
         if translation not in self.supported_translations:
             self.logger.warning(f"Unsupported translation: {translation}, falling back to KJV")
             translation = 'kjv'
         
-        api_config = self.supported_translations[translation]
-        api_type = api_config['api']
+        # Define optimized hierarchical fallback chains for each translation
+        fallback_chains = {
+            # Primary translation - highest reliability (bible-api.com)
+            'kjv': [
+                ('local_cache', 'kjv'),     # Primary: Local cache
+                ('bible-api', 'kjv'),       # Secondary: bible-api.com (reliable)
+                ('wldeh_api', 'kjv')        # Tertiary: wldeh API backup
+            ],
+            
+            # Young's Literal Translation - bible-api.com supported
+            'ylt': [
+                ('local_cache', 'ylt'),     # Primary: Local cache
+                ('bible-api', 'ylt'),       # Secondary: bible-api.com (reliable)
+                ('bible-api', 'kjv')        # Tertiary: KJV fallback
+            ],
+            
+            # Modern copyrighted translations (require scraping/special APIs)
+            'amp': [
+                ('local_cache', 'amp'),     # Primary: Growing local cache
+                ('web_scraping', 'AMP'),    # Secondary: Direct website scraping (BibleGateway)
+                ('bible_scraper', 'AMP'),   # Tertiary: YouVersion scraper
+                ('scripture_api', 'AMP'),   # Quaternary: Scripture API (api.bible)
+                ('biblegateway', 'AMP'),    # Quinary: BibleGateway API (with credentials)
+                ('bible-api', 'kjv')        # Final: KJV fallback
+            ],
+            'nlt': [
+                ('local_cache', 'nlt'),     # Primary: Growing local cache
+                ('bible_scraper', 'NLT'),   # Secondary: YouVersion scraper
+                ('biblegateway', 'NLT'),    # Tertiary: BibleGateway API
+                ('bible-api', 'kjv')        # Final: KJV fallback
+            ],
+            'msg': [
+                ('local_cache', 'msg'),     # Primary: Growing local cache
+                ('bible_scraper', 'MSG'),   # Secondary: YouVersion scraper
+                ('biblegateway', 'MSG'),    # Tertiary: BibleGateway API
+                ('bible-api', 'kjv')        # Final: KJV fallback
+            ],
+            'esv': [
+                ('local_cache', 'esv'),     # Primary: Growing local cache
+                ('esv_api', None),          # Secondary: Official ESV API
+                ('bible_scraper', 'ESV'),   # Tertiary: YouVersion scraper
+                ('bible-api', 'kjv')        # Final: KJV fallback
+            ],
+            'nasb': [
+                ('local_cache', 'nasb'),    # Primary: Growing local cache
+                ('bible_scraper', 'NASB1995'),  # Secondary: YouVersion scraper (NASB 1995)
+                ('biblegateway', 'NASB1995'),   # Tertiary: BibleGateway API (NASB 1995)
+                ('bible-api', 'kjv')        # Final: KJV fallback
+            ]
+        }
         
+        # Get the fallback chain for this translation
+        chain = fallback_chains.get(translation, [('bible-api', 'kjv')])
+        
+        for api_source, source_code in chain:
+            try:
+                result = None
+                
+                if api_source == 'local_cache':
+                    result = self._fetch_from_local_cache(book, chapter, verse, source_code)
+                elif api_source == 'local_amp':  # Legacy support
+                    result = self._fetch_from_local_amp(book, chapter, verse)
+                elif api_source == 'local_kjv':  # Legacy support
+                    result = self._fetch_from_local_kjv(book, chapter, verse)
+                elif api_source == 'youversion':
+                    result = self._fetch_from_youversion(book, chapter, verse, source_code)
+                elif api_source == 'web_scraping':
+                    result = self._fetch_from_web_scraping(book, chapter, verse, source_code)
+                elif api_source == 'bible_scraper':
+                    result = self._fetch_from_bible_scraper(book, chapter, verse, source_code)
+                elif api_source == 'wldeh_api':
+                    result = self._fetch_from_wldeh_api(book, chapter, verse, source_code)
+                elif api_source == 'bible-api':
+                    result = self._fetch_from_bible_api(book, chapter, verse, source_code)
+                elif api_source == 'esv_api':
+                    result = self._fetch_from_esv_api(book, chapter, verse)
+                elif api_source == 'scripture_api':
+                    result = self._fetch_from_scripture_api(book, chapter, verse, source_code)
+                elif api_source == 'biblegateway':
+                    result = self._fetch_from_biblegateway_api(book, chapter, verse, source_code)
+                    
+                if result and result.get('text'):
+                    # Add source information for debugging
+                    result['api_source'] = api_source
+                    result['source_translation'] = source_code or translation
+                    
+                    # Add fallback notation if not the original translation
+                    if source_code and source_code.lower() != translation.lower():
+                        result['text'] = f"[{translation.upper()} unavailable - showing {source_code.upper()}] {result['text']}"
+                        result['translation'] = f"{translation.upper()} (fallback: {source_code.upper()})"
+                    else:
+                        result['translation'] = translation.upper()
+                    
+                    self.logger.info(f"Successfully fetched {source_code or translation} verse from {api_source}")
+                    return result
+                    
+            except Exception as e:
+                self.logger.debug(f"Failed to fetch from {api_source} for {translation}: {e}")
+                continue
+        
+        # Final fallback to default verses
+        self.logger.warning(f"All API sources failed for {translation} {book} {chapter}:{verse}")
+        return self._get_final_fallback_verse(book, chapter, verse, translation)
+    
+    def _fetch_from_local_amp(self, book: str, chapter: int, verse: int) -> Optional[Dict]:
+        """Fetch verse from local AMP Bible file (limited sample data only)."""
+        if not hasattr(self, 'amp_bible') or not self.amp_bible:
+            self.logger.debug("No local AMP Bible data available")
+            return None
+            
         try:
-            if api_type == 'bible-api':
-                return self._fetch_from_bible_api(book, chapter, verse, api_config['code'])
-            elif api_type == 'esv':
-                return self._fetch_from_esv_api(book, chapter, verse)
-            elif api_type == 'fallback':
-                return self._fetch_from_fallback(book, chapter, verse, translation)
+            if (book in self.amp_bible and 
+                str(chapter) in self.amp_bible[book] and 
+                str(verse) in self.amp_bible[book][str(chapter)]):
+                
+                amp_text = self.amp_bible[book][str(chapter)][str(verse)]
+                self.logger.info(f"Found AMP verse in limited local data: {book} {chapter}:{verse}")
+                return {
+                    'reference': f"{book} {chapter:02d}:{verse:02d}",
+                    'text': amp_text,
+                    'book': book,
+                    'chapter': chapter,
+                    'verse': verse,
+                    'translation': 'AMP',
+                    'source_note': 'Local sample data'
+                }
             else:
-                self.logger.warning(f"Unknown API type: {api_type}")
-                return None
+                self.logger.debug(f"AMP verse not in local sample data: {book} {chapter}:{verse}")
                 
         except Exception as e:
-            self.logger.error(f"API fetch failed for {translation}: {e}")
+            self.logger.debug(f"Error accessing local AMP Bible: {e}")
+        return None
+    
+    def _fetch_from_local_kjv(self, book: str, chapter: int, verse: int) -> Optional[Dict]:
+        """Fetch verse from local KJV Bible file."""
+        if not hasattr(self, 'kjv_bible') or not self.kjv_bible:
             return None
+            
+        try:
+            if (book in self.kjv_bible and 
+                str(chapter) in self.kjv_bible[book] and 
+                str(verse) in self.kjv_bible[book][str(chapter)]):
+                
+                kjv_text = self.kjv_bible[book][str(chapter)][str(verse)]
+                return {
+                    'reference': f"{book} {chapter:02d}:{verse:02d}",
+                    'text': kjv_text,
+                    'book': book,
+                    'chapter': chapter,
+                    'verse': verse,
+                    'translation': 'KJV'
+                }
+        except Exception as e:
+            self.logger.debug(f"Error accessing local KJV Bible: {e}")
+        return None
+    
+    def _fetch_from_youversion(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse from YouVersion using a more practical approach."""
+        try:
+            # YouVersion/Bible.com has anti-scraping measures and requires JavaScript
+            # Instead of complex scraping, we'll use an alternative approach:
+            # BibleAPI.net which supports more translations including AMP
+            
+            if translation_code == 'AMP':
+                # Try BibleAPI.net for AMP (they have better translation support)
+                return self._fetch_from_bible_api_net(book, chapter, verse, 'AMP')
+            
+            # For other translations, use a simplified approach
+            # This is a placeholder for a more robust implementation
+            self.logger.debug(f"YouVersion API integration requires more development for {translation_code}")
+            return None
+            
+        except Exception as e:
+            self.logger.debug(f"YouVersion fetch failed: {e}")
+            return None
+    
+    def _fetch_from_bible_api_net(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Alternative API source for additional translations like AMP."""
+        try:
+            # BibleAPI.net format (alternative to bible-api.com)
+            # This is a conceptual implementation - the actual API might be different
+            book_mapping = {
+                'Genesis': 'gen', 'Exodus': 'exo', 'Leviticus': 'lev', 'Numbers': 'num',
+                'Deuteronomy': 'deu', 'Joshua': 'jos', 'Judges': 'jdg', 'Ruth': 'rut',
+                '1 Samuel': '1sa', '2 Samuel': '2sa', '1 Kings': '1ki', '2 Kings': '2ki',
+                '1 Chronicles': '1ch', '2 Chronicles': '2ch', 'Ezra': 'ezr', 'Nehemiah': 'neh',
+                'Esther': 'est', 'Job': 'job', 'Psalms': 'psa', 'Proverbs': 'pro',
+                'Ecclesiastes': 'ecc', 'Song of Solomon': 'sng', 'Isaiah': 'isa',
+                'Jeremiah': 'jer', 'Lamentations': 'lam', 'Ezekiel': 'eze', 'Daniel': 'dan',
+                'Matthew': 'mat', 'Mark': 'mar', 'Luke': 'luk', 'John': 'joh',
+                'Acts': 'act', 'Romans': 'rom', '1 Corinthians': '1co', '2 Corinthians': '2co'
+            }
+            
+            book_code = book_mapping.get(book, book.lower()[:3])
+            
+            # Note: This is a placeholder URL - actual implementation would need
+            # research into available free APIs that support AMP
+            url = f"https://api.bibleapi.net/v2/{translation_code.lower()}/{book_code}/{chapter}/{verse}"
+            
+            self.logger.debug(f"BibleAPI.net integration requires API research for {translation_code}")
+            return None
+            
+        except Exception as e:
+            self.logger.debug(f"BibleAPI.net fetch failed: {e}")
+            return None
+    
+    def _fetch_from_wldeh_api(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse from wldeh bible-api (free GitHub-hosted API with 200+ versions)."""
+        try:
+            import requests
+            
+            # Book name mapping for the wldeh API
+            book_mapping = {
+                'Genesis': 'GEN', 'Exodus': 'EXO', 'Leviticus': 'LEV', 'Numbers': 'NUM',
+                'Deuteronomy': 'DEU', 'Joshua': 'JOS', 'Judges': 'JDG', 'Ruth': 'RUT',
+                '1 Samuel': '1SA', '2 Samuel': '2SA', '1 Kings': '1KI', '2 Kings': '2KI',
+                '1 Chronicles': '1CH', '2 Chronicles': '2CH', 'Ezra': 'EZR', 'Nehemiah': 'NEH',
+                'Esther': 'EST', 'Job': 'JOB', 'Psalms': 'PSA', 'Proverbs': 'PRO',
+                'Ecclesiastes': 'ECC', 'Song of Solomon': 'SNG', 'Isaiah': 'ISA',
+                'Jeremiah': 'JER', 'Lamentations': 'LAM', 'Ezekiel': 'EZE', 'Daniel': 'DAN',
+                'Hosea': 'HOS', 'Joel': 'JOL', 'Amos': 'AMO', 'Obadiah': 'OBA',
+                'Jonah': 'JON', 'Micah': 'MIC', 'Nahum': 'NAH', 'Habakkuk': 'HAB',
+                'Zephaniah': 'ZEP', 'Haggai': 'HAG', 'Zechariah': 'ZEC', 'Malachi': 'MAL',
+                'Matthew': 'MAT', 'Mark': 'MRK', 'Luke': 'LUK', 'John': 'JHN',
+                'Acts': 'ACT', 'Romans': 'ROM', '1 Corinthians': '1CO', '2 Corinthians': '2CO',
+                'Galatians': 'GAL', 'Ephesians': 'EPH', 'Philippians': 'PHP', 'Colossians': 'COL',
+                '1 Thessalonians': '1TH', '2 Thessalonians': '2TH', '1 Timothy': '1TI',
+                '2 Timothy': '2TI', 'Titus': 'TIT', 'Philemon': 'PHM', 'Hebrews': 'HEB',
+                'James': 'JAS', '1 Peter': '1PE', '2 Peter': '2PE', '1 John': '1JN',
+                '2 John': '2JN', '3 John': '3JN', 'Jude': 'JUD', 'Revelation': 'REV'
+            }
+            
+            book_code = book_mapping.get(book, book.upper()[:3])
+            
+            # Translation mapping for wldeh API (they use specific codes)
+            wldeh_translation_map = {
+                'web': 'engWEB2019eb',  # World English Bible
+                'kjv': 'engKJV1611',     # King James Version 
+                'asv': 'engASV1901',     # American Standard Version
+            }
+            
+            api_translation = wldeh_translation_map.get(translation_code.lower(), 'engWEB2019eb')
+            
+            url = f"https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/{api_translation}/books/{book_code}/chapters/{chapter}/verses/{verse}.json"
+            
+            response = requests.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            
+            data = response.json()
+            verse_text = data.get('text', '').strip()
+            
+            if not verse_text:
+                return None
+            
+            return {
+                'reference': f"{book} {chapter:02d}:{verse:02d}",
+                'text': verse_text,
+                'book': book,
+                'chapter': chapter,
+                'verse': verse,
+                'translation': translation_code.upper(),
+                'api_source': 'wldeh_github_api'
+            }
+            
+        except Exception as e:
+            self.logger.debug(f"wldeh API fetch failed: {e}")
+            return None
+    
+    def _fetch_from_bible_scraper(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse using IonicaBizau/bible-scraper for YouVersion scraping."""
+        try:
+            import subprocess
+            import json
+            import tempfile
+            import os
+            
+            # Check if Node.js and npm are available
+            try:
+                subprocess.run(['node', '--version'], capture_output=True, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                self.logger.debug("Node.js not available for bible-scraper")
+                return None
+            
+            # Create a temporary directory for bible-scraper
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Create a simple Node.js script to use bible-scraper
+                scraper_script = f"""
+const BibleScraper = require('bible-scraper');
+
+async function getVerse() {{
+    try {{
+        // AMP translation ID for YouVersion
+        const translationId = {{'AMP': 1588, 'NIV': 111, 'ESV': 59}};
+        const id = translationId['{translation_code}'] || 1588;
+        
+        const scraper = new BibleScraper(id);
+        const reference = '{book} {chapter}:{verse}';
+        const result = await scraper.verse(reference);
+        
+        console.log(JSON.stringify({{
+            success: true,
+            data: result
+        }}));
+    }} catch (error) {{
+        console.log(JSON.stringify({{
+            success: false,
+            error: error.message
+        }}));
+    }}
+}}
+
+getVerse();
+"""
+                
+                script_path = os.path.join(temp_dir, 'scraper.js')
+                package_json = os.path.join(temp_dir, 'package.json')
+                
+                # Create package.json
+                with open(package_json, 'w') as f:
+                    json.dump({
+                        "name": "bible-scraper-temp",
+                        "version": "1.0.0",
+                        "dependencies": {
+                            "bible-scraper": "latest"
+                        }
+                    }, f)
+                
+                # Write the scraper script
+                with open(script_path, 'w') as f:
+                    f.write(scraper_script)
+                
+                # Install bible-scraper (this might take a moment on first run)
+                install_result = subprocess.run(
+                    ['npm', 'install'], 
+                    cwd=temp_dir,
+                    capture_output=True,
+                    timeout=30
+                )
+                
+                if install_result.returncode != 0:
+                    self.logger.debug("Failed to install bible-scraper npm package")
+                    return None
+                
+                # Run the scraper script
+                result = subprocess.run(
+                    ['node', script_path],
+                    cwd=temp_dir,
+                    capture_output=True,
+                    timeout=self.timeout,
+                    text=True
+                )
+                
+                if result.returncode == 0:
+                    output = json.loads(result.stdout.strip())
+                    if output.get('success') and output.get('data'):
+                        verse_data = output['data']
+                        verse_text = verse_data.get('text', '').strip()
+                        
+                        # Cache the verse for any translation
+                        if verse_text:
+                            self._cache_translation_verse(book, chapter, verse, verse_text, translation_code.lower())
+                        
+                        return {
+                            'reference': f"{book} {chapter:02d}:{verse:02d}",
+                            'text': verse_text,
+                            'book': book,
+                            'chapter': chapter,
+                            'verse': verse,
+                            'translation': translation_code,
+                            'api_source': 'bible_scraper_youversion'
+                        }
+                else:
+                    self.logger.debug(f"bible-scraper script failed: {result.stderr}")
+                    
+        except subprocess.TimeoutExpired:
+            self.logger.debug("bible-scraper timed out")
+        except Exception as e:
+            self.logger.debug(f"bible-scraper fetch failed: {e}")
+            
+        return None
+    
+    def _get_final_fallback_verse(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
+        """Get a final fallback verse when all API sources fail."""
+        try:
+            # Try to get a verse from our fallback collection
+            if self.fallback_verses:
+                import random
+                fallback = random.choice(self.fallback_verses).copy()
+                fallback['text'] = f"[{translation.upper()} API unavailable] {fallback['text']}"
+                fallback['translation'] = f"{translation.upper()} (fallback)"
+                fallback['api_source'] = 'fallback_collection'
+                return fallback
+        except Exception as e:
+            self.logger.error(f"Final fallback failed: {e}")
+        
+        # Absolute final fallback
+        return {
+            'reference': f"{book} {chapter:02d}:{verse:02d}",
+            'text': f"[{translation.upper()} unavailable] 'For I know the plans I have for you,' declares the LORD, 'plans to prosper you and not to harm you, to give you hope and a future.' - Jeremiah 29:11",
+            'book': book,
+            'chapter': chapter,
+            'verse': verse,
+            'translation': f"{translation.upper()} (fallback)",
+            'api_source': 'absolute_fallback'
+        }
     
     def _fetch_from_bible_api(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
         """Fetch verse from bible-api.com."""
@@ -943,6 +1391,9 @@ class VerseManager:
         if not verse_text:
             return None
         
+        # Cache the successful result
+        self._cache_translation_verse(book, chapter, verse, verse_text, translation_code.lower())
+        
         return {
             'reference': f"{book} {chapter:02d}:{verse:02d}",
             'text': verse_text,
@@ -955,8 +1406,8 @@ class VerseManager:
     def _fetch_from_esv_api(self, book: str, chapter: int, verse: int) -> Optional[Dict]:
         """Fetch verse from ESV API."""
         if not self.esv_api_key:
-            self.logger.warning("ESV API key not configured, using fallback")
-            return self._fetch_from_fallback(book, chapter, verse, 'esv')
+            self.logger.debug("ESV API key not configured, continuing fallback chain")
+            return None
         
         url = "https://api.esv.org/v3/passage/text/"
         headers = {
@@ -984,6 +1435,9 @@ class VerseManager:
         if not verse_text:
             return None
         
+        # Cache the successful ESV result
+        self._cache_translation_verse(book, chapter, verse, verse_text, 'esv')
+        
         return {
             'reference': f"{book} {chapter:02d}:{verse:02d}",
             'text': verse_text,
@@ -992,6 +1446,357 @@ class VerseManager:
             'verse': verse,
             'translation': 'ESV'
         }
+    
+    def _fetch_from_scripture_api(self, book: str, chapter: int, verse: int, bible_id: str) -> Optional[Dict]:
+        """Fetch verse from local AMP Bible or scripture.api.bible."""
+        # First, try to get verse from local AMP Bible
+        if hasattr(self, 'amp_bible') and self.amp_bible:
+            try:
+                if book in self.amp_bible and str(chapter) in self.amp_bible[book] and str(verse) in self.amp_bible[book][str(chapter)]:
+                    amp_text = self.amp_bible[book][str(chapter)][str(verse)]
+                    return {
+                        'reference': f"{book} {chapter:02d}:{verse:02d}",
+                        'text': amp_text,
+                        'book': book,
+                        'chapter': chapter,
+                        'verse': verse,
+                        'translation': 'AMP'
+                    }
+            except Exception as e:
+                self.logger.debug(f"Error accessing local AMP Bible: {e}")
+        
+        # If not in local AMP Bible, try the API (though AMP may not be available)
+        if not self.scripture_api_key:
+            self.logger.debug("Scripture API key not configured, continuing fallback chain")
+            return None
+        
+        # Convert book name to standard abbreviation for Scripture API
+        book_mapping = {
+            'Acts': 'ACT', 'Romans': 'ROM', 'Genesis': 'GEN', 'Matthew': 'MAT',
+            'Mark': 'MRK', 'Luke': 'LUK', 'John': 'JHN', 'Corinthians1': '1CO',
+            'Corinthians2': '2CO', 'Galatians': 'GAL', 'Ephesians': 'EPH',
+            'Philippians': 'PHP', 'Colossians': 'COL', 'Thessalonians1': '1TH',
+            'Thessalonians2': '2TH', 'Timothy1': '1TI', 'Timothy2': '2TI',
+            'Titus': 'TIT', 'Philemon': 'PHM', 'Hebrews': 'HEB', 'James': 'JAS',
+            'Peter1': '1PE', 'Peter2': '2PE', 'John1': '1JN', 'John2': '2JN',
+            'John3': '3JN', 'Jude': 'JUD', 'Revelation': 'REV'
+        }
+        
+        book_abbr = book_mapping.get(book, book.upper()[:3])
+        verse_id = f"{book_abbr}.{chapter}.{verse}"
+        
+        url = f"https://api.scripture.api.bible/v1/bibles/{bible_id}/verses/{verse_id}"
+        headers = {
+            'api-key': self.scripture_api_key
+        }
+        params = {
+            'content-type': 'text',
+            'include-notes': 'false',
+            'include-titles': 'false',
+            'include-chapter-numbers': 'false',
+            'include-verse-numbers': 'false'
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
+        response.raise_for_status()
+        
+        data = response.json()
+        content = data.get('data', {}).get('content', '').strip()
+        
+        if not content:
+            return None
+        
+        return {
+            'reference': f"{book} {chapter:02d}:{verse:02d}",
+            'text': content,
+            'book': book,
+            'chapter': chapter,
+            'verse': verse,
+            'translation': 'AMP'
+        }
+    
+    def _fetch_from_biblegateway_api(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse from Bible Gateway API."""
+        if not self.biblegateway_username or not self.biblegateway_password:
+            self.logger.debug("Bible Gateway credentials not configured, continuing fallback chain")
+            return None
+        
+        try:
+            # Get access token if we don't have one
+            if not self.biblegateway_token:
+                self._get_biblegateway_token()
+            
+            # Format reference for Bible Gateway API (e.g., "Matt 5:1" or "Acts 10:7")
+            reference = f"{book} {chapter}:{verse}"
+            
+            # Make API request
+            url = f"https://api.biblegateway.com/2/bible/osis/{reference}"
+            params = {
+                'access_token': self.biblegateway_token,
+                'translation-list': translation_code
+            }
+            
+            response = requests.get(url, params=params, timeout=self.timeout)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Extract verse text from the response
+            # Bible Gateway API returns XML-like content that needs parsing
+            content = data.get('content', '')
+            if not content:
+                return None
+            
+            # Simple text extraction (remove XML tags)
+            import re
+            text = re.sub(r'<[^>]+>', '', content).strip()
+            
+            if not text:
+                return None
+            
+            return {
+                'reference': f"{book} {chapter:02d}:{verse:02d}",
+                'text': text,
+                'book': book,
+                'chapter': chapter,
+                'verse': verse,
+                'translation': translation_code
+            }
+            
+        except Exception as e:
+            self.logger.debug(f"Bible Gateway API error for {translation_code}: {e}")
+            return None
+    
+    def _get_biblegateway_token(self):
+        """Get access token from Bible Gateway API."""
+        try:
+            url = "https://api.biblegateway.com/2/request_access_token"
+            params = {
+                'username': self.biblegateway_username,
+                'password': self.biblegateway_password
+            }
+            
+            response = requests.get(url, params=params, timeout=self.timeout)
+            response.raise_for_status()
+            
+            data = response.json()
+            self.biblegateway_token = data.get('access_token')
+            
+            if not self.biblegateway_token:
+                raise Exception("No access token received from Bible Gateway")
+            
+            self.logger.info("Successfully obtained Bible Gateway access token")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get Bible Gateway token: {e}")
+            self.biblegateway_token = None
+            raise
+    
+    def _fetch_from_web_scraping(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse by scraping Bible websites directly."""
+        try:
+            import requests
+            from bs4 import BeautifulSoup
+            import re
+            
+            # BibleGateway URL format for direct verse lookup
+            verse_ref = f"{book} {chapter}:{verse}"
+            url = f"https://www.biblegateway.com/passage/?search={verse_ref}&version={translation_code}"
+            
+            # Log the attempt
+            self.logger.info(f"Attempting web scraping for {verse_ref} {translation_code}")
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=self.timeout)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Find the passage content - BibleGateway uses specific classes
+            passage_content = soup.find('div', class_='passage-content')
+            if not passage_content:
+                # Try alternative selectors
+                passage_content = soup.find('div', class_='passage-text')
+                if not passage_content:
+                    passage_content = soup.find('div', class_='passage')
+            
+            if not passage_content:
+                self.logger.warning(f"Could not find passage content for {verse_ref} {translation_code}")
+                return None
+            
+            # Get all text from passage content and clean it
+            verse_text = passage_content.get_text().strip()
+            
+            if not verse_text:
+                self.logger.warning(f"No text found in passage content for {verse_ref} {translation_code}")
+                return None
+            
+            # Clean up the text - remove extra content
+            # Split by lines and find the actual verse line
+            lines = verse_text.split('\n')
+            verse_line = None
+            
+            for line in lines:
+                line = line.strip()
+                # Look for line that starts with verse number or contains substantial text
+                if line and (line.startswith(str(verse)) or len(line) > 20):
+                    # Remove verse number at start if present
+                    cleaned_line = re.sub(r'^\d+\s*', '', line).strip()
+                    if len(cleaned_line) > 10:
+                        verse_line = cleaned_line
+                        break
+            
+            if not verse_line:
+                # Fallback: use first substantial line
+                for line in lines:
+                    line = line.strip()
+                    if len(line) > 20 and not line.startswith(('Read full', 'Chapter', 'in all')):
+                        verse_line = line
+                        break
+            
+            if not verse_line:
+                self.logger.warning(f"Could not extract verse text for {verse_ref} {translation_code}")
+                return None
+            
+            # Final cleanup
+            verse_text = re.sub(r'\s+', ' ', verse_line).strip()
+            
+            # Remove common suffixes that aren't part of the verse
+            verse_text = re.split(r'\s+Read full chapter', verse_text)[0]
+            verse_text = re.split(r'\s+in all English', verse_text)[0]
+            
+            if len(verse_text) < 10:  # Sanity check
+                self.logger.warning(f"Verse text too short for {verse_ref} {translation_code}: '{verse_text}'")
+                return None
+            
+            # Log success
+            self.logger.info(f"Successfully scraped {translation_code} verse: {verse_text[:50]}...")
+            
+            # Cache the successful result
+            self._cache_translation_verse(book, chapter, verse, verse_text, translation_code.lower())
+            
+            return {
+                'reference': f"{book} {chapter:02d}:{verse:02d}",
+                'text': verse_text,
+                'book': book,
+                'chapter': chapter,
+                'verse': verse,
+                'translation': translation_code.upper()
+            }
+            
+        except ImportError:
+            self.logger.error("BeautifulSoup not available for web scraping")
+            return None
+        except Exception as e:
+            self.logger.error(f"Web scraping error for {translation_code} {verse_ref}: {e}")
+            return None
+    
+    def _fetch_from_scripture_api(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
+        """Fetch verse from Scripture API (api.bible) service."""
+        if not self.scripture_api_key:
+            self.logger.debug("Scripture API key not configured, continuing fallback chain")
+            return None
+        
+        try:
+            # Scripture API base URL
+            base_url = "https://api.scripture.api.bible/v1"
+            headers = {
+                'api-key': self.scripture_api_key,
+                'accept': 'application/json'
+            }
+            
+            # First, we need to find the Bible ID for AMP translation
+            # This is a simplified approach - in practice you'd cache these IDs
+            bibles_url = f"{base_url}/bibles"
+            response = requests.get(bibles_url, headers=headers, timeout=self.timeout)
+            response.raise_for_status()
+            
+            bibles_data = response.json()
+            bible_id = None
+            
+            # Look for AMP in available Bibles
+            for bible in bibles_data.get('data', []):
+                name = bible.get('name', '').lower()
+                abbreviation = bible.get('abbreviation', '').lower()
+                if 'amplified' in name or 'amp' in abbreviation:
+                    bible_id = bible.get('id')
+                    break
+            
+            if not bible_id:
+                self.logger.debug("AMP translation not found in Scripture API")
+                return None
+            
+            # Format the verse reference (e.g., "JHN.3.16")
+            book_abbr = self._get_scripture_api_book_code(book)
+            if not book_abbr:
+                return None
+                
+            verse_id = f"{book_abbr}.{chapter}.{verse}"
+            
+            # Fetch the verse
+            verse_url = f"{base_url}/bibles/{bible_id}/verses/{verse_id}"
+            params = {
+                'content-type': 'text',
+                'include-notes': 'false',
+                'include-titles': 'false',
+                'include-chapter-numbers': 'false',
+                'include-verse-numbers': 'false'
+            }
+            
+            response = requests.get(verse_url, headers=headers, params=params, timeout=self.timeout)
+            response.raise_for_status()
+            
+            data = response.json()
+            verse_data = data.get('data', {})
+            verse_text = verse_data.get('content', '').strip()
+            
+            if not verse_text:
+                return None
+            
+            # Clean up any HTML tags that might be present
+            import re
+            verse_text = re.sub(r'<[^>]+>', '', verse_text).strip()
+            
+            # Cache the successful result
+            self._cache_translation_verse(book, chapter, verse, verse_text, translation_code.lower())
+            
+            return {
+                'reference': f"{book} {chapter:02d}:{verse:02d}",
+                'text': verse_text,
+                'book': book,
+                'chapter': chapter,
+                'verse': verse,
+                'translation': translation_code.upper()
+            }
+            
+        except Exception as e:
+            self.logger.debug(f"Scripture API error for {translation_code}: {e}")
+            return None
+    
+    def _get_scripture_api_book_code(self, book: str) -> Optional[str]:
+        """Convert book name to Scripture API book code."""
+        # Mapping of common book names to Scripture API codes
+        book_codes = {
+            'genesis': 'GEN', 'exodus': 'EXO', 'leviticus': 'LEV', 'numbers': 'NUM', 'deuteronomy': 'DEU',
+            'joshua': 'JOS', 'judges': 'JDG', 'ruth': 'RUT', '1 samuel': '1SA', '2 samuel': '2SA',
+            '1 kings': '1KI', '2 kings': '2KI', '1 chronicles': '1CH', '2 chronicles': '2CH',
+            'ezra': 'EZR', 'nehemiah': 'NEH', 'esther': 'EST', 'job': 'JOB', 'psalms': 'PSA',
+            'proverbs': 'PRO', 'ecclesiastes': 'ECC', 'song of solomon': 'SNG', 'isaiah': 'ISA',
+            'jeremiah': 'JER', 'lamentations': 'LAM', 'ezekiel': 'EZK', 'daniel': 'DAN',
+            'hosea': 'HOS', 'joel': 'JOL', 'amos': 'AMO', 'obadiah': 'OBA', 'jonah': 'JON',
+            'micah': 'MIC', 'nahum': 'NAM', 'habakkuk': 'HAB', 'zephaniah': 'ZEP',
+            'haggai': 'HAG', 'zechariah': 'ZEC', 'malachi': 'MAL',
+            'matthew': 'MAT', 'mark': 'MRK', 'luke': 'LUK', 'john': 'JHN', 'acts': 'ACT',
+            'romans': 'ROM', '1 corinthians': '1CO', '2 corinthians': '2CO', 'galatians': 'GAL',
+            'ephesians': 'EPH', 'philippians': 'PHP', 'colossians': 'COL', '1 thessalonians': '1TH',
+            '2 thessalonians': '2TH', '1 timothy': '1TI', '2 timothy': '2TI', 'titus': 'TIT',
+            'philemon': 'PHM', 'hebrews': 'HEB', 'james': 'JAS', '1 peter': '1PE', '2 peter': '2PE',
+            '1 john': '1JN', '2 john': '2JN', '3 john': '3JN', 'jude': 'JUD', 'revelation': 'REV'
+        }
+        return book_codes.get(book.lower())
     
     def _fetch_from_fallback(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
         """Fallback method for unsupported translations."""
@@ -1020,6 +1825,18 @@ class VerseManager:
     def get_available_translations(self) -> List[str]:
         """Get list of available translations."""
         return list(self.supported_translations.keys())
+    
+    def get_translation_display_names(self) -> Dict[str, str]:
+        """Get translation codes mapped to display names."""
+        return {
+            'kjv': 'King James Version (KJV)',
+            'ylt': "Young's Literal Translation (YLT)",
+            'esv': 'English Standard Version (ESV)',
+            'amp': 'Amplified Bible (AMP)',
+            'nlt': 'New Living Translation (NLT)',
+            'msg': 'The Message (MSG)',
+            'nasb': 'New American Standard Bible 1995 (NASB)'
+        }
     
     def _rotate_daily_activity(self):
         """Rotate daily activity data to keep only recent days."""
@@ -1061,6 +1878,257 @@ class VerseManager:
             self.statistics['translation_usage'] = dict(sorted_translations[:self.MAX_TRANSLATION_USAGE])
             removed_count = len(sorted_translations) - self.MAX_TRANSLATION_USAGE
             self.logger.debug(f"Rotated translation usage: removed {removed_count} entries")
+
+    def _fetch_from_local_cache(self, book: str, chapter: int, verse: int, translation: str) -> Optional[Dict]:
+        """Fetch verse from local translation cache."""
+        if not hasattr(self, 'translation_caches') or translation not in self.translation_caches:
+            self.logger.debug(f"No local cache available for {translation}")
+            return None
+            
+        try:
+            cache = self.translation_caches[translation]
+            if (book in cache and 
+                str(chapter) in cache[book] and 
+                str(verse) in cache[book][str(chapter)]):
+                
+                verse_text = cache[book][str(chapter)][str(verse)]
+                if verse_text and verse_text.strip():
+                    self.logger.debug(f"Found {translation.upper()} verse in local cache: {book} {chapter}:{verse}")
+                    return {
+                        'reference': f"{book} {chapter:02d}:{verse:02d}",
+                        'text': verse_text.strip(),
+                        'book': book,
+                        'chapter': chapter,
+                        'verse': verse,
+                        'translation': translation.upper(),
+                        'source_note': 'Local cache'
+                    }
+            else:
+                self.logger.debug(f"{translation.upper()} verse not in local cache: {book} {chapter}:{verse}")
+                
+        except Exception as e:
+            self.logger.debug(f"Error accessing {translation} local cache: {e}")
+        return None
+
+    def _cache_translation_verse(self, book: str, chapter: int, verse: int, text: str, translation: str) -> bool:
+        """Cache a verse for any translation to build complete local Bible."""
+        if not self.translation_cache_enabled or not text or not text.strip():
+            return False
+        
+        if not hasattr(self, 'translation_caches'):
+            self.translation_caches = {}
+        
+        if translation not in self.translation_caches:
+            self.translation_caches[translation] = {}
+        
+        try:
+            # Ensure the structure exists
+            cache = self.translation_caches[translation]
+            if book not in cache:
+                cache[book] = {}
+            if str(chapter) not in cache[book]:
+                cache[book][str(chapter)] = {}
+            
+            # Only cache if we don't already have this verse
+            if str(verse) not in cache[book][str(chapter)]:
+                cache[book][str(chapter)][str(verse)] = text.strip()
+                
+                # Save to file immediately (to persist across restarts)
+                self._save_translation_cache(translation)
+                
+                # Update completion percentage
+                old_completion = self.translation_completion.get(translation, 0.0)
+                self.translation_completion = self._calculate_all_translation_completion()
+                new_completion = self.translation_completion.get(translation, 0.0)
+                
+                if new_completion > old_completion:
+                    self.logger.info(f"{translation.upper()} Bible cache updated: {book} {chapter}:{verse} - "
+                                   f"completion now {new_completion:.1f}%")
+                
+                return True
+        except Exception as e:
+            self.logger.error(f"Failed to cache {translation} verse {book} {chapter}:{verse}: {e}")
+        
+        return False
+    
+    def _save_translation_cache(self, translation: str):
+        """Save a specific translation cache to file."""
+        try:
+            cache_path = Path(f'data/translations/bible_{translation}.json')
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(cache_path, 'w') as f:
+                json.dump(self.translation_caches[translation], f, indent=2)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save {translation} cache: {e}")
+    
+    def _calculate_all_translation_completion(self) -> Dict[str, float]:
+        """Calculate completion percentage for all translations."""
+        if not self.bible_structure or not hasattr(self, 'translation_caches'):
+            return {}
+        
+        completion = {}
+        total_verses = self._get_total_bible_verses()
+        
+        for translation in self.translation_caches:
+            cached_verses = 0
+            cache = self.translation_caches[translation]
+            
+            # Count cached verses for this translation
+            for book in self.available_books:
+                if book in cache:
+                    for chapter_str in cache[book]:
+                        chapter_data = cache[book][chapter_str]
+                        for verse_str, verse_text in chapter_data.items():
+                            if verse_text and verse_text.strip():
+                                cached_verses += 1
+            
+            completion[translation] = (cached_verses / total_verses * 100.0) if total_verses > 0 else 0.0
+        
+        return completion
+    
+    def _get_total_bible_verses(self) -> int:
+        """Get total number of verses in the complete Bible."""
+        if not self.bible_structure:
+            return 31100  # Approximate Bible verse count
+        
+        total = 0
+        for book in self.bible_structure:
+            if book in self.available_books:
+                for chapter_str, verse_count in self.bible_structure[book].items():
+                    total += verse_count
+        return total
+    
+    def _format_completion_summary(self) -> str:
+        """Format a summary of translation completion percentages."""
+        if not hasattr(self, 'translation_completion'):
+            return "0 translations cached"
+        
+        completed = [f"{trans.upper()}: {pct:.1f}%" 
+                    for trans, pct in self.translation_completion.items() 
+                    if pct > 0]
+        
+        if not completed:
+            return "No translations cached yet"
+        
+        return f"{len(completed)} translations cached - " + ", ".join(completed[:3]) + \
+               (f" and {len(completed)-3} more" if len(completed) > 3 else "")
+
+    def _calculate_amp_completion(self) -> float:
+        """Calculate what percentage of the Bible we have in AMP translation."""
+        if not self.bible_structure or not self.amp_bible:
+            return 0.0
+        
+        total_verses = 0
+        cached_verses = 0
+        
+        # Count total verses and cached verses
+        for book in self.bible_structure:
+            if book in self.available_books:  # Only count books we recognize
+                for chapter_str, verse_count in self.bible_structure[book].items():
+                    chapter = int(chapter_str)
+                    total_verses += verse_count
+                    
+                    # Count how many verses we have cached for this chapter
+                    if (book in self.amp_bible and 
+                        str(chapter) in self.amp_bible[book]):
+                        chapter_data = self.amp_bible[book][str(chapter)]
+                        # Count actual verse entries (not just keys)
+                        for verse_num in range(1, verse_count + 1):
+                            if str(verse_num) in chapter_data and chapter_data[str(verse_num)].strip():
+                                cached_verses += 1
+        
+        if total_verses == 0:
+            return 0.0
+        
+        return (cached_verses / total_verses) * 100.0
+    
+    def _cache_amp_verse(self, book: str, chapter: int, verse: int, text: str) -> bool:
+        """Cache a newly scraped AMP verse to build the complete Bible."""
+        if not self.amp_cache_enabled or not text or not text.strip():
+            return False
+        
+        try:
+            # Ensure the structure exists
+            if book not in self.amp_bible:
+                self.amp_bible[book] = {}
+            if str(chapter) not in self.amp_bible[book]:
+                self.amp_bible[book][str(chapter)] = {}
+            
+            # Only cache if we don't already have this verse
+            if str(verse) not in self.amp_bible[book][str(chapter)]:
+                self.amp_bible[book][str(chapter)][str(verse)] = text.strip()
+                
+                # Save to file immediately (to persist across restarts)
+                self._save_amp_bible()
+                
+                # Update completion percentage
+                old_percentage = self.amp_completion_percentage
+                self.amp_completion_percentage = self._calculate_amp_completion()
+                
+                if self.amp_completion_percentage > old_percentage:
+                    self.logger.info(f"AMP Bible cache updated: {book} {chapter}:{verse} - "
+                                   f"completion now {self.amp_completion_percentage:.1f}%")
+                
+                return True
+        except Exception as e:
+            self.logger.error(f"Failed to cache AMP verse {book} {chapter}:{verse}: {e}")
+        
+        return False
+    
+    def _save_amp_bible(self):
+        """Save the AMP Bible cache to file."""
+        try:
+            amp_path = Path('data/translations/bible_amp.json')
+            amp_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(amp_path, 'w') as f:
+                json.dump(self.amp_bible, f, indent=2)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save AMP Bible cache: {e}")
+    
+    def get_amp_completion_stats(self) -> Dict:
+        """Get detailed AMP completion statistics."""
+        if not self.bible_structure:
+            return {"completion_percentage": 0.0, "total_verses": 0, "cached_verses": 0}
+        
+        total_verses = 0
+        cached_verses = 0
+        book_stats = {}
+        
+        for book in self.available_books:
+            if book in self.bible_structure:
+                book_total = 0
+                book_cached = 0
+                
+                for chapter_str, verse_count in self.bible_structure[book].items():
+                    chapter = int(chapter_str)
+                    book_total += verse_count
+                    
+                    if (book in self.amp_bible and 
+                        str(chapter) in self.amp_bible[book]):
+                        chapter_data = self.amp_bible[book][str(chapter)]
+                        for verse_num in range(1, verse_count + 1):
+                            if str(verse_num) in chapter_data and chapter_data[str(verse_num)].strip():
+                                book_cached += 1
+                
+                book_stats[book] = {
+                    "total_verses": book_total,
+                    "cached_verses": book_cached,
+                    "completion_percentage": (book_cached / book_total * 100.0) if book_total > 0 else 0.0
+                }
+                
+                total_verses += book_total
+                cached_verses += book_cached
+        
+        return {
+            "completion_percentage": self.amp_completion_percentage,
+            "total_verses": total_verses,
+            "cached_verses": cached_verses,
+            "book_stats": book_stats
+        }
 
 
 class VerseScheduler:

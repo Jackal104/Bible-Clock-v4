@@ -127,6 +127,97 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             app.logger.error(f"Status API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
+    @app.route('/api/storage', methods=['GET'])
+    def get_storage_stats():
+        """Get hard drive storage statistics."""
+        try:
+            # Get disk usage for the root filesystem
+            disk_usage = psutil.disk_usage('/')
+            
+            # Calculate percentages
+            used_percent = (disk_usage.used / disk_usage.total) * 100
+            free_percent = (disk_usage.free / disk_usage.total) * 100
+            
+            # Convert bytes to GB for readability
+            total_gb = disk_usage.total / (1024**3)
+            used_gb = disk_usage.used / (1024**3)
+            free_gb = disk_usage.free / (1024**3)
+            
+            # Get translation completion percentages (excluding WEB)
+            translation_completion = getattr(app.verse_manager, 'translation_completion', {})
+            
+            # Filter out WEB translation if it exists
+            if 'web' in translation_completion:
+                del translation_completion['web']
+            
+            # If no completion data, calculate basic completion based on file existence (excluding WEB)
+            if not translation_completion:
+                translation_completion = {}
+                for translation in ['kjv', 'amp', 'esv', 'nlt', 'msg', 'nasb', 'ylt']:
+                    file_path = Path(f'data/translations/bible_{translation}.json')
+                    if file_path.exists():
+                        # Estimate completion based on file size (rough approximation)
+                        size_bytes = file_path.stat().st_size
+                        if size_bytes > 4000000:  # > 4MB likely complete
+                            translation_completion[translation] = 100.0
+                        elif size_bytes > 100000:  # > 100KB partially complete
+                            translation_completion[translation] = (size_bytes / 4500000) * 100
+                        else:
+                            translation_completion[translation] = 1.0
+                    else:
+                        translation_completion[translation] = 0.0
+            
+            # Calculate Bible storage statistics (excluding WEB)
+            total_translations = len(['kjv', 'amp', 'esv', 'nlt', 'msg', 'nasb', 'ylt'])
+            completed_translations = sum(1 for completion in translation_completion.values() if completion >= 99.0)
+            overall_completion = sum(translation_completion.values()) / len(translation_completion) if translation_completion else 0
+            
+            # Get file sizes for translation files (excluding WEB)
+            translation_dir = Path('data/translations')
+            file_sizes = {}
+            bible_total_size = 0
+            
+            for translation_file in translation_dir.glob('bible_*.json'):
+                translation_name = translation_file.stem.replace('bible_', '')
+                if translation_name != 'web' and translation_file.exists():  # Exclude WEB
+                    size_bytes = translation_file.stat().st_size
+                    file_sizes[translation_name] = {
+                        'size_bytes': size_bytes,
+                        'size_mb': round(size_bytes / (1024 * 1024), 2)
+                    }
+                    bible_total_size += size_bytes
+            
+            storage_stats = {
+                'timestamp': datetime.now().isoformat(),
+                'disk': {
+                    'total_gb': round(total_gb, 2),
+                    'used_gb': round(used_gb, 2),
+                    'free_gb': round(free_gb, 2),
+                    'used_percent': round(used_percent, 1),
+                    'free_percent': round(free_percent, 1)
+                },
+                'translations': {
+                    name: {
+                        'completion': round(completion, 1),
+                        'status': 'complete' if completion >= 99.0 else 'partial',
+                        'file_info': file_sizes.get(name, {'size_bytes': 0, 'size_mb': 0})
+                    }
+                    for name, completion in translation_completion.items()
+                },
+                'bible_summary': {
+                    'overall_completion': round(overall_completion, 1),
+                    'completed_translations': completed_translations,
+                    'total_translations': total_translations,
+                    'total_size_mb': round(bible_total_size / (1024 * 1024), 2),
+                    'total_size_bytes': bible_total_size
+                }
+            }
+            
+            return jsonify({'success': True, 'data': storage_stats})
+        except Exception as e:
+            app.logger.error(f"Storage stats API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
     @app.route('/api/settings', methods=['GET'])
     def get_settings():
         """Get current settings."""
@@ -138,8 +229,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'background_index': app.image_generator.current_background_index,
                 'available_backgrounds': app.image_generator.get_available_backgrounds(),
                 'available_translations': app.verse_manager.get_available_translations(),
+                'translation_display_names': app.verse_manager.get_translation_display_names(),
                 'parallel_mode': getattr(app.verse_manager, 'parallel_mode', False),
-                'secondary_translation': getattr(app.verse_manager, 'secondary_translation', 'web'),
+                'secondary_translation': getattr(app.verse_manager, 'secondary_translation', 'amp'),
                 'available_fonts': app.image_generator.get_available_fonts(),
                 'current_font': app.image_generator.get_current_font(),
                 'font_sizes': app.image_generator.get_font_sizes(),
@@ -147,7 +239,8 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'voice_enabled': getattr(app.verse_manager, 'voice_enabled', False),
                 'web_enabled': True,
                 'auto_refresh': int(os.getenv('FORCE_REFRESH_INTERVAL', '60')),
-                'hardware_mode': os.getenv('SIMULATION_MODE', 'false').lower() == 'false'
+                'hardware_mode': os.getenv('SIMULATION_MODE', 'false').lower() == 'false',
+                'translation_completion': getattr(app.verse_manager, 'translation_completion', {})
             }
             
             return jsonify({'success': True, 'data': settings})
@@ -449,7 +542,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             original_translation = app.verse_manager.translation
             original_display_mode = getattr(app.verse_manager, 'display_mode', 'time')
             original_parallel_mode = getattr(app.verse_manager, 'parallel_mode', False)
-            original_secondary_translation = getattr(app.verse_manager, 'secondary_translation', 'web')
+            original_secondary_translation = getattr(app.verse_manager, 'secondary_translation', 'amp')
             original_background_index = app.image_generator.current_background_index
             original_font = app.image_generator.current_font_name
             original_font_sizes = app.image_generator.get_font_sizes()
@@ -1449,10 +1542,77 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             'average_response_time': 0.85
         }
     
+    @app.route('/api/translation-completion', methods=['GET'])
+    def translation_completion():
+        """Get completion statistics for all Bible translations."""
+        try:
+            if hasattr(app.verse_manager, 'translation_completion'):
+                completion = app.verse_manager.translation_completion
+                total_verses = app.verse_manager._get_total_bible_verses() if hasattr(app.verse_manager, '_get_total_bible_verses') else 31100
+                
+                # Calculate detailed stats
+                detailed_stats = {}
+                for translation, percentage in completion.items():
+                    cached_verses = int((percentage / 100.0) * total_verses)
+                    detailed_stats[translation] = {
+                        'completion_percentage': percentage,
+                        'cached_verses': cached_verses,
+                        'total_verses': total_verses,
+                        'display_name': app.verse_manager.get_translation_display_names().get(translation, translation.upper())
+                    }
+                
+                return jsonify({
+                    'success': True, 
+                    'data': {
+                        'translations': detailed_stats,
+                        'summary': {
+                            'total_translations': len(completion),
+                            'completed_translations': len([t for t, p in completion.items() if p >= 100.0]),
+                            'total_bible_verses': total_verses,
+                            'overall_progress': app.verse_manager._format_completion_summary() if hasattr(app.verse_manager, '_format_completion_summary') else 'Not available'
+                        }
+                    }
+                })
+            else:
+                return jsonify({'success': True, 'data': {
+                    'translations': {},
+                    'summary': {
+                        'total_translations': 0,
+                        'completed_translations': 0,
+                        'total_bible_verses': 31100,
+                        'overall_progress': 'Translation caching not available'
+                    }
+                }})
+        except Exception as e:
+            app.logger.error(f"Translation completion API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    # Legacy endpoint for backward compatibility
+    @app.route('/api/amp-completion', methods=['GET'])
+    def amp_completion():
+        """Get AMP Bible completion statistics (legacy endpoint)."""
+        try:
+            response = translation_completion()
+            data = response.get_json()
+            
+            if data.get('success') and 'amp' in data['data']['translations']:
+                amp_stats = data['data']['translations']['amp']
+                return jsonify({'success': True, 'data': amp_stats})
+            else:
+                return jsonify({'success': True, 'data': {
+                    'completion_percentage': 0.0,
+                    'cached_verses': 0,
+                    'total_verses': 31100,
+                    'message': 'AMP completion tracking not available'
+                }})
+        except Exception as e:
+            app.logger.error(f"AMP completion API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
     return app
 
 def _apply_display_transformations(image):
-    """Apply the same transformations to preview that are applied to actual display."""
+    """Apply transformations to show what the final display looks like after hardware processing."""
     try:
         from PIL import Image as PILImage
         import logging
@@ -1462,31 +1622,23 @@ def _apply_display_transformations(image):
         # Create a copy to avoid modifying the original
         transformed_image = image.copy()
         
-        # Apply EXACT same transformations as display_manager._display_on_hardware()
+        # The image generation creates a "raw" image, but the hardware applies transformations
+        # To show what users actually see, we need to apply the REVERSE of hardware transformations
+        # Hardware: mirror=true, rotation=180
+        # So preview should show: rotation=180 first, then reverse mirror
         
-        # Step 1: Apply mirroring if needed (fixes backwards text)
-        mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
-        logger.info(f"Preview transformation - Mirror setting: {mirror_setting}")
-        
-        if mirror_setting == 'true':
-            transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
-            logger.info("Applied horizontal flip to preview")
-        elif mirror_setting == 'vertical':
-            transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
-            logger.info("Applied vertical flip to preview")
-        elif mirror_setting == 'both':
-            transformed_image = transformed_image.transpose(PILImage.FLIP_LEFT_RIGHT)
-            transformed_image = transformed_image.transpose(PILImage.FLIP_TOP_BOTTOM)
-            logger.info("Applied both horizontal and vertical flip to preview")
-        
-        # Step 2: Apply software rotation for precise control
-        # This matches display_manager.py line 134-135 exactly
+        # Step 1: Apply software rotation (same as hardware)
         rotation_setting = os.getenv('DISPLAY_PHYSICAL_ROTATION', '180')
         logger.info(f"Preview transformation - Rotation setting: {rotation_setting}")
         
         if rotation_setting == '180':
             transformed_image = transformed_image.rotate(180)
             logger.info("Applied 180-degree rotation to preview")
+        
+        # Step 2: Do NOT apply mirroring - the raw image is already correct for reading
+        # Hardware mirroring corrects the display, so preview should show the corrected result
+        mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
+        logger.info(f"Preview transformation - Mirror setting: {mirror_setting} (not applied to preview)")
         
         return transformed_image
         

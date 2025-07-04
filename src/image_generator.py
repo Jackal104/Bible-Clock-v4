@@ -866,10 +866,10 @@ class ImageGenerator:
             return
         
         # Calculate current page based on time rotation
-        # Use a different rotation interval for pages (e.g., every 30 seconds)
+        # Use a different rotation interval for pages (e.g., every 15 seconds)
         from datetime import datetime
         now = datetime.now()
-        page_rotation_seconds = 30  # Change page every 30 seconds
+        page_rotation_seconds = 15  # Change page every 15 seconds
         seconds_since_midnight = now.hour * 3600 + now.minute * 60 + now.second
         page_slot = (seconds_since_midnight // page_rotation_seconds) % len(pages)
         current_page = page_slot + 1  # Pages are 1-indexed
@@ -1153,8 +1153,14 @@ class ImageGenerator:
     
     def _add_verse_reference_display(self, draw: ImageDraw.Draw, verse_data: Dict):
         """Add verse reference prominently at the configured position - this is the main time display."""
-        # Check if this is date-based mode
-        if verse_data.get('is_date_event'):
+        # Check if this is devotional mode
+        if verse_data.get('is_devotional') or 'devotional_text' in verse_data:
+            # For devotional mode, show time before date
+            now = datetime.now()
+            current_time = verse_data.get('current_time', now.strftime('%I:%M %p'))
+            current_date = verse_data.get('current_date', now.strftime('%A, %B %d, %Y'))
+            display_text = f"{current_time} - {current_date}"
+        elif verse_data.get('is_date_event'):
             # Show the actual date instead of reference for date-based mode
             now = datetime.now()
             display_text = now.strftime('%B %d, %Y')

@@ -1,0 +1,360 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}Settings - Bible Clock Mobile{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Display Settings -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Display Settings</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Translation</label>
+                <select id="translation-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateTranslation()">
+                    <option value="kjv">King James Version (KJV)</option>
+                    <option value="amp">Amplified Bible (AMP)</option>
+                    <option value="nlt">New Living Translation (NLT)</option>
+                    <option value="esv">English Standard Version (ESV)</option>
+                    <option value="msg">The Message (MSG)</option>
+                    <option value="nasb">New American Standard Bible (NASB)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Time Format</label>
+                <select id="time-format-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateTimeFormat()">
+                    <option value="12">12-Hour (1:30 PM)</option>
+                    <option value="24">24-Hour (13:30)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devotional Settings -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Devotional Settings</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Rotation Interval</label>
+                <select id="devotional-interval-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" onchange="updateDevotionalInterval()">
+                    <option value="5">5 Minutes</option>
+                    <option value="10">10 Minutes</option>
+                    <option value="15">15 Minutes</option>
+                    <option value="30">30 Minutes</option>
+                    <option value="60">60 Minutes</option>
+                </select>
+            </div>
+            
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    <svg class="w-5 h-5 text-purple-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h4 class="font-medium text-purple-800">Devotional Info</h4>
+                        <p class="text-sm text-purple-700 mt-1">Devotional content rotates automatically. Pages cycle every 15 seconds within each devotional.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parallel Translation -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Parallel Translation</h2>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-lg font-medium text-gray-800">Enable Parallel Mode</div>
+                    <div class="text-sm text-gray-500">Show two translations side by side</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="parallel-toggle" class="sr-only peer" onchange="toggleParallel()">
+                    <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            
+            <div id="secondary-translation-select-container" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Secondary Translation</label>
+                <select id="secondary-translation-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateSecondaryTranslation()">
+                    <option value="amp">Amplified Bible (AMP)</option>
+                    <option value="kjv">King James Version (KJV)</option>
+                    <option value="nlt">New Living Translation (NLT)</option>
+                    <option value="esv">English Standard Version (ESV)</option>
+                    <option value="msg">The Message (MSG)</option>
+                    <option value="nasb">New American Standard Bible (NASB)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Controls -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">System Controls</h2>
+        <div class="space-y-3">
+            <button onclick="restartService()" class="w-full mobile-button bg-yellow-500 text-white py-3 px-4 rounded-lg touch-feedback hover:bg-yellow-600 flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>Restart Service</span>
+            </button>
+            
+            <button onclick="clearCache()" class="w-full mobile-button bg-red-500 text-white py-3 px-4 rounded-lg touch-feedback hover:bg-red-600 flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                <span>Clear Cache</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="status-message" class="hidden mobile-card p-4 rounded-lg">
+        <div id="status-text" class="font-medium"></div>
+    </div>
+</div>
+
+<script>
+function updateTranslation() {
+    const translation = document.getElementById('translation-select').value;
+    showStatus(`Setting translation to ${translation.toUpperCase()}...`, 'info');
+    
+    fetch('/api/translation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ translation: translation })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Translation set to ${translation.toUpperCase()}`, 'success');
+        } else {
+            showStatus(`Failed to set translation: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function updateTimeFormat() {
+    const format = document.getElementById('time-format-select').value;
+    showStatus(`Setting time format to ${format}-hour...`, 'info');
+    
+    fetch('/api/time-format', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ format: format })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Time format set to ${format}-hour`, 'success');
+        } else {
+            showStatus(`Failed to set time format: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function updateDevotionalInterval() {
+    const interval = document.getElementById('devotional-interval-select').value;
+    showStatus(`Setting devotional interval to ${interval} minutes...`, 'info');
+    
+    fetch('/api/devotional/interval', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ interval: parseInt(interval) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Devotional interval set to ${interval} minutes`, 'success');
+        } else {
+            showStatus(`Failed to set interval: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function toggleParallel() {
+    const toggle = document.getElementById('parallel-toggle');
+    const container = document.getElementById('secondary-translation-select-container');
+    const enabled = toggle.checked;
+    
+    if (enabled) {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+    
+    showStatus(`${enabled ? 'Enabling' : 'Disabling'} parallel mode...`, 'info');
+    
+    fetch('/api/parallel-mode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: enabled })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Parallel mode ${enabled ? 'enabled' : 'disabled'}`, 'success');
+        } else {
+            showStatus(`Failed to toggle parallel mode: ${data.error}`, 'error');
+            toggle.checked = !enabled;
+            if (!enabled) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+        toggle.checked = !enabled;
+    });
+}
+
+function updateSecondaryTranslation() {
+    const translation = document.getElementById('secondary-translation-select').value;
+    showStatus(`Setting secondary translation to ${translation.toUpperCase()}...`, 'info');
+    
+    fetch('/api/secondary-translation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ translation: translation })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Secondary translation set to ${translation.toUpperCase()}`, 'success');
+        } else {
+            showStatus(`Failed to set secondary translation: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function restartService() {
+    if (confirm('Are you sure you want to restart the Bible Clock service?')) {
+        showStatus('Restarting service...', 'info');
+        
+        fetch('/api/restart', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStatus('Service restart initiated', 'success');
+            } else {
+                showStatus(`Failed to restart: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            showStatus(`Error: ${error.message}`, 'error');
+        });
+    }
+}
+
+function clearCache() {
+    if (confirm('Are you sure you want to clear all cached data?')) {
+        showStatus('Clearing cache...', 'info');
+        
+        fetch('/api/clear-cache', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStatus('Cache cleared successfully', 'success');
+            } else {
+                showStatus(`Failed to clear cache: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            showStatus(`Error: ${error.message}`, 'error');
+        });
+    }
+}
+
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('status-message');
+    const statusText = document.getElementById('status-text');
+    
+    statusText.textContent = message;
+    statusDiv.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'text-blue-800', 'text-green-800', 'text-red-800');
+    
+    if (type === 'success') {
+        statusDiv.classList.add('bg-green-100', 'text-green-800');
+    } else if (type === 'error') {
+        statusDiv.classList.add('bg-red-100', 'text-red-800');
+    } else {
+        statusDiv.classList.add('bg-blue-100', 'text-blue-800');
+    }
+    
+    statusDiv.classList.remove('hidden');
+    
+    setTimeout(() => {
+        statusDiv.classList.add('hidden');
+    }, 5000);
+}
+
+// Load current settings
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/settings')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const settings = data.data;
+                
+                // Set translation
+                if (settings.translation) {
+                    document.getElementById('translation-select').value = settings.translation;
+                }
+                
+                // Set time format
+                if (settings.time_format) {
+                    document.getElementById('time-format-select').value = settings.time_format;
+                }
+                
+                // Set devotional interval
+                if (settings.devotional_interval) {
+                    document.getElementById('devotional-interval-select').value = settings.devotional_interval.toString();
+                }
+                
+                // Set parallel mode
+                if (settings.parallel_mode !== undefined) {
+                    const toggle = document.getElementById('parallel-toggle');
+                    toggle.checked = settings.parallel_mode;
+                    const container = document.getElementById('secondary-translation-select-container');
+                    if (settings.parallel_mode) {
+                        container.classList.remove('hidden');
+                    }
+                }
+                
+                // Set secondary translation
+                if (settings.secondary_translation) {
+                    document.getElementById('secondary-translation-select').value = settings.secondary_translation;
+                }
+            }
+        })
+        .catch(console.error);
+});
+</script>
+{% endblock %}

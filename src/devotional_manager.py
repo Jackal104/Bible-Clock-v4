@@ -25,6 +25,11 @@ class DevotionalManager:
         self.devotional_cache_enabled = True
         self.max_cache_age_days = 30
         
+        # Configurable interval settings
+        self.default_rotation_minutes = 15  # Default interval
+        self.config_file = Path('data/devotional_config.json')
+        self._load_config()
+        
         # Devotional sources
         self.sources = {
             'faiths_checkbook': {
@@ -39,6 +44,48 @@ class DevotionalManager:
         self._load_devotional_cache()
         
         self.logger.info("DevotionalManager initialized")
+
+    def _load_config(self):
+        """Load configuration from file."""
+        try:
+            if self.config_file.exists():
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    self.rotation_minutes = config.get('rotation_minutes', self.default_rotation_minutes)
+                    self.logger.info(f"Loaded devotional config: rotation_minutes={self.rotation_minutes}")
+            else:
+                self.rotation_minutes = self.default_rotation_minutes
+                self._save_config()
+                self.logger.info(f"Created default devotional config: rotation_minutes={self.rotation_minutes}")
+        except Exception as e:
+            self.logger.error(f"Error loading devotional config: {e}")
+            self.rotation_minutes = self.default_rotation_minutes
+
+    def _save_config(self):
+        """Save configuration to file."""
+        try:
+            config = {
+                'rotation_minutes': self.rotation_minutes,
+                'last_updated': datetime.now().isoformat()
+            }
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            self.logger.debug("Saved devotional configuration")
+        except Exception as e:
+            self.logger.error(f"Error saving devotional config: {e}")
+
+    def set_rotation_interval(self, minutes: int):
+        """Set the rotation interval in minutes."""
+        if minutes < 1 or minutes > 1440:  # Max 24 hours
+            raise ValueError("Rotation interval must be between 1 and 1440 minutes")
+        
+        self.rotation_minutes = minutes
+        self._save_config()
+        self.logger.info(f"Updated devotional rotation interval to {minutes} minutes")
+
+    def get_rotation_interval(self) -> int:
+        """Get the current rotation interval in minutes."""
+        return self.rotation_minutes
 
     def _load_devotional_cache(self):
         """Load existing cached devotionals from file."""
@@ -70,9 +117,13 @@ class DevotionalManager:
         today = datetime.now()
         return self.get_devotional_by_date(today, source)
 
-    def get_rotating_devotional(self, source: str = 'faiths_checkbook', rotation_minutes: int = 15) -> Optional[Dict[str, Any]]:
+    def get_rotating_devotional(self, source: str = 'faiths_checkbook', rotation_minutes: int = None) -> Optional[Dict[str, Any]]:
         """Get devotional that rotates every specified number of minutes with random selection."""
         now = datetime.now()
+        
+        # Use configured interval if no override provided
+        if rotation_minutes is None:
+            rotation_minutes = self.rotation_minutes
         
         # Calculate which rotation slot we're in
         minutes_since_midnight = now.hour * 60 + now.minute
@@ -86,6 +137,9 @@ class DevotionalManager:
             devotional['rotation_slot'] = rotation_slot
             devotional['rotation_minutes'] = rotation_minutes
             devotional['next_change_at'] = self._get_next_rotation_time(now, rotation_minutes).strftime('%H:%M')
+            # Add time and date for display
+            devotional['current_time'] = now.strftime('%I:%M %p')
+            devotional['current_date'] = now.strftime('%A, %B %d, %Y')
             
         return devotional
 
@@ -116,13 +170,24 @@ class DevotionalManager:
         text = re.sub(r'Or, catch up on.*?Archives\..*?$', '', text, flags=re.MULTILINE | re.DOTALL)
         text = re.sub(r'catch up on.*?Archives\..*?$', '', text, flags=re.MULTILINE | re.DOTALL)
         
+        # Comprehensive date removal patterns
         # Remove dates from beginning (e.g., "July 3", "June 26", etc.)
         text = re.sub(r'^[A-Z][a-z]+ \d+', '', text)
         
-        # Remove additional date patterns
+        # Remove additional date patterns at start of text
         text = re.sub(r'^[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*', '', text)
         text = re.sub(r'^\d{1,2}[a-z]{0,2} [A-Z][a-z]+[,\s]*', '', text)
-        text = re.sub(r'[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*\d{4}', '', text)
+        text = re.sub(r'^[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*\d{4}', '', text)
+        
+        # Remove dates anywhere in text (more comprehensive)
+        text = re.sub(r'\b[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*\d{4}\b', '', text)
+        text = re.sub(r'\b\d{1,2}[a-z]{0,2} [A-Z][a-z]+[,\s]*\d{4}\b', '', text)
+        text = re.sub(r'\b[A-Z][a-z]+ \d{1,2}[a-z]{0,2}\b', '', text)
+        text = re.sub(r'\b\d{1,2}[a-z]{0,2} [A-Z][a-z]+\b', '', text)
+        
+        # Remove numeric date patterns (MM/DD/YYYY, DD/MM/YYYY, etc.)
+        text = re.sub(r'\b\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}\b', '', text)
+        text = re.sub(r'\b\d{4}[/\-]\d{1,2}[/\-]\d{1,2}\b', '', text)
         
         # Remove rotation information
         text = re.sub(r'Next rotation:.*?$', '', text, flags=re.MULTILINE)
@@ -132,8 +197,13 @@ class DevotionalManager:
         text = re.sub(r'pages?\s+\d+\s+of\s+\d+', '', text, flags=re.IGNORECASE)
         text = re.sub(r'page\s+\d+', '', text, flags=re.IGNORECASE)
         
-        # Clean up extra whitespace
+        # Remove time references that might be in devotional text
+        text = re.sub(r'\b\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M\b', '', text, flags=re.IGNORECASE)
+        
+        # Clean up extra whitespace and punctuation artifacts
         text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r'^\s*[,\.\-]\s*', '', text)  # Remove leading punctuation
+        text = re.sub(r'\s*[,\.\-]\s*$', '', text)  # Remove trailing punctuation
         
         return text
 

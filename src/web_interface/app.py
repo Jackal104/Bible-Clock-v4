@@ -55,25 +55,67 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     _track_activity("System startup", "Bible Clock system started successfully")
     _track_activity("Display initialized", "E-ink display ready for verse display")
     
+    def _is_mobile_device(request):
+        """Detect if the request is from a mobile device."""
+        user_agent = request.headers.get('User-Agent', '').lower()
+        mobile_keywords = [
+            'mobile', 'android', 'iphone', 'ipad', 'ipod', 
+            'windows phone', 'blackberry', 'webos', 'opera mini',
+            'phone', 'tablet'
+        ]
+        return any(keyword in user_agent for keyword in mobile_keywords)
+    
     @app.route('/')
     def index():
-        """Main dashboard."""
-        return render_template('dashboard.html')
+        """Main dashboard with mobile detection."""
+        # Check for force desktop parameter
+        if request.args.get('force_desktop') == '1':
+            return render_template('dashboard.html')
+        
+        # Check if mobile device
+        if _is_mobile_device(request):
+            return render_template('mobile/dashboard.html')
+        else:
+            return render_template('dashboard.html')
     
     @app.route('/settings')
     def settings():
-        """Settings page."""
-        return render_template('settings.html')
+        """Settings page with mobile detection."""
+        # Check for force desktop parameter
+        if request.args.get('force_desktop') == '1':
+            return render_template('settings.html')
+        
+        # Check if mobile device
+        if _is_mobile_device(request):
+            return render_template('mobile/settings.html')
+        else:
+            return render_template('settings.html')
     
     @app.route('/statistics')
     def statistics():
-        """Statistics page."""
-        return render_template('statistics.html')
+        """Statistics page with mobile detection."""
+        # Check for force desktop parameter
+        if request.args.get('force_desktop') == '1':
+            return render_template('statistics.html')
+        
+        # Check if mobile device
+        if _is_mobile_device(request):
+            return render_template('mobile/statistics.html')
+        else:
+            return render_template('statistics.html')
     
     @app.route('/voice')
     def voice_control():
-        """Voice control page."""
-        return render_template('voice_control.html')
+        """Voice control page with mobile detection."""
+        # Check for force desktop parameter
+        if request.args.get('force_desktop') == '1':
+            return render_template('voice_control.html')
+        
+        # Check if mobile device
+        if _is_mobile_device(request):
+            return render_template('mobile/voice_control.html')
+        else:
+            return render_template('voice_control.html')
     
     # === API Endpoints ===
     
@@ -1681,3 +1723,137 @@ def _cleanup_old_preview_images():
                     
     except Exception as e:
         print(f"Preview cleanup error: {e}")
+
+    # === Devotional API Endpoints ===
+    
+    @app.route('/api/devotional/config', methods=['GET'])
+    def get_devotional_config():
+        """Get devotional configuration."""
+        try:
+            if hasattr(app.verse_manager, 'devotional_manager') and app.verse_manager.devotional_manager:
+                config = {
+                    'rotation_interval': app.verse_manager.devotional_manager.get_rotation_interval(),
+                    'available_intervals': [5, 10, 15, 30, 60]
+                }
+                return jsonify({'success': True, 'data': config})
+            else:
+                return jsonify({'success': False, 'error': 'Devotional manager not available'})
+        except Exception as e:
+            app.logger.error(f"Devotional config API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/devotional/interval', methods=['POST'])
+    def set_devotional_interval():
+        """Set devotional rotation interval."""
+        try:
+            if not hasattr(app.verse_manager, 'devotional_manager') or not app.verse_manager.devotional_manager:
+                return jsonify({'success': False, 'error': 'Devotional manager not available'})
+            
+            data = request.get_json()
+            interval = data.get('interval')
+            
+            if not interval or interval not in [5, 10, 15, 30, 60]:
+                return jsonify({'success': False, 'error': 'Invalid interval. Must be 5, 10, 15, 30, or 60 minutes'})
+            
+            app.verse_manager.devotional_manager.set_rotation_interval(interval)
+            return jsonify({'success': True, 'message': f'Devotional interval set to {interval} minutes'})
+            
+        except Exception as e:
+            app.logger.error(f"Devotional interval API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/devotional/mode', methods=['POST'])
+    def set_devotional_mode():
+        """Enable or disable devotional mode."""
+        try:
+            data = request.get_json()
+            enabled = data.get('enabled', False)
+            
+            if enabled:
+                app.verse_manager.display_mode = 'devotional'
+                message = 'Devotional mode enabled'
+            else:
+                app.verse_manager.display_mode = 'time'  # Default fallback
+                message = 'Devotional mode disabled'
+            
+            # Force update display with new mode
+            verse_data = app.verse_manager.get_current_verse()
+            image = app.image_generator.create_verse_image(verse_data)
+            app.display_manager.display_image(image, force_refresh=True)
+            
+            return jsonify({'success': True, 'message': message})
+            
+        except Exception as e:
+            app.logger.error(f"Devotional mode API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    # === Mobile-specific API Endpoints ===
+    
+    @app.route('/api/voice/wake-word', methods=['POST'])
+    def toggle_wake_word():
+        """Toggle voice wake word detection for mobile."""
+        try:
+            if not hasattr(app.service_manager, 'voice_control') or not app.service_manager.voice_control:
+                return jsonify({'success': False, 'error': 'Voice control not available'})
+            
+            data = request.get_json()
+            enabled = data.get('enabled', False)
+            
+            # Toggle wake word detection
+            app.service_manager.voice_control.set_wake_word_enabled(enabled)
+            
+            message = f'Wake word detection {"enabled" if enabled else "disabled"}'
+            return jsonify({'success': True, 'message': message})
+            
+        except Exception as e:
+            app.logger.error(f"Wake word toggle API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/voice/status', methods=['GET'])
+    def get_voice_status():
+        """Get voice control status for mobile."""
+        try:
+            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
+                voice_control = app.service_manager.voice_control
+                status = {
+                    'wake_word_enabled': getattr(voice_control, 'wake_word_enabled', False),
+                    'is_listening': getattr(voice_control, 'is_listening', False),
+                    'audio_input_enabled': getattr(voice_control, 'audio_input_enabled', True),
+                    'audio_output_enabled': getattr(voice_control, 'audio_output_enabled', True)
+                }
+                return jsonify({'success': True, 'data': status})
+            else:
+                # Return default disabled status if voice control not available
+                status = {
+                    'wake_word_enabled': False,
+                    'is_listening': False,
+                    'audio_input_enabled': False,
+                    'audio_output_enabled': False
+                }
+                return jsonify({'success': True, 'data': status})
+        except Exception as e:
+            app.logger.error(f"Voice status API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/settings', methods=['GET'])
+    def get_settings():
+        """Get current settings for mobile interface."""
+        try:
+            settings = {
+                'translation': getattr(app.verse_manager, 'translation', 'kjv'),
+                'time_format': getattr(app.verse_manager, 'time_format', '12'),
+                'display_mode': getattr(app.verse_manager, 'display_mode', 'time'),
+                'parallel_mode': getattr(app.verse_manager, 'parallel_mode', False),
+                'secondary_translation': getattr(app.verse_manager, 'secondary_translation', 'amp')
+            }
+            
+            # Add devotional interval if available
+            if hasattr(app.verse_manager, 'devotional_manager') and app.verse_manager.devotional_manager:
+                settings['devotional_interval'] = app.verse_manager.devotional_manager.get_rotation_interval()
+            
+            return jsonify({'success': True, 'data': settings})
+        except Exception as e:
+            app.logger.error(f"Settings API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    return app

@@ -1,0 +1,325 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}Voice Control - Bible Clock Mobile{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Voice Status -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Voice Control Status</h2>
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" id="voice-status-indicator">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+            </div>
+            <div class="text-2xl font-bold mb-2" id="voice-status-text">Checking...</div>
+            <div class="text-gray-500" id="voice-status-detail">Loading voice control status</div>
+        </div>
+    </div>
+
+    <!-- Wake Word Control -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Wake Word Settings</h2>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-lg font-medium text-gray-800">Enable Wake Word</div>
+                    <div class="text-sm text-gray-500">Say "Hey Bible" to activate voice commands</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="wake-word-toggle" class="sr-only peer" onchange="toggleWakeWord()">
+                    <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h4 class="font-medium text-blue-800">Wake Word Usage</h4>
+                        <p class="text-sm text-blue-700 mt-1">Say "Hey Bible" followed by commands like "change mode to devotional", "show today's verse", or "what time is it".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Voice Commands -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Manual Voice Commands</h2>
+        <div class="space-y-3">
+            <button onclick="startListening()" class="w-full mobile-button bg-blue-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-blue-600 flex items-center justify-center space-x-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+                <span class="text-lg">Start Listening</span>
+            </button>
+            
+            <button onclick="stopListening()" class="w-full mobile-button bg-red-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-red-600 flex items-center justify-center space-x-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18 12M6 12l12 0"></path>
+                </svg>
+                <span class="text-lg">Stop Listening</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Common Voice Commands -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Common Voice Commands</h2>
+        <div class="space-y-3">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="font-medium text-gray-800">"Change mode to devotional"</div>
+                <div class="text-sm text-gray-500">Switch to devotional display mode</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="font-medium text-gray-800">"Change mode to time"</div>
+                <div class="text-sm text-gray-500">Switch to time-based verse mode</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="font-medium text-gray-800">"Show today's verse"</div>
+                <div class="text-sm text-gray-500">Display current verse</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="font-medium text-gray-800">"What time is it?"</div>
+                <div class="text-sm text-gray-500">Get current time</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="font-medium text-gray-800">"Update display"</div>
+                <div class="text-sm text-gray-500">Force refresh the display</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="font-medium text-gray-800">"Clear ghosting"</div>
+                <div class="text-sm text-gray-500">Clear display artifacts</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Response Log -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Recent Voice Activity</h2>
+        <div id="voice-log" class="space-y-2">
+            <div class="text-gray-500 text-center py-4">No recent voice activity</div>
+        </div>
+        <button onclick="clearVoiceLog()" class="mt-4 w-full mobile-button bg-gray-500 text-white py-2 px-4 rounded-lg touch-feedback hover:bg-gray-600">
+            Clear Log
+        </button>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="status-message" class="hidden mobile-card p-4 rounded-lg">
+        <div id="status-text" class="font-medium"></div>
+    </div>
+</div>
+
+<script>
+let voiceLogEntries = [];
+
+function toggleWakeWord() {
+    const toggle = document.getElementById('wake-word-toggle');
+    const enabled = toggle.checked;
+    
+    showStatus(`${enabled ? 'Enabling' : 'Disabling'} wake word detection...`, 'info');
+    
+    fetch('/api/voice/wake-word', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: enabled })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Wake word detection ${enabled ? 'enabled' : 'disabled'}`, 'success');
+            updateVoiceStatus();
+            addVoiceLogEntry(`Wake word ${enabled ? 'enabled' : 'disabled'}`, 'system');
+        } else {
+            showStatus(`Failed to toggle wake word: ${data.error}`, 'error');
+            toggle.checked = !enabled; // Revert toggle
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+        toggle.checked = !enabled; // Revert toggle
+    });
+}
+
+function startListening() {
+    showStatus('Starting voice listening...', 'info');
+    
+    fetch('/api/voice/listen', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Voice listening started', 'success');
+            addVoiceLogEntry('Manual listening started', 'user');
+            updateVoiceStatus();
+        } else {
+            showStatus(`Failed to start listening: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function stopListening() {
+    showStatus('Stopping voice listening...', 'info');
+    
+    fetch('/api/voice/stop', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Voice listening stopped', 'success');
+            addVoiceLogEntry('Manual listening stopped', 'user');
+            updateVoiceStatus();
+        } else {
+            showStatus(`Failed to stop listening: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function updateVoiceStatus() {
+    fetch('/api/voice/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const status = data.data;
+                const indicator = document.getElementById('voice-status-indicator');
+                const statusText = document.getElementById('voice-status-text');
+                const statusDetail = document.getElementById('voice-status-detail');
+                const wakeWordToggle = document.getElementById('wake-word-toggle');
+                
+                // Update wake word toggle
+                wakeWordToggle.checked = status.wake_word_enabled || false;
+                
+                // Update status display
+                if (status.is_listening) {
+                    indicator.className = 'inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-red-100 text-red-600';
+                    statusText.textContent = 'Listening';
+                    statusDetail.textContent = 'Voice control is actively listening';
+                } else if (status.wake_word_enabled) {
+                    indicator.className = 'inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-green-100 text-green-600';
+                    statusText.textContent = 'Ready';
+                    statusDetail.textContent = 'Say "Hey Bible" to activate';
+                } else {
+                    indicator.className = 'inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-gray-100 text-gray-600';
+                    statusText.textContent = 'Disabled';
+                    statusDetail.textContent = 'Voice control is disabled';
+                }
+            }
+        })
+        .catch(console.error);
+}
+
+function addVoiceLogEntry(message, type) {
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = {
+        timestamp: timestamp,
+        message: message,
+        type: type // 'user', 'system', 'response'
+    };
+    
+    voiceLogEntries.unshift(entry); // Add to beginning
+    if (voiceLogEntries.length > 20) {
+        voiceLogEntries = voiceLogEntries.slice(0, 20); // Keep only last 20
+    }
+    
+    updateVoiceLogDisplay();
+}
+
+function updateVoiceLogDisplay() {
+    const logContainer = document.getElementById('voice-log');
+    
+    if (voiceLogEntries.length === 0) {
+        logContainer.innerHTML = '<div class="text-gray-500 text-center py-4">No recent voice activity</div>';
+        return;
+    }
+    
+    const logHTML = voiceLogEntries.map(entry => {
+        let colorClass = 'text-gray-600';
+        let icon = '';
+        
+        switch(entry.type) {
+            case 'user':
+                colorClass = 'text-blue-600';
+                icon = '<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+                break;
+            case 'system':
+                colorClass = 'text-green-600';
+                icon = '<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                break;
+            case 'response':
+                colorClass = 'text-purple-600';
+                icon = '<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>';
+                break;
+        }
+        
+        return `
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="flex justify-between items-start">
+                    <div class="${colorClass} font-medium">
+                        ${icon}${entry.message}
+                    </div>
+                    <div class="text-xs text-gray-400">${entry.timestamp}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    logContainer.innerHTML = logHTML;
+}
+
+function clearVoiceLog() {
+    voiceLogEntries = [];
+    updateVoiceLogDisplay();
+    showStatus('Voice log cleared', 'success');
+}
+
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('status-message');
+    const statusText = document.getElementById('status-text');
+    
+    statusText.textContent = message;
+    statusDiv.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'text-blue-800', 'text-green-800', 'text-red-800');
+    
+    if (type === 'success') {
+        statusDiv.classList.add('bg-green-100', 'text-green-800');
+    } else if (type === 'error') {
+        statusDiv.classList.add('bg-red-100', 'text-red-800');
+    } else {
+        statusDiv.classList.add('bg-blue-100', 'text-blue-800');
+    }
+    
+    statusDiv.classList.remove('hidden');
+    
+    setTimeout(() => {
+        statusDiv.classList.add('hidden');
+    }, 5000);
+}
+
+// Load initial state and set up auto-refresh
+document.addEventListener('DOMContentLoaded', function() {
+    updateVoiceStatus();
+    
+    // Auto-refresh voice status every 10 seconds
+    setInterval(updateVoiceStatus, 10000);
+    
+    // Simulate some initial log entries for demo
+    setTimeout(() => {
+        addVoiceLogEntry('Voice control system initialized', 'system');
+    }, 1000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,256 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}Dashboard - Bible Clock Mobile{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Current Status Card -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">System Status</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600" id="system-health" data-auto-refresh data-endpoint="/api/status" data-field="system_health">Healthy</div>
+                <div class="text-sm text-gray-500">System Health</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600" id="verses-today" data-auto-refresh data-endpoint="/api/status" data-field="verses_today">--</div>
+                <div class="text-sm text-gray-500">Verses Today</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Mode Controls -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Display Mode</h2>
+        <div class="space-y-3">
+            <button onclick="setMode('time')" class="w-full mobile-button bg-blue-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-blue-600 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-lg">Time Mode</span>
+                </div>
+                <span class="text-sm opacity-75">HH:MM = Chapter:Verse</span>
+            </button>
+            
+            <button onclick="setMode('devotional')" class="w-full mobile-button bg-purple-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-purple-600 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    <span class="text-lg">Devotional Mode</span>
+                </div>
+                <span class="text-sm opacity-75">Daily devotionals</span>
+            </button>
+            
+            <button onclick="setMode('date')" class="w-full mobile-button bg-green-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-green-600 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-lg">Date Mode</span>
+                </div>
+                <span class="text-sm opacity-75">Biblical calendar events</span>
+            </button>
+            
+            <button onclick="setMode('random')" class="w-full mobile-button bg-orange-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-orange-600 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h4a1 1 0 011 1v2m6 2a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6z"></path>
+                    </svg>
+                    <span class="text-lg">Random Mode</span>
+                </div>
+                <span class="text-sm opacity-75">Random Bible verses</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Current Mode Display -->
+    <div class="mobile-card bg-gray-100 p-6">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">Current Mode</h3>
+        <div class="text-2xl font-bold text-blue-600" id="current-mode">Loading...</div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="forceUpdate()" class="mobile-button bg-blue-500 text-white py-3 px-4 rounded-lg touch-feedback hover:bg-blue-600 flex flex-col items-center space-y-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span class="text-sm">Update Display</span>
+            </button>
+            
+            <button onclick="clearGhosting()" class="mobile-button bg-red-500 text-white py-3 px-4 rounded-lg touch-feedback hover:bg-red-600 flex flex-col items-center space-y-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                <span class="text-sm">Clear Display</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Voice Wake Word Toggle -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Voice Control</h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="text-lg font-medium text-gray-800">Wake Word Detection</div>
+                <div class="text-sm text-gray-500">Enable "Hey Bible" voice commands</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="voice-wake-toggle" class="sr-only peer" onchange="toggleVoiceWake()">
+                <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="status-message" class="hidden mobile-card p-4 rounded-lg">
+        <div id="status-text" class="font-medium"></div>
+    </div>
+</div>
+
+<script>
+// Mobile-optimized JavaScript functions
+function setMode(mode) {
+    showStatus(`Switching to ${mode} mode...`, 'info');
+    
+    fetch('/api/mode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mode: mode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Successfully switched to ${mode} mode`, 'success');
+            updateCurrentMode();
+        } else {
+            showStatus(`Failed to switch mode: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function forceUpdate() {
+    showStatus('Updating display...', 'info');
+    
+    fetch('/api/force-update', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Display updated successfully', 'success');
+        } else {
+            showStatus(`Update failed: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function clearGhosting() {
+    showStatus('Clearing display ghosting...', 'info');
+    
+    fetch('/api/clear-ghosting', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Display cleared successfully', 'success');
+        } else {
+            showStatus(`Clear failed: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function toggleVoiceWake() {
+    const toggle = document.getElementById('voice-wake-toggle');
+    const enabled = toggle.checked;
+    
+    showStatus(`${enabled ? 'Enabling' : 'Disabling'} voice wake word...`, 'info');
+    
+    fetch('/api/voice/wake-word', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: enabled })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Voice wake word ${enabled ? 'enabled' : 'disabled'}`, 'success');
+        } else {
+            showStatus(`Failed to toggle voice wake word: ${data.error}`, 'error');
+            toggle.checked = !enabled; // Revert toggle
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+        toggle.checked = !enabled; // Revert toggle
+    });
+}
+
+function updateCurrentMode() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data.display_mode) {
+                document.getElementById('current-mode').textContent = 
+                    data.data.display_mode.charAt(0).toUpperCase() + data.data.display_mode.slice(1) + ' Mode';
+            }
+        })
+        .catch(console.error);
+}
+
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('status-message');
+    const statusText = document.getElementById('status-text');
+    
+    statusText.textContent = message;
+    statusDiv.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'text-blue-800', 'text-green-800', 'text-red-800');
+    
+    if (type === 'success') {
+        statusDiv.classList.add('bg-green-100', 'text-green-800');
+    } else if (type === 'error') {
+        statusDiv.classList.add('bg-red-100', 'text-red-800');
+    } else {
+        statusDiv.classList.add('bg-blue-100', 'text-blue-800');
+    }
+    
+    statusDiv.classList.remove('hidden');
+    
+    setTimeout(() => {
+        statusDiv.classList.add('hidden');
+    }, 5000);
+}
+
+// Load initial state
+document.addEventListener('DOMContentLoaded', function() {
+    updateCurrentMode();
+    
+    // Load voice wake word state
+    fetch('/api/voice/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data.wake_word_enabled !== undefined) {
+                document.getElementById('voice-wake-toggle').checked = data.data.wake_word_enabled;
+            }
+        })
+        .catch(console.error);
+});
+</script>
+{% endblock %}

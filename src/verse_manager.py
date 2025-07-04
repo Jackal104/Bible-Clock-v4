@@ -19,6 +19,15 @@ class VerseManager:
         self.translation = os.getenv('DEFAULT_TRANSLATION', 'kjv')
         self.timeout = int(os.getenv('REQUEST_TIMEOUT', '10'))
         
+        # Initialize devotional manager
+        try:
+            from src.devotional_manager import DevotionalManager
+            self.devotional_manager = DevotionalManager()
+            self.logger.info("Devotional manager initialized")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize devotional manager: {e}")
+            self.devotional_manager = None
+        
         # Multiple API support for different translations
         self.esv_api_key = os.getenv('ESV_API_KEY', '')  # From https://api.esv.org
         self.scripture_api_key = os.getenv('SCRIPTURE_API_KEY', '')  # From https://scripture.api.bible
@@ -40,7 +49,7 @@ class VerseManager:
         }
         
         # Enhanced features
-        self.display_mode = 'time'  # 'time', 'date', 'random'
+        self.display_mode = 'time'  # 'time', 'date', 'random', 'devotional'
         self.parallel_mode = False  # Parallel mode off by default - user can enable
         self.secondary_translation = 'amp'  # Default secondary translation when parallel mode enabled
         self.time_format = '12'  # '12' for 12-hour format, '24' for 24-hour format
@@ -54,7 +63,7 @@ class VerseManager:
             'verses_today': 0,
             'books_accessed': set(),
             'translation_usage': {},
-            'mode_usage': {'time': 0, 'date': 0, 'random': 0},
+            'mode_usage': {'time': 0, 'date': 0, 'random': 0, 'devotional': 0},
             'daily_activity': {}  # Date -> count mapping for rotation
         }
         self.start_time = datetime.now()
@@ -372,6 +381,8 @@ class VerseManager:
             verse_data = self._get_date_based_verse()
         elif self.display_mode == 'random':
             verse_data = self._get_random_verse()
+        elif self.display_mode == 'devotional':
+            verse_data = self._get_devotional_verse()
         else:  # time mode
             verse_data = self._get_time_based_verse()
         
@@ -400,6 +411,45 @@ class VerseManager:
         self._rotate_translation_usage()
         
         return verse_data
+    
+    def _get_devotional_verse(self) -> Dict:
+        """Get devotional content using the devotional manager."""
+        if not self.devotional_manager:
+            self.logger.warning("Devotional manager not available, falling back to random verse")
+            return self._get_random_verse()
+        
+        try:
+            # Get rotating devotional from the devotional manager
+            devotional_data = self.devotional_manager.get_rotating_devotional()
+            
+            if devotional_data:
+                # Convert devotional data to verse format
+                return {
+                    'reference': devotional_data.get('reference', devotional_data.get('scripture_reference', 'Today\'s Devotional')),
+                    'text': devotional_data.get('devotional_text', devotional_data.get('text', 'No devotional content available')),
+                    'book': 'Devotional',
+                    'chapter': 0,
+                    'verse': 0,
+                    'is_devotional': True,
+                    'devotional_title': devotional_data.get('title', 'Today\'s Devotional'),
+                    'devotional_text': devotional_data.get('devotional_text', devotional_data.get('text', '')),
+                    'author': devotional_data.get('author', 'Charles Spurgeon'),
+                    'source': devotional_data.get('source', 'Faith\'s Checkbook'),
+                    'rotation_slot': devotional_data.get('rotation_slot', 0),
+                    'rotation_minutes': devotional_data.get('rotation_minutes', 15),
+                    'next_change_at': devotional_data.get('next_change_at', ''),
+                    'current_time': devotional_data.get('current_time', ''),
+                    'current_date': devotional_data.get('current_date', ''),
+                    'current_page': devotional_data.get('current_page', 1),
+                    'total_pages': devotional_data.get('total_pages', 1)
+                }
+            else:
+                self.logger.warning("No devotional data available, falling back to random verse")
+                return self._get_random_verse()
+                
+        except Exception as e:
+            self.logger.error(f"Error getting devotional verse: {e}")
+            return self._get_random_verse()
     
     def _get_time_based_verse(self) -> Dict:
         """Time-based verse logic: HH:MM = Chapter:Verse, minute 00 = book summary."""

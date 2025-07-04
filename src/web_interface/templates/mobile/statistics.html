@@ -1,0 +1,361 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}Statistics - Bible Clock Mobile{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Today's Stats -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Today's Activity</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600" id="verses-today" data-auto-refresh data-endpoint="/api/statistics" data-field="verses_today">--</div>
+                <div class="text-sm text-gray-500">Verses Displayed</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl font-bold text-green-600" id="uptime-hours">--</div>
+                <div class="text-sm text-gray-500">Hours Online</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Mode Usage -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Display Mode Usage</h2>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                    <span class="text-gray-700">Time Mode</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="text-lg font-semibold text-gray-800" id="time-mode-count">--</div>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" id="time-mode-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
+                    <span class="text-gray-700">Devotional Mode</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="text-lg font-semibold text-gray-800" id="devotional-mode-count">--</div>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-purple-500 h-2 rounded-full" id="devotional-mode-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <span class="text-gray-700">Date Mode</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="text-lg font-semibold text-gray-800" id="date-mode-count">--</div>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" id="date-mode-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-orange-500 rounded-full"></div>
+                    <span class="text-gray-700">Random Mode</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="text-lg font-semibold text-gray-800" id="random-mode-count">--</div>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-orange-500 h-2 rounded-full" id="random-mode-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Translation Usage -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Translation Usage</h2>
+        <div id="translation-usage" class="space-y-3">
+            <div class="text-gray-500 text-center py-4">Loading translation usage...</div>
+        </div>
+    </div>
+
+    <!-- Books Accessed -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Bible Books Accessed</h2>
+        <div class="text-center mb-4">
+            <div class="text-4xl font-bold text-indigo-600" id="books-accessed-count">--</div>
+            <div class="text-sm text-gray-500">Different Books Read</div>
+        </div>
+        <div id="books-accessed-list" class="space-y-2">
+            <div class="text-gray-500 text-center py-4">Loading books data...</div>
+        </div>
+    </div>
+
+    <!-- System Performance -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">System Performance</h2>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-gray-700">CPU Usage</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg font-semibold" id="cpu-usage">--%</span>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" id="cpu-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <span class="text-gray-700">Memory Usage</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg font-semibold" id="memory-usage">--%</span>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" id="memory-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <span class="text-gray-700">CPU Temperature</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg font-semibold" id="cpu-temp">--°C</span>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-red-500 h-2 rounded-full" id="temp-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Recent Activity</h2>
+        <div id="recent-activity" class="space-y-2">
+            <div class="text-gray-500 text-center py-4">Loading recent activity...</div>
+        </div>
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div class="mobile-card bg-blue-50 p-4">
+        <div class="flex items-center space-x-3">
+            <svg class="w-5 h-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <div>
+                <div class="font-medium text-blue-800">Auto-Refresh Enabled</div>
+                <div class="text-sm text-blue-700">Statistics update every 30 seconds</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateStatistics() {
+    // Update main statistics
+    fetch('/api/statistics')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const stats = data.data;
+                
+                // Update verses today
+                const versesToday = document.getElementById('verses-today');
+                if (versesToday && stats.verses_today !== undefined) {
+                    versesToday.textContent = stats.verses_today;
+                }
+                
+                // Update uptime
+                const uptimeHours = document.getElementById('uptime-hours');
+                if (uptimeHours && stats.uptime_hours !== undefined) {
+                    uptimeHours.textContent = Math.floor(stats.uptime_hours);
+                }
+                
+                // Update mode usage
+                if (stats.mode_usage) {
+                    updateModeUsage(stats.mode_usage);
+                }
+                
+                // Update translation usage
+                if (stats.translation_usage) {
+                    updateTranslationUsage(stats.translation_usage);
+                }
+                
+                // Update books accessed
+                if (stats.books_accessed) {
+                    updateBooksAccessed(stats.books_accessed);
+                }
+                
+                // Update recent activity
+                if (stats.recent_activities) {
+                    updateRecentActivity(stats.recent_activities);
+                }
+            }
+        })
+        .catch(console.error);
+    
+    // Update system status
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const status = data.data;
+                
+                // Update CPU usage
+                const cpuUsage = document.getElementById('cpu-usage');
+                const cpuBar = document.getElementById('cpu-bar');
+                if (cpuUsage && status.cpu_usage !== undefined) {
+                    const cpu = parseFloat(status.cpu_usage) || 0;
+                    cpuUsage.textContent = `${cpu.toFixed(1)}%`;
+                    cpuBar.style.width = `${Math.min(cpu, 100)}%`;
+                }
+                
+                // Update memory usage
+                const memoryUsage = document.getElementById('memory-usage');
+                const memoryBar = document.getElementById('memory-bar');
+                if (memoryUsage && status.memory_usage !== undefined) {
+                    const memory = parseFloat(status.memory_usage) || 0;
+                    memoryUsage.textContent = `${memory.toFixed(1)}%`;
+                    memoryBar.style.width = `${Math.min(memory, 100)}%`;
+                }
+                
+                // Update CPU temperature
+                const cpuTemp = document.getElementById('cpu-temp');
+                const tempBar = document.getElementById('temp-bar');
+                if (cpuTemp && status.cpu_temperature !== undefined) {
+                    const temp = parseFloat(status.cpu_temperature) || 0;
+                    cpuTemp.textContent = `${temp.toFixed(1)}°C`;
+                    tempBar.style.width = `${Math.min(temp / 80 * 100, 100)}%`; // Scale to 80°C max
+                }
+            }
+        })
+        .catch(console.error);
+}
+
+function updateModeUsage(modeUsage) {
+    const total = Object.values(modeUsage).reduce((sum, count) => sum + count, 0);
+    
+    if (total === 0) return;
+    
+    // Update individual mode counts and bars
+    ['time', 'devotional', 'date', 'random'].forEach(mode => {
+        const countElement = document.getElementById(`${mode}-mode-count`);
+        const barElement = document.getElementById(`${mode}-mode-bar`);
+        
+        if (countElement && barElement) {
+            const count = modeUsage[mode] || 0;
+            const percentage = (count / total) * 100;
+            
+            countElement.textContent = count;
+            barElement.style.width = `${percentage}%`;
+        }
+    });
+}
+
+function updateTranslationUsage(translationUsage) {
+    const container = document.getElementById('translation-usage');
+    if (!container) return;
+    
+    const translations = Object.entries(translationUsage);
+    if (translations.length === 0) {
+        container.innerHTML = '<div class="text-gray-500 text-center py-4">No translation usage data</div>';
+        return;
+    }
+    
+    const total = translations.reduce((sum, [, count]) => sum + count, 0);
+    
+    const html = translations.sort((a, b) => b[1] - a[1]).map(([translation, count]) => {
+        const percentage = total > 0 ? (count / total) * 100 : 0;
+        return `
+            <div class="flex items-center justify-between">
+                <span class="text-gray-700">${translation.toUpperCase()}</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg font-semibold text-gray-800">${count}</span>
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-500 h-2 rounded-full" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+function updateBooksAccessed(booksAccessed) {
+    const countElement = document.getElementById('books-accessed-count');
+    const listElement = document.getElementById('books-accessed-list');
+    
+    if (countElement) {
+        countElement.textContent = Array.isArray(booksAccessed) ? booksAccessed.length : Object.keys(booksAccessed).length;
+    }
+    
+    if (listElement) {
+        let books = Array.isArray(booksAccessed) ? booksAccessed : Object.keys(booksAccessed);
+        
+        if (books.length === 0) {
+            listElement.innerHTML = '<div class="text-gray-500 text-center py-4">No books accessed yet</div>';
+            return;
+        }
+        
+        // Show first 10 books
+        const displayBooks = books.slice(0, 10);
+        const html = displayBooks.map(book => `
+            <div class="bg-gray-50 p-2 rounded text-center text-sm font-medium text-gray-700">
+                ${book}
+            </div>
+        `).join('');
+        
+        let additionalText = '';
+        if (books.length > 10) {
+            additionalText = `<div class="text-center text-sm text-gray-500 mt-2">...and ${books.length - 10} more</div>`;
+        }
+        
+        listElement.innerHTML = `<div class="grid grid-cols-2 gap-2">${html}</div>${additionalText}`;
+    }
+}
+
+function updateRecentActivity(activities) {
+    const container = document.getElementById('recent-activity');
+    if (!container) return;
+    
+    if (!Array.isArray(activities) || activities.length === 0) {
+        container.innerHTML = '<div class="text-gray-500 text-center py-4">No recent activity</div>';
+        return;
+    }
+    
+    // Show only the most recent 5 activities
+    const recentActivities = activities.slice(0, 5);
+    
+    const html = recentActivities.map(activity => {
+        const timestamp = new Date(activity.timestamp).toLocaleTimeString();
+        return `
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-medium text-gray-800">${activity.action}</div>
+                        ${activity.details ? `<div class="text-sm text-gray-600">${activity.details}</div>` : ''}
+                    </div>
+                    <div class="text-xs text-gray-400">${timestamp}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+// Initialize and set up auto-refresh
+document.addEventListener('DOMContentLoaded', function() {
+    updateStatistics();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(updateStatistics, 30000);
+});
+</script>
+{% endblock %}

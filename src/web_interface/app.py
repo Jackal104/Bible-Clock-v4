@@ -339,7 +339,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             # Update display mode with validation
             if 'display_mode' in data:
                 mode = data['display_mode']
-                valid_modes = ['time', 'date', 'random']
+                valid_modes = ['time', 'date', 'random', 'devotional']
                 try:
                     if mode in valid_modes:
                         current_app.verse_manager.display_mode = mode
@@ -529,6 +529,30 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             return jsonify({'success': True, 'message': 'Display refreshed'})
         except Exception as e:
             current_app.logger.error(f"Refresh error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/clear-ghosting', methods=['POST'])
+    def clear_ghosting():
+        """Clear display ghosting artifacts."""
+        try:
+            if hasattr(current_app.display_manager, 'clear_ghosting'):
+                current_app.display_manager.clear_ghosting()
+                _track_activity("Display ghosting cleared", "Aggressive ghosting removal performed")
+                return jsonify({'success': True, 'message': 'Display ghosting cleared'})
+            else:
+                # Fallback to multiple full refreshes
+                for i in range(3):
+                    verse_data = current_app.verse_manager.get_current_verse()
+                    image = current_app.image_generator.create_verse_image(verse_data)
+                    current_app.display_manager.display_image(image, force_refresh=True)
+                    if i < 2:  # Don't sleep after last refresh
+                        import time
+                        time.sleep(1)
+                
+                _track_activity("Display cleared", "Multiple refresh cycles performed")
+                return jsonify({'success': True, 'message': 'Display cleared with multiple refreshes'})
+        except Exception as e:
+            current_app.logger.error(f"Clear ghosting error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/background/cycle', methods=['POST'])

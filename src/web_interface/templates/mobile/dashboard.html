@@ -99,6 +99,21 @@
         </div>
     </div>
 
+    <!-- Parallel Mode Toggle -->
+    <div class="mobile-card bg-white p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Parallel Mode</h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="text-lg font-medium text-gray-800">Show Two Translations</div>
+                <div class="text-sm text-gray-500">Display verses in two translations side by side</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="parallel-mode-toggle" class="sr-only peer" onchange="toggleParallelMode()">
+                <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+    </div>
+
     <!-- Voice Wake Word Toggle -->
     <div class="mobile-card bg-white p-6">
         <h2 class="text-xl font-semibold mb-4 text-gray-800">Voice Control</h2>
@@ -130,13 +145,19 @@ function setMode(mode) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ display_mode: mode })
+        body: JSON.stringify({ display_mode: mode, update_display: true })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showStatus(`Successfully switched to ${mode} mode`, 'success');
             updateCurrentMode();
+            
+            // Force a second refresh after a short delay to clear any artifacts
+            setTimeout(() => {
+                fetch('/api/refresh', { method: 'POST' })
+                    .catch(console.error);
+            }, 2000);
         } else {
             showStatus(`Failed to switch mode: ${data.error}`, 'error');
         }
@@ -181,6 +202,34 @@ function clearGhosting() {
     })
     .catch(error => {
         showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function toggleParallelMode() {
+    const toggle = document.getElementById('parallel-mode-toggle');
+    const enabled = toggle.checked;
+    
+    showStatus(`${enabled ? 'Enabling' : 'Disabling'} parallel mode...`, 'info');
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ parallel_mode: enabled, update_display: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Parallel mode ${enabled ? 'enabled' : 'disabled'}`, 'success');
+        } else {
+            showStatus(`Failed to toggle parallel mode: ${data.error}`, 'error');
+            toggle.checked = !enabled; // Revert toggle
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+        toggle.checked = !enabled; // Revert toggle
     });
 }
 
@@ -249,6 +298,21 @@ function showStatus(message, type) {
 // Load initial state
 document.addEventListener('DOMContentLoaded', function() {
     updateCurrentMode();
+    
+    // Load current settings including parallel mode
+    fetch('/api/settings')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const settings = data.data;
+                
+                // Set parallel mode toggle
+                if (settings.parallel_mode !== undefined) {
+                    document.getElementById('parallel-mode-toggle').checked = settings.parallel_mode;
+                }
+            }
+        })
+        .catch(console.error);
     
     // Load voice wake word state
     fetch('/api/voice/status')

@@ -324,7 +324,40 @@ class ImageGenerator:
         self._add_verse_reference_display(draw, verse_data)
     
     def _draw_book_summary(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
-        """Draw a book summary with proper vertical centering."""
+        """Draw a book summary with page cycling for long text."""
+        
+        # Check if we need pagination and get current page
+        pages = self._paginate_book_summary_text(verse_data['text'], content_width, margin)
+        
+        if not pages or len(pages) == 1:
+            # Single page or pagination failed - use original behavior
+            self._draw_book_summary_single_page(draw, verse_data, margin, content_width)
+            return
+        
+        # Calculate current page based on time rotation (same as devotionals)
+        # Use 15-second rotation interval for pages
+        from datetime import datetime
+        now = datetime.now()
+        page_rotation_seconds = 15  # Change page every 15 seconds
+        seconds_since_midnight = now.hour * 3600 + now.minute * 60 + now.second
+        page_slot = (seconds_since_midnight // page_rotation_seconds) % len(pages)
+        current_page = page_slot + 1  # Pages are 1-indexed
+        
+        # Update verse_data with page information
+        verse_data['current_page'] = current_page
+        verse_data['total_pages'] = len(pages)
+        
+        # Get current page content
+        page_content = pages[page_slot]
+        
+        # Draw the current page
+        self._draw_book_summary_page(draw, verse_data, page_content, margin, content_width)
+        
+        # Add verse reference display (shows current time for summaries)
+        self._add_verse_reference_display(draw, verse_data)
+
+    def _draw_book_summary_single_page(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
+        """Draw a book summary that fits on a single page (original implementation)."""
         
         # Get book name for the title
         book_name = verse_data.get('book', 'Unknown Book')
@@ -381,9 +414,106 @@ class ImageGenerator:
                 line_x = (self.width - line_width) // 2
                 draw.text((line_x, y_position), line, fill=0, font=self.verse_font)
                 y_position += line_bbox[3] - line_bbox[1] + 25
+
+    def _paginate_book_summary_text(self, text: str, content_width: int, margin: int) -> List[str]:
+        """Split book summary text into pages that fit the display (similar to devotionals)."""
+        # Use a reasonable font size for pagination calculation
+        test_font = self._get_font(self.verse_size)
         
-        # Add verse reference display (will show current time for summaries)
-        self._add_verse_reference_display(draw, verse_data)
+        # Calculate available space for content
+        ref_bbox = (0, 0, 0, 100)  # Approximate reference height
+        ref_height = ref_bbox[3] - ref_bbox[1]
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        ref_y = base_margin + self.reference_y_offset
+        min_gap = 40
+        reference_bottom = ref_y + ref_height + min_gap
+        title_height = 60  # Approximate title height for "Book of [Name]"
+        available_height = self.height - reference_bottom - title_height - margin - 60  # Reserve space for page info
+        
+        # Calculate max lines per page
+        line_height = test_font.size + 25 if test_font else 30  # Match book summary line spacing
+        max_lines_per_page = max(3, available_height // line_height)  # Minimum 3 lines per page
+        
+        # Wrap text and split into pages
+        wrapped_lines = self._wrap_text(text, content_width, test_font)
+        
+        # If text fits on one page, return single page
+        if len(wrapped_lines) <= max_lines_per_page:
+            return [text]
+        
+        # Split into pages
+        pages = []
+        for i in range(0, len(wrapped_lines), max_lines_per_page):
+            page_lines = wrapped_lines[i:i + max_lines_per_page]
+            pages.append(' '.join(page_lines))
+        
+        return pages
+
+    def _draw_book_summary_page(self, draw: ImageDraw.Draw, verse_data: Dict, page_content: str, margin: int, content_width: int):
+        """Draw a single page of book summary content."""
+        
+        # Get book name for the title
+        book_name = verse_data.get('book', 'Unknown Book')
+        
+        # Calculate reference position and reserve space
+        ref_bbox = draw.textbbox((0, 0), verse_data.get('reference', 'Unknown'), font=self.reference_font) if self.reference_font else (0, 0, 0, 100)
+        ref_height = ref_bbox[3] - ref_bbox[1]
+        
+        # Get margin based on decorative border presence
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        # Calculate actual reference Y position
+        ref_y = base_margin + self.reference_y_offset
+        min_gap = 40
+        reference_bottom = ref_y + ref_height + min_gap
+        
+        # Draw book title
+        book_title = f"Book of {book_name}"
+        if self.title_font:
+            title_bbox = draw.textbbox((0, 0), book_title, font=self.title_font)
+            title_width = title_bbox[2] - title_bbox[0]
+            title_height = title_bbox[3] - title_bbox[1]
+            title_x = (self.width - title_width) // 2
+            title_y = reference_bottom
+            draw.text((title_x, title_y), book_title, fill=0, font=self.title_font)
+            
+            content_start_y = title_y + title_height + 30
+        else:
+            content_start_y = reference_bottom
+        
+        # Draw page indicator if multiple pages
+        if verse_data.get('total_pages', 1) > 1:
+            page_info = f"Page {verse_data.get('current_page', 1)} of {verse_data.get('total_pages', 1)}"
+            if self.reference_font:
+                page_info_bbox = draw.textbbox((0, 0), page_info, font=self.reference_font)
+                page_info_width = page_info_bbox[2] - page_info_bbox[0]
+                page_info_x = (self.width - page_info_width) // 2
+                page_info_y = content_start_y
+                draw.text((page_info_x, page_info_y), page_info, fill=0, font=self.reference_font)
+                content_start_y += page_info_bbox[3] - page_info_bbox[1] + 20
+        
+        # Use consistent font size for all pages
+        page_font = self._get_font(self.verse_size)
+        
+        # Wrap page content
+        wrapped_text = self._wrap_text(page_content, content_width, page_font)
+        
+        # Draw page text
+        y_position = content_start_y
+        for line in wrapped_text:
+            if page_font:
+                line_bbox = draw.textbbox((0, 0), line, font=page_font)
+                line_width = line_bbox[2] - line_bbox[0]
+                line_x = (self.width - line_width) // 2
+                draw.text((line_x, y_position), line, fill=0, font=page_font)
+                y_position += page_font.size + 25  # Match book summary line spacing
     
     def _get_optimal_font_size(self, text: str, content_width: int, margin: int) -> ImageFont.ImageFont:
         """Get optimal font size that fits the text within the display bounds."""

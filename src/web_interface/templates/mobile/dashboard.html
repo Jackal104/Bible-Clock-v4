@@ -19,11 +19,17 @@
         </div>
     </div>
 
+    <!-- Current Mode Display -->
+    <div class="mobile-card bg-gray-100 p-6">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">Current Mode</h3>
+        <div class="text-2xl font-bold text-blue-600" id="current-mode">Loading...</div>
+    </div>
+
     <!-- Display Mode Controls -->
     <div class="mobile-card bg-white p-6">
-        <h2 class="text-xl font-semibold mb-4 text-gray-800">Display Mode</h2>
-        <div class="space-y-3">
-            <button onclick="setMode('time')" class="w-full mobile-button bg-blue-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-blue-600 flex items-center justify-between">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Switch to Different Mode</h2>
+        <div class="space-y-3" id="mode-buttons">
+            <button id="time-mode-btn" onclick="setMode('time')" class="w-full mobile-button bg-blue-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-blue-600 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -35,7 +41,7 @@
                 </div>
             </button>
             
-            <button onclick="setMode('devotional')" class="w-full mobile-button bg-purple-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-purple-600 flex items-center justify-between">
+            <button id="devotional-mode-btn" onclick="setMode('devotional')" class="w-full mobile-button bg-purple-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-purple-600 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
@@ -47,7 +53,7 @@
                 </div>
             </button>
             
-            <button onclick="setMode('date')" class="w-full mobile-button bg-green-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-green-600 flex items-center justify-between">
+            <button id="date-mode-btn" onclick="setMode('date')" class="w-full mobile-button bg-green-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-green-600 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -59,7 +65,7 @@
                 </div>
             </button>
             
-            <button onclick="setMode('random')" class="w-full mobile-button bg-orange-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-orange-600 flex items-center justify-between">
+            <button id="random-mode-btn" onclick="setMode('random')" class="w-full mobile-button bg-orange-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-orange-600 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h4a1 1 0 011 1v2m6 2a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6z"></path>
@@ -71,12 +77,6 @@
                 </div>
             </button>
         </div>
-    </div>
-
-    <!-- Current Mode Display -->
-    <div class="mobile-card bg-gray-100 p-6">
-        <h3 class="text-lg font-semibold mb-2 text-gray-700">Current Mode</h3>
-        <div class="text-2xl font-bold text-blue-600" id="current-mode">Loading...</div>
     </div>
 
     <!-- Quick Actions -->
@@ -140,6 +140,11 @@
 function setMode(mode) {
     showStatus(`Switching to ${mode} mode...`, 'info');
     
+    // Immediately update UI optimistically
+    document.getElementById('current-mode').textContent = 
+        mode.charAt(0).toUpperCase() + mode.slice(1) + ' Mode';
+    updateModeButtons(mode);
+    
     fetch('/api/settings', {
         method: 'POST',
         headers: {
@@ -151,6 +156,8 @@ function setMode(mode) {
     .then(data => {
         if (data.success) {
             showStatus(`Successfully switched to ${mode} mode`, 'success');
+            
+            // Confirm the change worked by updating from server
             updateCurrentMode();
             
             // Force a second refresh after a short delay to clear any artifacts
@@ -160,10 +167,14 @@ function setMode(mode) {
             }, 2000);
         } else {
             showStatus(`Failed to switch mode: ${data.error}`, 'error');
+            // Revert optimistic UI update on failure
+            updateCurrentMode();
         }
     })
     .catch(error => {
         showStatus(`Error: ${error.message}`, 'error');
+        // Revert optimistic UI update on error
+        updateCurrentMode();
     });
 }
 
@@ -266,11 +277,37 @@ function updateCurrentMode() {
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data.display_mode) {
+                const currentMode = data.data.display_mode;
                 document.getElementById('current-mode').textContent = 
-                    data.data.display_mode.charAt(0).toUpperCase() + data.data.display_mode.slice(1) + ' Mode';
+                    currentMode.charAt(0).toUpperCase() + currentMode.slice(1) + ' Mode';
+                
+                // Update button visibility
+                updateModeButtons(currentMode);
             }
         })
         .catch(console.error);
+}
+
+function updateModeButtons(currentMode) {
+    // Define all mode buttons
+    const modeButtons = {
+        'time': document.getElementById('time-mode-btn'),
+        'devotional': document.getElementById('devotional-mode-btn'),
+        'date': document.getElementById('date-mode-btn'),
+        'random': document.getElementById('random-mode-btn')
+    };
+    
+    // Show all buttons first
+    Object.values(modeButtons).forEach(button => {
+        if (button) {
+            button.style.display = 'flex';
+        }
+    });
+    
+    // Hide the current mode button
+    if (modeButtons[currentMode]) {
+        modeButtons[currentMode].style.display = 'none';
+    }
 }
 
 function showStatus(message, type) {
@@ -297,6 +334,7 @@ function showStatus(message, type) {
 
 // Load initial state
 document.addEventListener('DOMContentLoaded', function() {
+    // Update current mode and button visibility
     updateCurrentMode();
     
     // Load current settings including parallel mode
@@ -309,6 +347,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set parallel mode toggle
                 if (settings.parallel_mode !== undefined) {
                     document.getElementById('parallel-mode-toggle').checked = settings.parallel_mode;
+                }
+                
+                // Update button visibility based on current mode
+                if (settings.display_mode) {
+                    updateModeButtons(settings.display_mode);
                 }
             }
         })

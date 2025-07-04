@@ -119,7 +119,7 @@ function updateTranslation() {
     const translation = document.getElementById('translation-select').value;
     showStatus(`Setting translation to ${translation.toUpperCase()}...`, 'info');
     
-    fetch('/api/translation', {
+    fetch('/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -143,12 +143,12 @@ function updateTimeFormat() {
     const format = document.getElementById('time-format-select').value;
     showStatus(`Setting time format to ${format}-hour...`, 'info');
     
-    fetch('/api/time-format', {
+    fetch('/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ format: format })
+        body: JSON.stringify({ time_format: format })
     })
     .then(response => response.json())
     .then(data => {
@@ -200,12 +200,12 @@ function toggleParallel() {
     
     showStatus(`${enabled ? 'Enabling' : 'Disabling'} parallel mode...`, 'info');
     
-    fetch('/api/parallel-mode', {
+    fetch('/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ enabled: enabled })
+        body: JSON.stringify({ parallel_mode: enabled })
     })
     .then(response => response.json())
     .then(data => {
@@ -231,12 +231,12 @@ function updateSecondaryTranslation() {
     const translation = document.getElementById('secondary-translation-select').value;
     showStatus(`Setting secondary translation to ${translation.toUpperCase()}...`, 'info');
     
-    fetch('/api/secondary-translation', {
+    fetch('/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ translation: translation })
+        body: JSON.stringify({ secondary_translation: translation })
     })
     .then(response => response.json())
     .then(data => {

@@ -28,9 +28,11 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span class="text-lg">Time Mode</span>
+                    <div class="text-left">
+                        <span class="text-lg block">Time Mode</span>
+                        <span class="text-sm opacity-75">HH:MM = Chapter:Verse</span>
+                    </div>
                 </div>
-                <span class="text-sm opacity-75">HH:MM = Chapter:Verse</span>
             </button>
             
             <button onclick="setMode('devotional')" class="w-full mobile-button bg-purple-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-purple-600 flex items-center justify-between">
@@ -38,9 +40,11 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                     </svg>
-                    <span class="text-lg">Devotional Mode</span>
+                    <div class="text-left">
+                        <span class="text-lg block">Devotional Mode</span>
+                        <span class="text-sm opacity-75">Daily devotionals</span>
+                    </div>
                 </div>
-                <span class="text-sm opacity-75">Daily devotionals</span>
             </button>
             
             <button onclick="setMode('date')" class="w-full mobile-button bg-green-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-green-600 flex items-center justify-between">
@@ -48,9 +52,11 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <span class="text-lg">Date Mode</span>
+                    <div class="text-left">
+                        <span class="text-lg block">Date Mode</span>
+                        <span class="text-sm opacity-75">Biblical calendar events</span>
+                    </div>
                 </div>
-                <span class="text-sm opacity-75">Biblical calendar events</span>
             </button>
             
             <button onclick="setMode('random')" class="w-full mobile-button bg-orange-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-orange-600 flex items-center justify-between">
@@ -58,9 +64,11 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h4a1 1 0 011 1v2m6 2a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6z"></path>
                     </svg>
-                    <span class="text-lg">Random Mode</span>
+                    <div class="text-left">
+                        <span class="text-lg block">Random Mode</span>
+                        <span class="text-sm opacity-75">Random Bible verses</span>
+                    </div>
                 </div>
-                <span class="text-sm opacity-75">Random Bible verses</span>
             </button>
         </div>
     </div>
@@ -117,12 +125,12 @@
 function setMode(mode) {
     showStatus(`Switching to ${mode} mode...`, 'info');
     
-    fetch('/api/mode', {
+    fetch('/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mode: mode })
+        body: JSON.stringify({ display_mode: mode })
     })
     .then(response => response.json())
     .then(data => {
@@ -141,7 +149,7 @@ function setMode(mode) {
 function forceUpdate() {
     showStatus('Updating display...', 'info');
     
-    fetch('/api/force-update', {
+    fetch('/api/refresh', {
         method: 'POST'
     })
     .then(response => response.json())

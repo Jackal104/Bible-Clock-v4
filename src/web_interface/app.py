@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, render_template, send_file
+from flask import Flask, jsonify, request, render_template, send_file, current_app
 from pathlib import Path
 import psutil
 from src.conversation_manager import ConversationManager
@@ -41,14 +41,35 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'details': details or '',
                 'type': 'system'
             }
-            app.recent_activities.append(activity)
             
-            # Keep only last 100 activities to prevent memory growth
-            if len(app.recent_activities) > 100:
-                app.recent_activities = app.recent_activities[-100:]
+            # Use app directly when outside request context, current_app when in request context
+            try:
+                from flask import has_request_context
+                if has_request_context():
+                    current_app.recent_activities.append(activity)
+                    # Keep only last 100 activities to prevent memory growth
+                    if len(current_app.recent_activities) > 100:
+                        current_app.recent_activities = current_app.recent_activities[-100:]
+                else:
+                    app.recent_activities.append(activity)
+                    # Keep only last 100 activities to prevent memory growth
+                    if len(app.recent_activities) > 100:
+                        app.recent_activities = app.recent_activities[-100:]
+            except:
+                # Fallback to app reference
+                app.recent_activities.append(activity)
+                if len(app.recent_activities) > 100:
+                    app.recent_activities = app.recent_activities[-100:]
                 
         except Exception as e:
-            app.logger.error(f"Activity tracking error: {e}")
+            try:
+                from flask import has_request_context
+                if has_request_context():
+                    current_app.logger.error(f"Activity tracking error: {e}")
+                else:
+                    app.logger.error(f"Activity tracking error: {e}")
+            except:
+                app.logger.error(f"Activity tracking error: {e}")
     
     # Initial activity and test activities
     _track_activity("Web interface started", "Bible Clock web interface initialized")
@@ -123,7 +144,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     def get_current_verse():
         """Get the current verse as JSON."""
         try:
-            verse_data = app.verse_manager.get_current_verse()
+            verse_data = current_app.verse_manager.get_current_verse()
             verse_data['timestamp'] = datetime.now().isoformat()
             
             return jsonify({
@@ -131,7 +152,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'data': verse_data
             })
         except Exception as e:
-            app.logger.error(f"API error: {e}")
+            current_app.logger.error(f"API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/status', methods=['GET'])
@@ -139,17 +160,17 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Get comprehensive system status."""
         try:
             # Check simulation mode from display manager
-            simulation_mode = getattr(app.display_manager, 'simulation_mode', False)
+            simulation_mode = getattr(current_app.display_manager, 'simulation_mode', False)
             
             status = {
                 'timestamp': datetime.now().isoformat(),
-                'translation': app.verse_manager.translation,
-                'api_url': app.verse_manager.api_url,
-                'display_mode': getattr(app.verse_manager, 'display_mode', 'time'),
+                'translation': current_app.verse_manager.translation,
+                'api_url': current_app.verse_manager.api_url,
+                'display_mode': getattr(current_app.verse_manager, 'display_mode', 'time'),
                 'simulation_mode': simulation_mode,
                 'hardware_mode': 'Simulation' if simulation_mode else 'Hardware',
-                'current_background': app.image_generator.get_current_background_info(),
-                'verses_today': getattr(app.verse_manager, 'statistics', {}).get('verses_today', 0),
+                'current_background': current_app.image_generator.get_current_background_info(),
+                'verses_today': getattr(current_app.verse_manager, 'statistics', {}).get('verses_today', 0),
                 'system': {
                     'cpu_percent': psutil.cpu_percent(),
                     'memory_percent': psutil.virtual_memory().percent,
@@ -161,12 +182,12 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 }
             }
             
-            if app.performance_monitor:
-                status['performance'] = app.performance_monitor.get_performance_summary()
+            if current_app.performance_monitor:
+                status['performance'] = current_app.performance_monitor.get_performance_summary()
             
             return jsonify({'success': True, 'data': status})
         except Exception as e:
-            app.logger.error(f"Status API error: {e}")
+            current_app.logger.error(f"Status API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/storage', methods=['GET'])
@@ -186,7 +207,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             free_gb = disk_usage.free / (1024**3)
             
             # Get translation completion percentages (excluding WEB)
-            translation_completion = getattr(app.verse_manager, 'translation_completion', {})
+            translation_completion = getattr(current_app.verse_manager, 'translation_completion', {})
             
             # Filter out WEB translation if it exists
             if 'web' in translation_completion:
@@ -257,7 +278,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             
             return jsonify({'success': True, 'data': storage_stats})
         except Exception as e:
-            app.logger.error(f"Storage stats API error: {e}")
+            current_app.logger.error(f"Storage stats API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/settings', methods=['GET'])
@@ -265,29 +286,29 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Get current settings."""
         try:
             settings = {
-                'translation': app.verse_manager.translation,
-                'display_mode': getattr(app.verse_manager, 'display_mode', 'time'),
-                'time_format': getattr(app.verse_manager, 'time_format', '12'),
-                'background_index': app.image_generator.current_background_index,
-                'available_backgrounds': app.image_generator.get_available_backgrounds(),
-                'available_translations': app.verse_manager.get_available_translations(),
-                'translation_display_names': app.verse_manager.get_translation_display_names(),
-                'parallel_mode': getattr(app.verse_manager, 'parallel_mode', False),
-                'secondary_translation': getattr(app.verse_manager, 'secondary_translation', 'amp'),
-                'available_fonts': app.image_generator.get_available_fonts(),
-                'current_font': app.image_generator.get_current_font(),
-                'font_sizes': app.image_generator.get_font_sizes(),
-                'reference_position_info': app.image_generator.get_reference_position_info(),
-                'voice_enabled': getattr(app.verse_manager, 'voice_enabled', False),
+                'translation': current_app.verse_manager.translation,
+                'display_mode': getattr(current_app.verse_manager, 'display_mode', 'time'),
+                'time_format': getattr(current_app.verse_manager, 'time_format', '12'),
+                'background_index': current_app.image_generator.current_background_index,
+                'available_backgrounds': current_app.image_generator.get_available_backgrounds(),
+                'available_translations': current_app.verse_manager.get_available_translations(),
+                'translation_display_names': current_app.verse_manager.get_translation_display_names(),
+                'parallel_mode': getattr(current_app.verse_manager, 'parallel_mode', False),
+                'secondary_translation': getattr(current_app.verse_manager, 'secondary_translation', 'amp'),
+                'available_fonts': current_app.image_generator.get_available_fonts(),
+                'current_font': current_app.image_generator.get_current_font(),
+                'font_sizes': current_app.image_generator.get_font_sizes(),
+                'reference_position_info': current_app.image_generator.get_reference_position_info(),
+                'voice_enabled': getattr(current_app.verse_manager, 'voice_enabled', False),
                 'web_enabled': True,
                 'auto_refresh': int(os.getenv('FORCE_REFRESH_INTERVAL', '60')),
                 'hardware_mode': os.getenv('SIMULATION_MODE', 'false').lower() == 'false',
-                'translation_completion': getattr(app.verse_manager, 'translation_completion', {})
+                'translation_completion': getattr(current_app.verse_manager, 'translation_completion', {})
             }
             
             return jsonify({'success': True, 'data': settings})
         except Exception as e:
-            app.logger.error(f"Settings API error: {e}")
+            current_app.logger.error(f"Settings API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/settings', methods=['POST'])
@@ -303,16 +324,16 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             if 'translation' in data:
                 translation = data['translation']
                 try:
-                    available_translations = app.verse_manager.get_available_translations()
+                    available_translations = current_app.verse_manager.get_available_translations()
                     if translation in available_translations:
-                        app.verse_manager.translation = translation
-                        app.logger.info(f"Translation changed to: {translation}")
+                        current_app.verse_manager.translation = translation
+                        current_app.logger.info(f"Translation changed to: {translation}")
                         needs_display_update = True
                     else:
-                        app.logger.error(f"Invalid translation: {translation}. Available: {available_translations}")
+                        current_app.logger.error(f"Invalid translation: {translation}. Available: {available_translations}")
                         return jsonify({'success': False, 'error': f'Invalid translation: {translation}. Available translations: {", ".join(available_translations)}'}), 400
                 except Exception as e:
-                    app.logger.error(f"Translation validation error: {e}")
+                    current_app.logger.error(f"Translation validation error: {e}")
                     return jsonify({'success': False, 'error': f'Translation validation failed: {str(e)}'}), 500
             
             # Update display mode with validation
@@ -321,14 +342,14 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 valid_modes = ['time', 'date', 'random']
                 try:
                     if mode in valid_modes:
-                        app.verse_manager.display_mode = mode
-                        app.logger.info(f"Display mode changed to: {mode}")
+                        current_app.verse_manager.display_mode = mode
+                        current_app.logger.info(f"Display mode changed to: {mode}")
                         needs_display_update = True
                     else:
-                        app.logger.error(f"Invalid display mode: {mode}. Valid modes: {valid_modes}")
+                        current_app.logger.error(f"Invalid display mode: {mode}. Valid modes: {valid_modes}")
                         return jsonify({'success': False, 'error': f'Invalid display mode: {mode}. Valid modes: {", ".join(valid_modes)}'}), 400
                 except Exception as e:
-                    app.logger.error(f"Display mode validation error: {e}")
+                    current_app.logger.error(f"Display mode validation error: {e}")
                     return jsonify({'success': False, 'error': f'Display mode update failed: {str(e)}'}), 500
             
             # Update time format with validation
@@ -336,70 +357,70 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 time_format = data['time_format']
                 valid_formats = ['12', '24']
                 if time_format in valid_formats:
-                    app.verse_manager.time_format = time_format
-                    app.logger.info(f"Time format changed to: {time_format}")
+                    current_app.verse_manager.time_format = time_format
+                    current_app.logger.info(f"Time format changed to: {time_format}")
                     needs_display_update = True
                 else:
-                    app.logger.error(f"Invalid time format: {time_format}. Valid formats: {valid_formats}")
+                    current_app.logger.error(f"Invalid time format: {time_format}. Valid formats: {valid_formats}")
                     return jsonify({'success': False, 'error': f'Invalid time format: {time_format}'}), 400
             
             # Update parallel mode
             if 'parallel_mode' in data:
-                app.verse_manager.parallel_mode = data['parallel_mode']
-                app.logger.info(f"Parallel mode: {data['parallel_mode']}")
+                current_app.verse_manager.parallel_mode = data['parallel_mode']
+                current_app.logger.info(f"Parallel mode: {data['parallel_mode']}")
             
             # Update secondary translation
             if 'secondary_translation' in data:
-                app.verse_manager.secondary_translation = data['secondary_translation']
-                app.logger.info(f"Secondary translation: {data['secondary_translation']}")
+                current_app.verse_manager.secondary_translation = data['secondary_translation']
+                current_app.logger.info(f"Secondary translation: {data['secondary_translation']}")
             
             # Update background with smart refresh detection
             background_changed = False
             if 'background_index' in data:
-                old_bg_index = app.image_generator.current_background_index
-                app.image_generator.set_background(data['background_index'])
-                background_changed = (old_bg_index != app.image_generator.current_background_index)
-                app.logger.info(f"Background changed to index: {data['background_index']} (changed: {background_changed})")
+                old_bg_index = current_app.image_generator.current_background_index
+                current_app.image_generator.set_background(data['background_index'])
+                background_changed = (old_bg_index != current_app.image_generator.current_background_index)
+                current_app.logger.info(f"Background changed to index: {data['background_index']} (changed: {background_changed})")
                 needs_display_update = True  # Background changes need immediate update
             
             # Update font with validation
             if 'font' in data:
                 font_name = data['font']
                 try:
-                    available_fonts = app.image_generator.get_available_fonts()
+                    available_fonts = current_app.image_generator.get_available_fonts()
                     # available_fonts is a List[str] from get_available_fonts()
                     font_names = available_fonts if isinstance(available_fonts, list) else list(available_fonts)
                     
                     if font_name in font_names or font_name == 'default':
-                        app.image_generator.set_font(font_name)
-                        app.logger.info(f"Font changed to: {font_name}")
+                        current_app.image_generator.set_font(font_name)
+                        current_app.logger.info(f"Font changed to: {font_name}")
                         needs_display_update = True
                     else:
-                        app.logger.error(f"Invalid font: {font_name}. Available: {font_names}")
+                        current_app.logger.error(f"Invalid font: {font_name}. Available: {font_names}")
                         return jsonify({'success': False, 'error': f'Invalid font: {font_name}. Available fonts: {", ".join(font_names)}'}), 400
                         
                 except Exception as e:
-                    app.logger.error(f"Font validation error: {e}")
+                    current_app.logger.error(f"Font validation error: {e}")
                     return jsonify({'success': False, 'error': f'Font update failed: {str(e)}'}), 500
             
             # Update font sizes
             if any(key in data for key in ['verse_size', 'reference_size']):
-                app.image_generator.set_font_sizes(
+                current_app.image_generator.set_font_sizes(
                     verse_size=data.get('verse_size'),
                     reference_size=data.get('reference_size')
                 )
-                app.logger.info("Font sizes updated")
+                current_app.logger.info("Font sizes updated")
                 needs_display_update = True  # Font size changes need immediate update
             
             # Update reference positioning
             if any(key in data for key in ['reference_position', 'reference_x_offset', 'reference_y_offset', 'reference_margin']):
-                app.image_generator.set_reference_position(
-                    position=data.get('reference_position', app.image_generator.reference_position),
-                    x_offset=data.get('reference_x_offset', app.image_generator.reference_x_offset),
-                    y_offset=data.get('reference_y_offset', app.image_generator.reference_y_offset),
-                    margin=data.get('reference_margin', app.image_generator.reference_margin)
+                current_app.image_generator.set_reference_position(
+                    position=data.get('reference_position', current_app.image_generator.reference_position),
+                    x_offset=data.get('reference_x_offset', current_app.image_generator.reference_x_offset),
+                    y_offset=data.get('reference_y_offset', current_app.image_generator.reference_y_offset),
+                    margin=data.get('reference_margin', current_app.image_generator.reference_margin)
                 )
-                app.logger.info("Reference position updated")
+                current_app.logger.info("Reference position updated")
                 needs_display_update = True  # Position changes need immediate update
             
             # Update hardware mode
@@ -407,8 +428,8 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 simulation_mode = 'false' if data['hardware_mode'] else 'true'
                 os.environ['SIMULATION_MODE'] = simulation_mode
                 # Update display manager simulation mode
-                app.display_manager.simulation_mode = not data['hardware_mode']
-                app.logger.info(f"Hardware mode: {'enabled' if data['hardware_mode'] else 'disabled (simulation)'}")
+                current_app.display_manager.simulation_mode = not data['hardware_mode']
+                current_app.logger.info(f"Hardware mode: {'enabled' if data['hardware_mode'] else 'disabled (simulation)'}")
             
             # Consolidated display update logic - update if requested OR if visual changes were made
             should_update_display = (
@@ -421,63 +442,63 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             
             if should_update_display:
                 try:
-                    verse_data = app.verse_manager.get_current_verse()
-                    image = app.image_generator.create_verse_image(verse_data)
+                    verse_data = current_app.verse_manager.get_current_verse()
+                    image = current_app.image_generator.create_verse_image(verse_data)
                     
                     # Determine refresh type: full refresh for background changes, partial for other settings
                     force_refresh = 'background_index' in data or background_changed
-                    app.display_manager.display_image(image, force_refresh=force_refresh)
+                    current_app.display_manager.display_image(image, force_refresh=force_refresh)
                     
                     refresh_type = "full (background change)" if force_refresh else "partial (settings change)"
-                    app.logger.info(f"Display updated immediately with {refresh_type}")
+                    current_app.logger.info(f"Display updated immediately with {refresh_type}")
                     
                     # Track activity for recent activity log
                     _track_activity("Settings updated", f"Updated settings: {', '.join(data.keys())}")
                     
                 except Exception as display_error:
-                    app.logger.error(f"Display update failed: {display_error}")
+                    current_app.logger.error(f"Display update failed: {display_error}")
                     # Don't fail the entire settings update for display issues
             
             return jsonify({'success': True, 'message': 'Settings updated successfully'})
             
         except Exception as e:
-            app.logger.error(f"Settings update error: {e}")
+            current_app.logger.error(f"Settings update error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/backgrounds', methods=['GET'])
     def get_backgrounds():
         """Get available backgrounds with previews and cycling settings."""
         try:
-            backgrounds = app.image_generator.get_background_info()
-            cycling_settings = app.image_generator.get_cycling_settings()
+            backgrounds = current_app.image_generator.get_background_info()
+            cycling_settings = current_app.image_generator.get_cycling_settings()
             backgrounds['cycling'] = cycling_settings
             return jsonify({'success': True, 'data': backgrounds})
         except Exception as e:
-            app.logger.error(f"Backgrounds API error: {e}")
+            current_app.logger.error(f"Backgrounds API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/fonts', methods=['GET'])
     def get_fonts():
         """Get available fonts."""
         try:
-            fonts = app.image_generator.get_font_info()
+            fonts = current_app.image_generator.get_font_info()
             return jsonify({'success': True, 'data': fonts})
         except Exception as e:
-            app.logger.error(f"Fonts API error: {e}")
+            current_app.logger.error(f"Fonts API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/statistics', methods=['GET'])
     def get_statistics():
         """Get usage statistics."""
         try:
-            if hasattr(app.verse_manager, 'get_statistics'):
-                stats = app.verse_manager.get_statistics()
+            if hasattr(current_app.verse_manager, 'get_statistics'):
+                stats = current_app.verse_manager.get_statistics()
             else:
                 stats = _generate_basic_statistics()
             
             # Add AI statistics if voice control is available
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                stats['ai_statistics'] = app.service_manager.voice_control.get_ai_statistics()
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                stats['ai_statistics'] = current_app.service_manager.voice_control.get_ai_statistics()
             else:
                 # Provide empty AI statistics if voice control not available
                 stats['ai_statistics'] = {
@@ -493,66 +514,66 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             
             return jsonify({'success': True, 'data': stats})
         except Exception as e:
-            app.logger.error(f"Statistics API error: {e}")
+            current_app.logger.error(f"Statistics API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/refresh', methods=['POST'])
     def force_refresh():
         """Force display refresh."""
         try:
-            verse_data = app.verse_manager.get_current_verse()
-            image = app.image_generator.create_verse_image(verse_data)
-            app.display_manager.display_image(image, force_refresh=True)
+            verse_data = current_app.verse_manager.get_current_verse()
+            image = current_app.image_generator.create_verse_image(verse_data)
+            current_app.display_manager.display_image(image, force_refresh=True)
             
             _track_activity("Display refreshed", f"Manual refresh triggered for {verse_data.get('reference', 'Unknown')}")
             return jsonify({'success': True, 'message': 'Display refreshed'})
         except Exception as e:
-            app.logger.error(f"Refresh error: {e}")
+            current_app.logger.error(f"Refresh error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/background/cycle', methods=['POST'])
     def cycle_background():
         """Cycle to next background with smart refresh."""
         try:
-            app.image_generator.cycle_background()
+            current_app.image_generator.cycle_background()
             
             # Update display if requested - always use full refresh for background changes
             if request.get_json() and request.get_json().get('update_display', False):
-                verse_data = app.verse_manager.get_current_verse()
-                image = app.image_generator.create_verse_image(verse_data)
-                app.display_manager.display_image(image, force_refresh=True)
-                app.logger.info("Background cycled with full refresh")
-                _track_activity("Background cycled", f"Background changed to index {app.image_generator.current_background_index}")
+                verse_data = current_app.verse_manager.get_current_verse()
+                image = current_app.image_generator.create_verse_image(verse_data)
+                current_app.display_manager.display_image(image, force_refresh=True)
+                current_app.logger.info("Background cycled with full refresh")
+                _track_activity("Background cycled", f"Background changed to index {current_app.image_generator.current_background_index}")
             
             return jsonify({
                 'success': True, 
                 'message': 'Background cycled',
-                'current_background': app.image_generator.get_current_background_info()
+                'current_background': current_app.image_generator.get_current_background_info()
             })
         except Exception as e:
-            app.logger.error(f"Background cycle error: {e}")
+            current_app.logger.error(f"Background cycle error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/background/randomize', methods=['POST'])
     def randomize_background():
         """Randomize background with smart refresh."""
         try:
-            app.image_generator.randomize_background()
+            current_app.image_generator.randomize_background()
             
             # Update display if requested - always use full refresh for background changes
             if request.get_json() and request.get_json().get('update_display', False):
-                verse_data = app.verse_manager.get_current_verse()
-                image = app.image_generator.create_verse_image(verse_data)
-                app.display_manager.display_image(image, force_refresh=True)
-                app.logger.info("Background randomized with full refresh")
+                verse_data = current_app.verse_manager.get_current_verse()
+                image = current_app.image_generator.create_verse_image(verse_data)
+                current_app.display_manager.display_image(image, force_refresh=True)
+                current_app.logger.info("Background randomized with full refresh")
             
             return jsonify({
                 'success': True, 
                 'message': 'Background randomized',
-                'current_background': app.image_generator.get_current_background_info()
+                'current_background': current_app.image_generator.get_current_background_info()
             })
         except Exception as e:
-            app.logger.error(f"Background randomize error: {e}")
+            current_app.logger.error(f"Background randomize error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/background/cycling', methods=['POST'])
@@ -563,15 +584,15 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             enabled = data.get('enabled', False)
             interval = data.get('interval_minutes', 30)
             
-            app.image_generator.set_background_cycling(enabled, interval)
+            current_app.image_generator.set_background_cycling(enabled, interval)
             
             return jsonify({
                 'success': True,
                 'message': 'Background cycling updated',
-                'settings': app.image_generator.get_cycling_settings()
+                'settings': current_app.image_generator.get_cycling_settings()
             })
         except Exception as e:
-            app.logger.error(f"Background cycling error: {e}")
+            current_app.logger.error(f"Background cycling error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/preview', methods=['POST'])
@@ -581,50 +602,50 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             data = request.get_json()
             
             # Store original settings
-            original_translation = app.verse_manager.translation
-            original_display_mode = getattr(app.verse_manager, 'display_mode', 'time')
-            original_parallel_mode = getattr(app.verse_manager, 'parallel_mode', False)
-            original_secondary_translation = getattr(app.verse_manager, 'secondary_translation', 'amp')
-            original_background_index = app.image_generator.current_background_index
-            original_font = app.image_generator.current_font_name
-            original_font_sizes = app.image_generator.get_font_sizes()
+            original_translation = current_app.verse_manager.translation
+            original_display_mode = getattr(current_app.verse_manager, 'display_mode', 'time')
+            original_parallel_mode = getattr(current_app.verse_manager, 'parallel_mode', False)
+            original_secondary_translation = getattr(current_app.verse_manager, 'secondary_translation', 'amp')
+            original_background_index = current_app.image_generator.current_background_index
+            original_font = current_app.image_generator.current_font_name
+            original_font_sizes = current_app.image_generator.get_font_sizes()
             
             try:
                 # Apply temporary changes
                 if 'translation' in data:
-                    app.verse_manager.translation = data['translation']
+                    current_app.verse_manager.translation = data['translation']
                 
                 if 'display_mode' in data:
-                    app.verse_manager.display_mode = data['display_mode']
+                    current_app.verse_manager.display_mode = data['display_mode']
                 
                 if 'parallel_mode' in data:
-                    app.verse_manager.parallel_mode = data['parallel_mode']
+                    current_app.verse_manager.parallel_mode = data['parallel_mode']
                 
                 if 'secondary_translation' in data:
-                    app.verse_manager.secondary_translation = data['secondary_translation']
+                    current_app.verse_manager.secondary_translation = data['secondary_translation']
                 
                 if 'background_index' in data:
                     bg_index = data['background_index']
-                    if 0 <= bg_index < len(app.image_generator.background_files):
-                        app.image_generator.current_background_index = bg_index
+                    if 0 <= bg_index < len(current_app.image_generator.background_files):
+                        current_app.image_generator.current_background_index = bg_index
                     else:
-                        app.logger.warning(f"Invalid background index: {bg_index}")
-                        app.image_generator.current_background_index = 0
+                        current_app.logger.warning(f"Invalid background index: {bg_index}")
+                        current_app.image_generator.current_background_index = 0
                 
                 if 'font' in data:
-                    app.image_generator.current_font_name = data['font']
-                    app.image_generator._load_fonts_with_selection()
+                    current_app.image_generator.current_font_name = data['font']
+                    current_app.image_generator._load_fonts_with_selection()
                 
                 if 'font_sizes' in data:
                     sizes = data['font_sizes']
-                    app.image_generator.set_font_sizes(
+                    current_app.image_generator.set_font_sizes(
                         verse_size=sizes.get('verse_size'),
                         reference_size=sizes.get('reference_size')
                     )
                 
                 # Generate preview
-                verse_data = app.verse_manager.get_current_verse()
-                image = app.image_generator.create_verse_image(verse_data)
+                verse_data = current_app.verse_manager.get_current_verse()
+                image = current_app.image_generator.create_verse_image(verse_data)
                 
                 # Apply same transformations as actual display for accurate preview
                 preview_image = _apply_display_transformations(image)
@@ -642,34 +663,34 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     'success': True, 
                     'preview_url': f'/static/preview.png?t={datetime.now().timestamp()}',
                     'timestamp': datetime.now().isoformat(),
-                    'background_name': f"Background {app.image_generator.current_background_index + 1}",
-                    'font_name': app.image_generator.current_font_name,
+                    'background_name': f"Background {current_app.image_generator.current_background_index + 1}",
+                    'font_name': current_app.image_generator.current_font_name,
                     'verse_reference': verse_data.get('reference', 'Unknown')
                 })
                 
             finally:
                 # Restore original settings
-                app.verse_manager.translation = original_translation
-                app.verse_manager.display_mode = original_display_mode
-                app.verse_manager.parallel_mode = original_parallel_mode
-                app.verse_manager.secondary_translation = original_secondary_translation
-                app.image_generator.current_background_index = original_background_index
-                app.image_generator.current_font_name = original_font
-                app.image_generator.set_font_sizes(
+                current_app.verse_manager.translation = original_translation
+                current_app.verse_manager.display_mode = original_display_mode
+                current_app.verse_manager.parallel_mode = original_parallel_mode
+                current_app.verse_manager.secondary_translation = original_secondary_translation
+                current_app.image_generator.current_background_index = original_background_index
+                current_app.image_generator.current_font_name = original_font
+                current_app.image_generator.set_font_sizes(
                     verse_size=original_font_sizes['verse_size'],
                     reference_size=original_font_sizes['reference_size']
                 )
             
         except Exception as e:
-            app.logger.error(f"Preview error: {e}")
+            current_app.logger.error(f"Preview error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/status', methods=['GET'])
     def get_voice_status():
         """Get voice control status."""
         try:
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                status = app.service_manager.voice_control.get_voice_status()
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                status = current_app.service_manager.voice_control.get_voice_status()
                 return jsonify({'success': True, 'data': status})
             else:
                 return jsonify({
@@ -683,57 +704,57 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     }
                 })
         except Exception as e:
-            app.logger.error(f"Voice status API error: {e}")
+            current_app.logger.error(f"Voice status API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/test', methods=['POST'])
     def test_voice():
         """Test voice synthesis."""
         try:
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                app.service_manager.voice_control.test_voice_synthesis()
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                current_app.service_manager.voice_control.test_voice_synthesis()
                 return jsonify({'success': True, 'message': 'Voice test initiated'})
             else:
                 return jsonify({'success': False, 'error': 'Voice control not available'})
         except Exception as e:
-            app.logger.error(f"Voice test API error: {e}")
+            current_app.logger.error(f"Voice test API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/clear-history', methods=['POST'])
     def clear_voice_history():
         """Clear ChatGPT conversation history."""
         try:
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                app.service_manager.voice_control.clear_conversation_history()
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                current_app.service_manager.voice_control.clear_conversation_history()
                 return jsonify({'success': True, 'message': 'Conversation history cleared'})
             else:
                 return jsonify({'success': False, 'error': 'Voice control not available'})
         except Exception as e:
-            app.logger.error(f"Clear history API error: {e}")
+            current_app.logger.error(f"Clear history API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/history', methods=['GET'])
     def get_voice_history():
         """Get conversation history."""
         try:
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                history = app.service_manager.voice_control.get_conversation_history()
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                history = current_app.service_manager.voice_control.get_conversation_history()
                 return jsonify({'success': True, 'data': history})
             else:
                 return jsonify({'success': True, 'data': []})
         except Exception as e:
-            app.logger.error(f"Voice history API error: {e}")
+            current_app.logger.error(f"Voice history API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/settings', methods=['POST'])
     def update_voice_settings():
         """Update voice control settings."""
         try:
-            if not hasattr(app.service_manager, 'voice_control') or not app.service_manager.voice_control:
+            if not hasattr(current_app.service_manager, 'voice_control') or not current_app.service_manager.voice_control:
                 return jsonify({'success': False, 'error': 'Voice control not available'})
             
             data = request.get_json()
-            voice_control = app.service_manager.voice_control
+            voice_control = current_app.service_manager.voice_control
             
             # Update settings
             if 'voice_rate' in data:
@@ -754,7 +775,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     voice_control.openai_api_key = api_key
                     # Re-initialize ChatGPT with the new key
                     voice_control._initialize_chatgpt()
-                    app.logger.info("ChatGPT API key updated")
+                    current_app.logger.info("ChatGPT API key updated")
             
             # Now handle ChatGPT enabled/disabled AFTER API key is set
             if 'chatgpt_enabled' in data:
@@ -766,15 +787,15 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             # Handle audio input/output controls
             if 'audio_input_enabled' in data:
                 voice_control.audio_input_enabled = data['audio_input_enabled']
-                app.logger.info(f"Audio input: {'enabled' if data['audio_input_enabled'] else 'disabled'}")
+                current_app.logger.info(f"Audio input: {'enabled' if data['audio_input_enabled'] else 'disabled'}")
             
             if 'audio_output_enabled' in data:
                 voice_control.audio_output_enabled = data['audio_output_enabled']
-                app.logger.info(f"Audio output: {'enabled' if data['audio_output_enabled'] else 'disabled'}")
+                current_app.logger.info(f"Audio output: {'enabled' if data['audio_output_enabled'] else 'disabled'}")
             
             if 'screen_display_enabled' in data:
                 voice_control.screen_display_enabled = data['screen_display_enabled']
-                app.logger.info(f"Screen display: {'enabled' if data['screen_display_enabled'] else 'disabled'}")
+                current_app.logger.info(f"Screen display: {'enabled' if data['screen_display_enabled'] else 'disabled'}")
             
             
             if 'voice_selection' in data:
@@ -784,7 +805,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 # For OpenAI TTS, update the voice directly
                 if hasattr(voice_control, 'tts_voice') and selection in ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']:
                     voice_control.tts_voice = selection
-                    app.logger.info(f"OpenAI TTS voice updated to: {selection}")
+                    current_app.logger.info(f"OpenAI TTS voice updated to: {selection}")
                     
                     # Update environment variable for persistence
                     import os
@@ -811,9 +832,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                             with open(env_file_path, 'w') as f:
                                 f.writelines(lines)
                             
-                            app.logger.info(f"Updated .env file with TTS_VOICE={selection}")
+                            current_app.logger.info(f"Updated .env file with TTS_VOICE={selection}")
                     except Exception as e:
-                        app.logger.warning(f"Could not update .env file: {e}")
+                        current_app.logger.warning(f"Could not update .env file: {e}")
                 
                 # Legacy system TTS fallback (for compatibility)
                 elif voice_control.tts_engine:
@@ -831,7 +852,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             return jsonify({'success': True, 'message': 'Voice settings updated successfully'})
             
         except Exception as e:
-            app.logger.error(f"Voice settings API error: {e}")
+            current_app.logger.error(f"Voice settings API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     # === Conversation Analytics API ===
@@ -841,10 +862,10 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Get conversation analytics and metrics."""
         try:
             days_back = request.args.get('days', 7, type=int)
-            analytics = app.conversation_manager.get_analytics(days_back)
+            analytics = current_app.conversation_manager.get_analytics(days_back)
             return jsonify({'success': True, 'data': analytics})
         except Exception as e:
-            app.logger.error(f"Conversation analytics API error: {e}")
+            current_app.logger.error(f"Conversation analytics API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/conversation/sessions', methods=['GET'])
@@ -857,34 +878,34 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     'created_at': session.created_at.isoformat(),
                     'last_activity': session.last_activity.isoformat(),
                     'turn_count': len(session.turns),
-                    'is_current': session.session_id == app.conversation_manager.current_session.session_id if app.conversation_manager.current_session else False
+                    'is_current': session.session_id == current_app.conversation_manager.current_session.session_id if current_app.conversation_manager.current_session else False
                 }
-                for session in app.conversation_manager.sessions.values()
+                for session in current_app.conversation_manager.sessions.values()
                 if not session.is_expired()
             ]
             return jsonify({'success': True, 'data': active_sessions})
         except Exception as e:
-            app.logger.error(f"Conversation sessions API error: {e}")
+            current_app.logger.error(f"Conversation sessions API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/conversation/suggestions', methods=['GET'])
     def get_bible_study_suggestions():
         """Get Bible study suggestions based on conversation history."""
         try:
-            suggestions = app.conversation_manager.get_bible_study_suggestions()
+            suggestions = current_app.conversation_manager.get_bible_study_suggestions()
             return jsonify({'success': True, 'data': suggestions})
         except Exception as e:
-            app.logger.error(f"Bible study suggestions API error: {e}")
+            current_app.logger.error(f"Bible study suggestions API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/conversation/memory', methods=['GET'])
     def get_conversation_memory():
         """Get conversation context/memory for current session."""
         try:
-            context = app.conversation_manager.get_conversation_context(turns_back=5)
+            context = current_app.conversation_manager.get_conversation_context(turns_back=5)
             return jsonify({'success': True, 'data': {'context': context}})
         except Exception as e:
-            app.logger.error(f"Conversation memory API error: {e}")
+            current_app.logger.error(f"Conversation memory API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     # === Piper Voice Management API ===
@@ -946,7 +967,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             })
             
         except Exception as e:
-            app.logger.error(f"Piper voices API error: {e}")
+            current_app.logger.error(f"Piper voices API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/piper/preview', methods=['POST'])
@@ -1032,7 +1053,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     pass
                     
         except Exception as e:
-            app.logger.error(f"Voice preview API error: {e}")
+            current_app.logger.error(f"Voice preview API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/voice/piper/set-voice', methods=['POST'])
@@ -1046,8 +1067,8 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             voice_name = data['voice_name']
             
             # Update voice control if available
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                voice_control = app.service_manager.voice_control
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                voice_control = current_app.service_manager.voice_control
                 
                 # Check if voice control uses Piper TTS
                 if hasattr(voice_control, 'piper_model'):
@@ -1077,7 +1098,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                         with open(env_file, 'w') as f:
                             f.writelines(lines)
                 except Exception as e:
-                    app.logger.warning(f"Could not update .env file: {e}")
+                    current_app.logger.warning(f"Could not update .env file: {e}")
                 
                 return jsonify({
                     'success': True,
@@ -1088,7 +1109,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 return jsonify({'success': False, 'error': 'Voice control not available'}), 500
                 
         except Exception as e:
-            app.logger.error(f"Set voice API error: {e}")
+            current_app.logger.error(f"Set voice API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     def _format_voice_name(voice_name):
@@ -1115,8 +1136,8 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Get the currently selected Piper voice."""
         try:
             # Check voice control first
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                voice_control = app.service_manager.voice_control
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                voice_control = current_app.service_manager.voice_control
                 if hasattr(voice_control, 'piper_model'):
                     return voice_control.piper_model.replace('.onnx', '')
             
@@ -1175,7 +1196,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 }
             })
         except Exception as e:
-            app.logger.error(f"Audio devices API error: {e}")
+            current_app.logger.error(f"Audio devices API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/audio/test-microphone', methods=['POST'])
@@ -1230,7 +1251,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 'error': 'Recording timeout - microphone may not be working'
             })
         except Exception as e:
-            app.logger.error(f"Microphone test API error: {e}")
+            current_app.logger.error(f"Microphone test API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/audio/test-speakers', methods=['POST'])
@@ -1257,7 +1278,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 })
                 
         except Exception as e:
-            app.logger.error(f"Speaker test API error: {e}")
+            current_app.logger.error(f"Speaker test API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/audio/play-test-sound', methods=['POST'])
@@ -1265,7 +1286,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Play a test sound using text-to-speech."""
         try:
             # Use voice control to play test sound if available
-            voice_control = getattr(app.service_manager, 'voice_control', None)
+            voice_control = getattr(current_app.service_manager, 'voice_control', None)
             if voice_control and hasattr(voice_control, 'speak'):
                 voice_control.speak("Audio test successful. Speakers are working properly.")
                 return jsonify({
@@ -1282,7 +1303,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 })
                 
         except Exception as e:
-            app.logger.error(f"Play test sound API error: {e}")
+            current_app.logger.error(f"Play test sound API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/audio/volume', methods=['POST'])
@@ -1354,7 +1375,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             })
             
         except Exception as e:
-            app.logger.error(f"Audio volume API error: {e}")
+            current_app.logger.error(f"Audio volume API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/activities', methods=['GET'])
@@ -1362,10 +1383,10 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Get recent activity log."""
         try:
             # Limit to last 50 activities
-            recent = app.recent_activities[-50:] if len(app.recent_activities) > 50 else app.recent_activities
+            recent = current_app.recent_activities[-50:] if len(current_app.recent_activities) > 50 else current_app.recent_activities
             return jsonify({'success': True, 'data': recent})
         except Exception as e:
-            app.logger.error(f"Activities API error: {e}")
+            current_app.logger.error(f"Activities API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/health')
@@ -1444,12 +1465,12 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 issues.append("High CPU temperature")
             
             # Check if display manager is responding
-            if not hasattr(app.display_manager, 'last_image_hash'):
+            if not hasattr(current_app.display_manager, 'last_image_hash'):
                 issues.append("Display manager not responding")
             
             # Check API connectivity
             try:
-                test_verse = app.verse_manager.get_current_verse()
+                test_verse = current_app.verse_manager.get_current_verse()
                 if not test_verse or 'error' in test_verse:
                     issues.append("Bible API connectivity issues")
             except Exception:
@@ -1460,9 +1481,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                 issues.append("Low disk space warning")
             
             # Check if voice control is functioning (if enabled)
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
                 try:
-                    voice_status = app.service_manager.voice_control.get_voice_status()
+                    voice_status = current_app.service_manager.voice_control.get_voice_status()
                     if not voice_status.get('enabled', False):
                         issues.append("Voice control disabled")
                 except Exception:
@@ -1556,7 +1577,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         """Check if Bible API is accessible."""
         try:
             # Quick test of verse retrieval
-            test_verse = app.verse_manager.get_current_verse()
+            test_verse = current_app.verse_manager.get_current_verse()
             return bool(test_verse and 'error' not in test_verse and test_verse.get('text'))
         except Exception:
             return False
@@ -1564,8 +1585,8 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     def _check_voice_control_status():
         """Check voice control system status."""
         try:
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                voice_status = app.service_manager.voice_control.get_voice_status()
+            if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
+                voice_status = current_app.service_manager.voice_control.get_voice_status()
                 if voice_status.get('enabled', False):
                     return "active"
                 else:
@@ -1588,9 +1609,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
     def translation_completion():
         """Get completion statistics for all Bible translations."""
         try:
-            if hasattr(app.verse_manager, 'translation_completion'):
-                completion = app.verse_manager.translation_completion
-                total_verses = app.verse_manager._get_total_bible_verses() if hasattr(app.verse_manager, '_get_total_bible_verses') else 31100
+            if hasattr(current_app.verse_manager, 'translation_completion'):
+                completion = current_app.verse_manager.translation_completion
+                total_verses = current_app.verse_manager._get_total_bible_verses() if hasattr(current_app.verse_manager, '_get_total_bible_verses') else 31100
                 
                 # Calculate detailed stats
                 detailed_stats = {}
@@ -1600,7 +1621,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                         'completion_percentage': percentage,
                         'cached_verses': cached_verses,
                         'total_verses': total_verses,
-                        'display_name': app.verse_manager.get_translation_display_names().get(translation, translation.upper())
+                        'display_name': current_app.verse_manager.get_translation_display_names().get(translation, translation.upper())
                     }
                 
                 return jsonify({
@@ -1611,7 +1632,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                             'total_translations': len(completion),
                             'completed_translations': len([t for t, p in completion.items() if p >= 100.0]),
                             'total_bible_verses': total_verses,
-                            'overall_progress': app.verse_manager._format_completion_summary() if hasattr(app.verse_manager, '_format_completion_summary') else 'Not available'
+                            'overall_progress': current_app.verse_manager._format_completion_summary() if hasattr(current_app.verse_manager, '_format_completion_summary') else 'Not available'
                         }
                     }
                 })
@@ -1626,7 +1647,7 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     }
                 }})
         except Exception as e:
-            app.logger.error(f"Translation completion API error: {e}")
+            current_app.logger.error(f"Translation completion API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     # Legacy endpoint for backward compatibility
@@ -1648,8 +1669,35 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     'message': 'AMP completion tracking not available'
                 }})
         except Exception as e:
-            app.logger.error(f"AMP completion API error: {e}")
+            current_app.logger.error(f"AMP completion API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
+    
+    # === Mobile-specific API Endpoints ===
+    
+    @app.route('/api/test-mobile', methods=['GET'])
+    def test_mobile():
+        return jsonify({'success': True, 'message': 'Mobile endpoints working'})
+    
+    @app.route('/api/voice/wake-word', methods=['POST'])
+    def toggle_wake_word():
+        """Toggle voice wake word detection for mobile."""
+        try:
+            if not hasattr(current_app.service_manager, 'voice_control') or not current_app.service_manager.voice_control:
+                return jsonify({'success': False, 'error': 'Voice control not available'})
+            
+            data = request.get_json()
+            enabled = data.get('enabled', False)
+            
+            # Toggle wake word detection
+            current_app.service_manager.voice_control.set_wake_word_enabled(enabled)
+            
+            message = f'Wake word detection {"enabled" if enabled else "disabled"}'
+            return jsonify({'success': True, 'message': message})
+            
+        except Exception as e:
+            current_app.logger.error(f"Wake word toggle API error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
     
     return app
 
@@ -1730,23 +1778,23 @@ def _cleanup_old_preview_images():
     def get_devotional_config():
         """Get devotional configuration."""
         try:
-            if hasattr(app.verse_manager, 'devotional_manager') and app.verse_manager.devotional_manager:
+            if hasattr(current_app.verse_manager, 'devotional_manager') and current_app.verse_manager.devotional_manager:
                 config = {
-                    'rotation_interval': app.verse_manager.devotional_manager.get_rotation_interval(),
+                    'rotation_interval': current_app.verse_manager.devotional_manager.get_rotation_interval(),
                     'available_intervals': [5, 10, 15, 30, 60]
                 }
                 return jsonify({'success': True, 'data': config})
             else:
                 return jsonify({'success': False, 'error': 'Devotional manager not available'})
         except Exception as e:
-            app.logger.error(f"Devotional config API error: {e}")
+            current_app.logger.error(f"Devotional config API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/devotional/interval', methods=['POST'])
     def set_devotional_interval():
         """Set devotional rotation interval."""
         try:
-            if not hasattr(app.verse_manager, 'devotional_manager') or not app.verse_manager.devotional_manager:
+            if not hasattr(current_app.verse_manager, 'devotional_manager') or not current_app.verse_manager.devotional_manager:
                 return jsonify({'success': False, 'error': 'Devotional manager not available'})
             
             data = request.get_json()
@@ -1755,11 +1803,11 @@ def _cleanup_old_preview_images():
             if not interval or interval not in [5, 10, 15, 30, 60]:
                 return jsonify({'success': False, 'error': 'Invalid interval. Must be 5, 10, 15, 30, or 60 minutes'})
             
-            app.verse_manager.devotional_manager.set_rotation_interval(interval)
+            current_app.verse_manager.devotional_manager.set_rotation_interval(interval)
             return jsonify({'success': True, 'message': f'Devotional interval set to {interval} minutes'})
             
         except Exception as e:
-            app.logger.error(f"Devotional interval API error: {e}")
+            current_app.logger.error(f"Devotional interval API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/devotional/mode', methods=['POST'])
@@ -1770,90 +1818,19 @@ def _cleanup_old_preview_images():
             enabled = data.get('enabled', False)
             
             if enabled:
-                app.verse_manager.display_mode = 'devotional'
+                current_app.verse_manager.display_mode = 'devotional'
                 message = 'Devotional mode enabled'
             else:
-                app.verse_manager.display_mode = 'time'  # Default fallback
+                current_app.verse_manager.display_mode = 'time'  # Default fallback
                 message = 'Devotional mode disabled'
             
             # Force update display with new mode
-            verse_data = app.verse_manager.get_current_verse()
-            image = app.image_generator.create_verse_image(verse_data)
-            app.display_manager.display_image(image, force_refresh=True)
+            verse_data = current_app.verse_manager.get_current_verse()
+            image = current_app.image_generator.create_verse_image(verse_data)
+            current_app.display_manager.display_image(image, force_refresh=True)
             
             return jsonify({'success': True, 'message': message})
             
         except Exception as e:
-            app.logger.error(f"Devotional mode API error: {e}")
+            current_app.logger.error(f"Devotional mode API error: {e}")
             return jsonify({'success': False, 'error': str(e)}), 500
-    
-    # === Mobile-specific API Endpoints ===
-    
-    @app.route('/api/voice/wake-word', methods=['POST'])
-    def toggle_wake_word():
-        """Toggle voice wake word detection for mobile."""
-        try:
-            if not hasattr(app.service_manager, 'voice_control') or not app.service_manager.voice_control:
-                return jsonify({'success': False, 'error': 'Voice control not available'})
-            
-            data = request.get_json()
-            enabled = data.get('enabled', False)
-            
-            # Toggle wake word detection
-            app.service_manager.voice_control.set_wake_word_enabled(enabled)
-            
-            message = f'Wake word detection {"enabled" if enabled else "disabled"}'
-            return jsonify({'success': True, 'message': message})
-            
-        except Exception as e:
-            app.logger.error(f"Wake word toggle API error: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
-    
-    @app.route('/api/voice/status', methods=['GET'])
-    def get_voice_status():
-        """Get voice control status for mobile."""
-        try:
-            if hasattr(app.service_manager, 'voice_control') and app.service_manager.voice_control:
-                voice_control = app.service_manager.voice_control
-                status = {
-                    'wake_word_enabled': getattr(voice_control, 'wake_word_enabled', False),
-                    'is_listening': getattr(voice_control, 'is_listening', False),
-                    'audio_input_enabled': getattr(voice_control, 'audio_input_enabled', True),
-                    'audio_output_enabled': getattr(voice_control, 'audio_output_enabled', True)
-                }
-                return jsonify({'success': True, 'data': status})
-            else:
-                # Return default disabled status if voice control not available
-                status = {
-                    'wake_word_enabled': False,
-                    'is_listening': False,
-                    'audio_input_enabled': False,
-                    'audio_output_enabled': False
-                }
-                return jsonify({'success': True, 'data': status})
-        except Exception as e:
-            app.logger.error(f"Voice status API error: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
-    
-    @app.route('/api/settings', methods=['GET'])
-    def get_settings():
-        """Get current settings for mobile interface."""
-        try:
-            settings = {
-                'translation': getattr(app.verse_manager, 'translation', 'kjv'),
-                'time_format': getattr(app.verse_manager, 'time_format', '12'),
-                'display_mode': getattr(app.verse_manager, 'display_mode', 'time'),
-                'parallel_mode': getattr(app.verse_manager, 'parallel_mode', False),
-                'secondary_translation': getattr(app.verse_manager, 'secondary_translation', 'amp')
-            }
-            
-            # Add devotional interval if available
-            if hasattr(app.verse_manager, 'devotional_manager') and app.verse_manager.devotional_manager:
-                settings['devotional_interval'] = app.verse_manager.devotional_manager.get_rotation_interval()
-            
-            return jsonify({'success': True, 'data': settings})
-        except Exception as e:
-            app.logger.error(f"Settings API error: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-    return app

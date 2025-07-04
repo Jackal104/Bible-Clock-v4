@@ -65,7 +65,7 @@ def check_data_files():
     
     required_files = [
         'data/fallback_verses.json',
-        'data/book_summaries.json',
+        'data/bible_book_summaries_kjv_all_66.json',
         'data/translations/bible_kjv.json'
     ]
     

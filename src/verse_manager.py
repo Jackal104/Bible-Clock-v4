@@ -101,7 +101,7 @@ class VerseManager:
     def _load_book_summaries(self):
         """Load book summaries from JSON file."""
         try:
-            summaries_path = Path('data/book_summaries.json')
+            summaries_path = Path('data/bible_book_summaries_kjv_all_66.json')
             with open(summaries_path, 'r') as f:
                 self.book_summaries = json.load(f)
             self.logger.info(f"Loaded {len(self.book_summaries)} book summaries")
@@ -522,7 +522,12 @@ class VerseManager:
         """Get a book summary for time-based display when exact verse doesn't exist."""
         # Get book summary
         if self.book_summaries and book in self.book_summaries:
-            summary = self.book_summaries[book]
+            # New format: direct string values
+            summary_text = self.book_summaries[book]
+            summary = {
+                'title': book,
+                'summary': summary_text
+            }
         else:
             # Create a basic summary if none available
             summary = {
@@ -680,7 +685,12 @@ class VerseManager:
         """Get a random book summary."""
         if self.book_summaries:
             book = random.choice(list(self.book_summaries.keys()))
-            summary = self.book_summaries[book]
+            # New format: direct string values
+            summary_text = self.book_summaries[book]
+            summary = {
+                'title': book,
+                'summary': summary_text
+            }
         else:
             # Fallback if no summaries available
             book = random.choice(self.available_books)

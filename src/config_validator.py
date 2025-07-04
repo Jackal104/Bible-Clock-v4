@@ -62,7 +62,7 @@ class ConfigValidator:
         """Validate required data files exist and are valid."""
         required_files = {
             'data/fallback_verses.json': self._validate_json,
-            'data/book_summaries.json': self._validate_json
+            'data/bible_book_summaries_kjv_all_66.json': self._validate_json
         }
         
         for file_path, validator in required_files.items():

@@ -169,8 +169,16 @@ class ServiceManager:
                     # For devotional mode, only force refresh on background/parallel changes
                     force_refresh = background_changed or parallel_mode_changed
                 else:
-                    # For other modes, force refresh for parallel mode to prevent artifacts
-                    force_refresh = background_changed or parallel_mode_changed or current_parallel_mode
+                    # For parallel mode, only force refresh based on display manager's interval, not every minute
+                    if current_parallel_mode:
+                        # Check if it's time for a scheduled refresh based on display manager interval
+                        time_since_last_refresh = time.time() - self.display_manager.last_full_refresh
+                        refresh_interval_minutes = self.display_manager.force_refresh_interval
+                        should_refresh_by_interval = time_since_last_refresh >= (refresh_interval_minutes * 60)
+                        force_refresh = background_changed or parallel_mode_changed or should_refresh_by_interval
+                    else:
+                        # For non-parallel modes, only refresh on changes
+                        force_refresh = background_changed or parallel_mode_changed
                 
                 self.display_manager.display_image(image, force_refresh=force_refresh)
                 

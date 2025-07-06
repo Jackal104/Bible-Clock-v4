@@ -1719,10 +1719,24 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             # Toggle voice control enabled state
             current_app.service_manager.voice_control.enabled = enabled
             
+            # Actually start or stop the voice control service
+            if enabled:
+                if hasattr(current_app.service_manager.voice_control, 'start_listening'):
+                    current_app.service_manager.voice_control.start_listening()
+                    current_app.logger.info("Voice control service started")
+                else:
+                    current_app.logger.warning("Voice control start_listening method not available")
+            else:
+                if hasattr(current_app.service_manager.voice_control, 'stop_listening'):
+                    current_app.service_manager.voice_control.stop_listening()
+                    current_app.logger.info("Voice control service stopped")
+                else:
+                    current_app.logger.warning("Voice control stop_listening method not available")
+            
             # Update environment variable for persistence
             os.environ['ENABLE_VOICE'] = 'true' if enabled else 'false'
             
-            message = f'Voice control {"enabled" if enabled else "disabled"}'
+            message = f'Voice control {"enabled" if enabled else "disabled"} - service {"started" if enabled else "stopped"}'
             return jsonify({'success': True, 'message': message})
             
         except Exception as e:

@@ -76,6 +76,18 @@
                     </div>
                 </div>
             </button>
+            
+            <button id="parallel-mode-btn" onclick="toggleParallelAndSetTime()" class="w-full mobile-button bg-teal-500 text-white py-4 px-6 rounded-lg touch-feedback hover:bg-teal-600 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10z"></path>
+                    </svg>
+                    <div class="text-left">
+                        <span class="text-lg block">Parallel Mode</span>
+                        <span class="text-sm opacity-75">Two translations side by side</span>
+                    </div>
+                </div>
+            </button>
         </div>
     </div>
 
@@ -233,6 +245,8 @@ function toggleParallelMode() {
     .then(data => {
         if (data.success) {
             showStatus(`Parallel mode ${enabled ? 'enabled' : 'disabled'}`, 'success');
+            // Update the mode display and button visibility
+            updateCurrentMode();
         } else {
             showStatus(`Failed to toggle parallel mode: ${data.error}`, 'error');
             toggle.checked = !enabled; // Revert toggle
@@ -272,29 +286,89 @@ function toggleVoiceWake() {
     });
 }
 
+function toggleParallelAndSetTime() {
+    showStatus('Enabling parallel mode with time display...', 'info');
+    
+    // Enable parallel mode and set to time mode
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            parallel_mode: true, 
+            display_mode: 'time',
+            update_display: true 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Parallel mode enabled', 'success');
+            
+            // Update UI to reflect parallel mode
+            document.getElementById('current-mode').textContent = 'Parallel Mode (Time)';
+            document.getElementById('parallel-mode-toggle').checked = true;
+            updateModeButtons('time', true);
+            
+            // Force a display refresh
+            setTimeout(() => {
+                fetch('/api/refresh', { method: 'POST' })
+                    .catch(console.error);
+            }, 1000);
+        } else {
+            showStatus(`Failed to enable parallel mode: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
 function updateCurrentMode() {
     fetch('/api/status')
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data.display_mode) {
                 const currentMode = data.data.display_mode;
-                document.getElementById('current-mode').textContent = 
-                    currentMode.charAt(0).toUpperCase() + currentMode.slice(1) + ' Mode';
                 
-                // Update button visibility
-                updateModeButtons(currentMode);
+                // Check if we need to get parallel mode status
+                fetch('/api/settings')
+                    .then(response => response.json())
+                    .then(settingsData => {
+                        const parallelMode = settingsData.success && settingsData.data.parallel_mode;
+                        
+                        // Update current mode display
+                        if (parallelMode) {
+                            document.getElementById('current-mode').textContent = 
+                                `Parallel Mode (${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)})`;
+                        } else {
+                            document.getElementById('current-mode').textContent = 
+                                currentMode.charAt(0).toUpperCase() + currentMode.slice(1) + ' Mode';
+                        }
+                        
+                        // Update button visibility
+                        updateModeButtons(currentMode, parallelMode);
+                    })
+                    .catch(() => {
+                        // Fallback if settings fetch fails
+                        document.getElementById('current-mode').textContent = 
+                            currentMode.charAt(0).toUpperCase() + currentMode.slice(1) + ' Mode';
+                        updateModeButtons(currentMode, false);
+                    });
             }
         })
         .catch(console.error);
 }
 
-function updateModeButtons(currentMode) {
-    // Define all mode buttons
+function updateModeButtons(currentMode, parallelMode = false) {
+    // Define all mode buttons including parallel
     const modeButtons = {
         'time': document.getElementById('time-mode-btn'),
         'devotional': document.getElementById('devotional-mode-btn'),
         'date': document.getElementById('date-mode-btn'),
-        'random': document.getElementById('random-mode-btn')
+        'random': document.getElementById('random-mode-btn'),
+        'parallel': document.getElementById('parallel-mode-btn')
     };
     
     // Show all buttons first
@@ -304,9 +378,20 @@ function updateModeButtons(currentMode) {
         }
     });
     
-    // Hide the current mode button
-    if (modeButtons[currentMode]) {
-        modeButtons[currentMode].style.display = 'none';
+    // Special logic for parallel mode
+    if (parallelMode) {
+        // If parallel mode is enabled, hide the parallel mode button and the current base mode
+        if (modeButtons['parallel']) {
+            modeButtons['parallel'].style.display = 'none';
+        }
+        if (modeButtons[currentMode]) {
+            modeButtons[currentMode].style.display = 'none';
+        }
+    } else {
+        // If parallel mode is not enabled, just hide the current mode button
+        if (modeButtons[currentMode]) {
+            modeButtons[currentMode].style.display = 'none';
+        }
     }
 }
 
@@ -349,9 +434,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('parallel-mode-toggle').checked = settings.parallel_mode;
                 }
                 
-                // Update button visibility based on current mode
+                // Update button visibility based on current mode and parallel mode
                 if (settings.display_mode) {
-                    updateModeButtons(settings.display_mode);
+                    updateModeButtons(settings.display_mode, settings.parallel_mode);
                 }
             }
         })

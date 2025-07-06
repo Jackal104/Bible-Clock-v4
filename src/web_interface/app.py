@@ -715,12 +715,16 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
         try:
             if hasattr(current_app.service_manager, 'voice_control') and current_app.service_manager.voice_control:
                 status = current_app.service_manager.voice_control.get_voice_status()
+                # Add wake_word_enabled field for mobile compatibility
+                if 'enabled' in status:
+                    status['wake_word_enabled'] = status['enabled']
                 return jsonify({'success': True, 'data': status})
             else:
                 return jsonify({
                     'success': True, 
                     'data': {
                         'enabled': False,
+                        'wake_word_enabled': False,
                         'listening': False,
                         'chatgpt_enabled': False,
                         'help_enabled': False,
@@ -1712,10 +1716,13 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             data = request.get_json()
             enabled = data.get('enabled', False)
             
-            # Toggle wake word detection
-            current_app.service_manager.voice_control.set_wake_word_enabled(enabled)
+            # Toggle voice control enabled state
+            current_app.service_manager.voice_control.enabled = enabled
             
-            message = f'Wake word detection {"enabled" if enabled else "disabled"}'
+            # Update environment variable for persistence
+            os.environ['ENABLE_VOICE'] = 'true' if enabled else 'false'
+            
+            message = f'Voice control {"enabled" if enabled else "disabled"}'
             return jsonify({'success': True, 'message': message})
             
         except Exception as e:

@@ -427,15 +427,25 @@ function toggleParallelAndSetTime() {
             document.getElementById('current-mode').textContent = 'Parallel Mode (Time)';
             document.getElementById('parallel-mode-toggle').checked = true;
             
-            // Show translation selection dropdowns
+            // Show translation selection dropdowns with debugging
             const translationSelection = document.getElementById('parallel-translation-selection');
+            console.log('Translation selection element:', translationSelection);
+            console.log('Current classes before:', translationSelection.className);
             translationSelection.classList.remove('hidden');
+            console.log('Current classes after:', translationSelection.className);
             
             // Update button visibility to hide parallel mode button since it's now active
             updateModeButtons('time', true);
             
-            // Force a display refresh
+            // Force a display refresh and double-check translation dropdowns
             setTimeout(() => {
+                // Double-check that translation dropdowns are visible
+                const translationSelection = document.getElementById('parallel-translation-selection');
+                if (translationSelection.classList.contains('hidden')) {
+                    console.log('Translation dropdowns still hidden after parallel mode enable - forcing visible');
+                    translationSelection.classList.remove('hidden');
+                }
+                
                 fetch('/api/refresh', { method: 'POST' })
                     .catch(console.error);
             }, 1000);
@@ -472,6 +482,17 @@ function updateCurrentMode() {
                         
                         // Update button visibility
                         updateModeButtons(currentMode, parallelMode);
+                        
+                        // Update translation dropdown visibility based on parallel mode
+                        const translationSelection = document.getElementById('parallel-translation-selection');
+                        const parallelToggle = document.getElementById('parallel-mode-toggle');
+                        if (parallelMode) {
+                            translationSelection.classList.remove('hidden');
+                            parallelToggle.checked = true;
+                        } else {
+                            translationSelection.classList.add('hidden');
+                            parallelToggle.checked = false;
+                        }
                     })
                     .catch(() => {
                         // Fallback if settings fetch fails

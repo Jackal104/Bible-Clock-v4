@@ -1,6 +1,6 @@
-# Bible Clock v2.0
+# Bible Clock v4
 
-A comprehensive Raspberry Pi-based e-ink display system that shows Bible verses corresponding to the current time, featuring a modern web interface, date-based biblical events, and advanced system monitoring.
+A comprehensive Raspberry Pi-based e-ink display system that shows Bible verses corresponding to the current time, featuring a modern web interface, date-based biblical events, advanced voice control, and AI integration.
 
 ## ✨ Features
 
@@ -37,14 +37,17 @@ A comprehensive Raspberry Pi-based e-ink display system that shows Bible verses 
 ### 1. Installation
 
 ```bash
-git clone https://github.com/Jackal104/Bible-Clockv2.git
-cd Bible-Clockv2
+git clone https://github.com/Jackal104/Bible-Clock-v4.git
+cd Bible-Clock-v4
 
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+# For minimal installation (software mode only):
+pip install -r requirements-dev.txt
+
+# For full installation (includes voice and AI features):
 pip install -r requirements.txt
 
 # Copy and configure environment
@@ -52,7 +55,21 @@ cp .env.example .env
 # Edit .env with your preferences
 ```
 
-### 2. Run in Different Modes
+### 2. Software Mode (Local Development)
+
+For local development without Raspberry Pi hardware:
+
+```bash
+# Install minimal dependencies
+pip install -r requirements-dev.txt
+
+# Run in software simulation mode  
+python main.py --simulation
+
+# Access web interface at http://localhost:7777
+```
+
+### 3. Run in Different Modes
 
 ```bash
 # Web interface only (great for testing)

@@ -1246,8 +1246,8 @@ class ImageGenerator:
         if bottom_label_y > max_label_y:
             bottom_label_y = max_label_y
         
-        # Use smaller font for translation labels to avoid overlapping
-        label_font_size = min(optimal_font.size - 8, 24) if optimal_font else 20  # Smaller than verse text
+        # Use appropriately sized font for translation labels (larger than before)
+        label_font_size = min(optimal_font.size - 4, 36) if optimal_font else 28  # Larger font for better readability
         try:
             system_dejavu_path = Path('/usr/share/fonts/truetype/dejavu')
             if system_dejavu_path.exists():
@@ -1265,14 +1265,14 @@ class ImageGenerator:
             left_label_bbox = draw.textbbox((0, 0), left_label, font=label_font)
             left_label_width = left_label_bbox[2] - left_label_bbox[0]
             left_label_x = left_margin + (column_width // 2) - (left_label_width // 2)
-            draw.text((left_label_x, bottom_label_y), left_label, fill=64, font=label_font)  # Lighter gray to distinguish from verse
+            draw.text((left_label_x, bottom_label_y), left_label, fill=32, font=label_font)  # Darker gray for better visibility
             
-            # Right column label (secondary translation) - smaller font
+            # Right column label (secondary translation) - larger font
             right_label = f"({secondary_label})"
             right_label_bbox = draw.textbbox((0, 0), right_label, font=label_font)
             right_label_width = right_label_bbox[2] - right_label_bbox[0]
             right_label_x = right_margin + (column_width // 2) - (right_label_width // 2)
-            draw.text((right_label_x, bottom_label_y), right_label, fill=64, font=label_font)  # Lighter gray to distinguish from verse
+            draw.text((right_label_x, bottom_label_y), right_label, fill=32, font=label_font)  # Darker gray for better visibility
             
             self.logger.debug(f"Drew translation labels: '{left_label}' at ({left_label_x}, {bottom_label_y}), '{right_label}' at ({right_label_x}, {bottom_label_y})")
         else:

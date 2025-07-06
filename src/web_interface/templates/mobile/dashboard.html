@@ -124,6 +124,34 @@
                 <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
         </div>
+        
+        <!-- Translation Selection for Parallel Mode -->
+        <div id="parallel-translation-selection" class="hidden mt-4 pt-4 border-t border-gray-200">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Primary Translation</label>
+                    <select id="primary-translation-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updatePrimaryTranslation()">
+                        <option value="kjv">King James Version (KJV)</option>
+                        <option value="amp">Amplified Bible (AMP)</option>
+                        <option value="nlt">New Living Translation (NLT)</option>
+                        <option value="esv">English Standard Version (ESV)</option>
+                        <option value="msg">The Message (MSG)</option>
+                        <option value="nasb">New American Standard Bible (NASB)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Secondary Translation</label>
+                    <select id="secondary-translation-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateSecondaryTranslation()">
+                        <option value="amp">Amplified Bible (AMP)</option>
+                        <option value="kjv">King James Version (KJV)</option>
+                        <option value="nlt">New Living Translation (NLT)</option>
+                        <option value="esv">English Standard Version (ESV)</option>
+                        <option value="msg">The Message (MSG)</option>
+                        <option value="nasb">New American Standard Bible (NASB)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Voice Wake Word Toggle -->
@@ -157,17 +185,25 @@ function setMode(mode) {
         mode.charAt(0).toUpperCase() + mode.slice(1) + ' Mode';
     updateModeButtons(mode);
     
+    // When switching to a regular mode, ensure parallel mode is disabled
     fetch('/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ display_mode: mode, update_display: true })
+        body: JSON.stringify({ 
+            display_mode: mode, 
+            parallel_mode: false,  // Explicitly disable parallel mode
+            update_display: true 
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showStatus(`Successfully switched to ${mode} mode`, 'success');
+            
+            // Update parallel mode toggle to reflect disabled state
+            document.getElementById('parallel-mode-toggle').checked = false;
             
             // Confirm the change worked by updating from server
             updateCurrentMode();
@@ -231,6 +267,14 @@ function clearGhosting() {
 function toggleParallelMode() {
     const toggle = document.getElementById('parallel-mode-toggle');
     const enabled = toggle.checked;
+    const translationSelection = document.getElementById('parallel-translation-selection');
+    
+    // Show/hide translation selection based on parallel mode
+    if (enabled) {
+        translationSelection.classList.remove('hidden');
+    } else {
+        translationSelection.classList.add('hidden');
+    }
     
     showStatus(`${enabled ? 'Enabling' : 'Disabling'} parallel mode...`, 'info');
     
@@ -250,11 +294,65 @@ function toggleParallelMode() {
         } else {
             showStatus(`Failed to toggle parallel mode: ${data.error}`, 'error');
             toggle.checked = !enabled; // Revert toggle
+            // Revert translation selection visibility
+            if (!enabled) {
+                translationSelection.classList.remove('hidden');
+            } else {
+                translationSelection.classList.add('hidden');
+            }
         }
     })
     .catch(error => {
         showStatus(`Error: ${error.message}`, 'error');
         toggle.checked = !enabled; // Revert toggle
+    });
+}
+
+function updatePrimaryTranslation() {
+    const translation = document.getElementById('primary-translation-select').value;
+    showStatus(`Setting primary translation to ${translation.toUpperCase()}...`, 'info');
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ translation: translation, update_display: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Primary translation set to ${translation.toUpperCase()}`, 'success');
+        } else {
+            showStatus(`Failed to set primary translation: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
+    });
+}
+
+function updateSecondaryTranslation() {
+    const translation = document.getElementById('secondary-translation-select').value;
+    showStatus(`Setting secondary translation to ${translation.toUpperCase()}...`, 'info');
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ secondary_translation: translation, update_display: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Secondary translation set to ${translation.toUpperCase()}`, 'success');
+        } else {
+            showStatus(`Failed to set secondary translation: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus(`Error: ${error.message}`, 'error');
     });
 }
 
@@ -429,9 +527,24 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 const settings = data.data;
                 
-                // Set parallel mode toggle
+                // Set parallel mode toggle and translation selection visibility
+                const translationSelection = document.getElementById('parallel-translation-selection');
                 if (settings.parallel_mode !== undefined) {
                     document.getElementById('parallel-mode-toggle').checked = settings.parallel_mode;
+                    // Show/hide translation selection based on parallel mode
+                    if (settings.parallel_mode) {
+                        translationSelection.classList.remove('hidden');
+                    } else {
+                        translationSelection.classList.add('hidden');
+                    }
+                }
+                
+                // Set current translations
+                if (settings.translation) {
+                    document.getElementById('primary-translation-select').value = settings.translation;
+                }
+                if (settings.secondary_translation) {
+                    document.getElementById('secondary-translation-select').value = settings.secondary_translation;
                 }
                 
                 // Update button visibility based on current mode and parallel mode

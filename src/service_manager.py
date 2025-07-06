@@ -162,7 +162,16 @@ class ServiceManager:
                 
                 # Display image with smart refresh logic
                 # Force full refresh for parallel mode to prevent artifacts
-                force_refresh = background_changed or parallel_mode_changed or current_parallel_mode
+                # Use partial refresh for devotional mode to reduce jarring updates
+                is_devotional_mode = verse_data.get('is_devotional', False)
+                
+                if is_devotional_mode:
+                    # For devotional mode, only force refresh on background/parallel changes
+                    force_refresh = background_changed or parallel_mode_changed
+                else:
+                    # For other modes, force refresh for parallel mode to prevent artifacts
+                    force_refresh = background_changed or parallel_mode_changed or current_parallel_mode
+                
                 self.display_manager.display_image(image, force_refresh=force_refresh)
                 
                 # Update tracking

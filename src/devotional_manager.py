@@ -150,10 +150,14 @@ class DevotionalManager:
         if not self.devotional_cache:
             return None
         
-        # Use slot as seed so same devotional is returned during the same time interval
-        random.seed(slot)
         cache_keys = list(self.devotional_cache.keys())
-        selected_key = random.choice(cache_keys)
+        if not cache_keys:
+            return None
+        
+        # Use slot to deterministically select devotional, but cycle through all available
+        # This ensures different devotionals are shown in different time slots
+        selected_index = slot % len(cache_keys)
+        selected_key = cache_keys[selected_index]
         
         devotional = self.devotional_cache[selected_key].copy()
         
@@ -161,14 +165,28 @@ class DevotionalManager:
         if 'devotional_text' in devotional:
             devotional['devotional_text'] = self._clean_devotional_text(devotional['devotional_text'])
         
+        # Add debug info for cycling
+        devotional['cache_position'] = f"{selected_index + 1} of {len(cache_keys)}"
+        devotional['rotation_info'] = f"Slot {slot}, showing devotional {selected_index + 1}/{len(cache_keys)}"
+        
         return devotional
 
     def _clean_devotional_text(self, text: str) -> str:
         """Clean up devotional text by removing unwanted content."""
-        # Remove purchase messages and archive links
+        # Remove purchase messages and archive links (enhanced patterns)
         text = re.sub(r'Purchase your own copy of this devotional\..*?$', '', text, flags=re.MULTILINE | re.DOTALL)
         text = re.sub(r'Or, catch up on.*?Archives\..*?$', '', text, flags=re.MULTILINE | re.DOTALL)
         text = re.sub(r'catch up on.*?Archives\..*?$', '', text, flags=re.MULTILINE | re.DOTALL)
+        
+        # Additional purchase/archive removal patterns
+        text = re.sub(r'Purchase.*?devotional.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'Buy.*?copy.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'Order.*?devotional.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'Visit.*?archive.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'Check.*?archive.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'.*?archives?\..*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'Available.*?store.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        text = re.sub(r'.*?bookstore.*?$', '', text, flags=re.MULTILINE | re.IGNORECASE)
         
         # Comprehensive date removal patterns
         # Remove dates from beginning (e.g., "July 3", "June 26", etc.)

@@ -445,11 +445,19 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
                     verse_data = current_app.verse_manager.get_current_verse()
                     image = current_app.image_generator.create_verse_image(verse_data)
                     
-                    # Determine refresh type: full refresh for background changes, partial for other settings
-                    force_refresh = 'background_index' in data or background_changed
+                    # Determine refresh type: full refresh for background changes and parallel mode changes, partial for other settings
+                    force_refresh = 'background_index' in data or background_changed or 'parallel_mode' in data
                     current_app.display_manager.display_image(image, force_refresh=force_refresh)
                     
-                    refresh_type = "full (background change)" if force_refresh else "partial (settings change)"
+                    if force_refresh:
+                        if 'background_index' in data or background_changed:
+                            refresh_type = "full (background change)"
+                        elif 'parallel_mode' in data:
+                            refresh_type = "full (parallel mode change)"
+                        else:
+                            refresh_type = "full (other change)"
+                    else:
+                        refresh_type = "partial (settings change)"
                     current_app.logger.info(f"Display updated immediately with {refresh_type}")
                     
                     # Track activity for recent activity log

@@ -283,7 +283,11 @@ function toggleParallelMode() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ parallel_mode: enabled, update_display: true })
+        body: JSON.stringify({ 
+            parallel_mode: enabled, 
+            display_mode: 'time',  // Set to time mode when enabling parallel
+            update_display: true 
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -291,6 +295,21 @@ function toggleParallelMode() {
             showStatus(`Parallel mode ${enabled ? 'enabled' : 'disabled'}`, 'success');
             // Update the mode display and button visibility
             updateCurrentMode();
+            
+            // Force a display refresh to ensure translation labels show up
+            // Use a longer delay to ensure backend has time to process the mode change
+            setTimeout(() => {
+                fetch('/api/refresh', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log('Display refresh successful after parallel mode toggle');
+                        } else {
+                            console.error('Display refresh failed:', data.error);
+                        }
+                    })
+                    .catch(console.error);
+            }, 2000);
         } else {
             showStatus(`Failed to toggle parallel mode: ${data.error}`, 'error');
             toggle.checked = !enabled; // Revert toggle
@@ -407,6 +426,12 @@ function toggleParallelAndSetTime() {
             // Update UI to reflect parallel mode
             document.getElementById('current-mode').textContent = 'Parallel Mode (Time)';
             document.getElementById('parallel-mode-toggle').checked = true;
+            
+            // Show translation selection dropdowns
+            const translationSelection = document.getElementById('parallel-translation-selection');
+            translationSelection.classList.remove('hidden');
+            
+            // Update button visibility to hide parallel mode button since it's now active
             updateModeButtons('time', true);
             
             // Force a display refresh

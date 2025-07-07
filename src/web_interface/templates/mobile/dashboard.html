@@ -177,6 +177,7 @@
 
 <script>
 // Mobile-optimized JavaScript functions
+let manualUIUpdate = false; // Flag to prevent automatic updates from overriding manual changes
 function setMode(mode) {
     showStatus(`Switching to ${mode} mode...`, 'info');
     
@@ -423,31 +424,55 @@ function toggleParallelAndSetTime() {
         if (data.success) {
             showStatus('Parallel mode enabled', 'success');
             
-            // Update UI to reflect parallel mode
+            // Set flag to prevent automatic updates from interfering
+            manualUIUpdate = true;
+            
+            // STEP 1: Update UI to reflect parallel mode
             document.getElementById('current-mode').textContent = 'Parallel Mode (Time)';
             document.getElementById('parallel-mode-toggle').checked = true;
             
-            // Show translation selection dropdowns with debugging
+            // STEP 2: Show translation selection dropdowns IMMEDIATELY
             const translationSelection = document.getElementById('parallel-translation-selection');
-            console.log('Translation selection element:', translationSelection);
-            console.log('Current classes before:', translationSelection.className);
+            console.log('Step 2 - Translation selection element:', translationSelection);
+            console.log('Step 2 - Current classes before:', translationSelection.className);
             translationSelection.classList.remove('hidden');
-            console.log('Current classes after:', translationSelection.className);
+            console.log('Step 2 - Current classes after:', translationSelection.className);
             
-            // Update button visibility to hide parallel mode button since it's now active
+            // STEP 3: Update button visibility 
             updateModeButtons('time', true);
             
-            // Force a display refresh and double-check translation dropdowns
+            // STEP 4: Force dropdowns visible again after a short delay (in case something overrides it)
             setTimeout(() => {
-                // Double-check that translation dropdowns are visible
-                const translationSelection = document.getElementById('parallel-translation-selection');
-                if (translationSelection.classList.contains('hidden')) {
-                    console.log('Translation dropdowns still hidden after parallel mode enable - forcing visible');
-                    translationSelection.classList.remove('hidden');
+                console.log('Step 4 - Double-checking translation dropdowns...');
+                const translationCheck = document.getElementById('parallel-translation-selection');
+                console.log('Step 4 - Classes before recheck:', translationCheck.className);
+                
+                if (translationCheck.classList.contains('hidden')) {
+                    console.log('Step 4 - Dropdowns were hidden again! Forcing visible...');
+                    translationCheck.classList.remove('hidden');
+                } else {
+                    console.log('Step 4 - Dropdowns still visible, good!');
+                }
+                console.log('Step 4 - Final classes:', translationCheck.className);
+            }, 100);
+            
+            // STEP 5: Force display refresh after longer delay
+            setTimeout(() => {
+                // One more check before refresh
+                const finalCheck = document.getElementById('parallel-translation-selection');
+                if (finalCheck.classList.contains('hidden')) {
+                    console.log('Final check - Dropdowns hidden before refresh! Re-showing...');
+                    finalCheck.classList.remove('hidden');
                 }
                 
                 fetch('/api/refresh', { method: 'POST' })
                     .catch(console.error);
+                
+                // Reset flag after everything is done
+                setTimeout(() => {
+                    manualUIUpdate = false;
+                    console.log('Manual UI update flag reset');
+                }, 500);
             }, 1000);
         } else {
             showStatus(`Failed to enable parallel mode: ${data.error}`, 'error');
@@ -484,14 +509,20 @@ function updateCurrentMode() {
                         updateModeButtons(currentMode, parallelMode);
                         
                         // Update translation dropdown visibility based on parallel mode
-                        const translationSelection = document.getElementById('parallel-translation-selection');
-                        const parallelToggle = document.getElementById('parallel-mode-toggle');
-                        if (parallelMode) {
-                            translationSelection.classList.remove('hidden');
-                            parallelToggle.checked = true;
+                        // But only if we're not in the middle of a manual UI update
+                        if (!manualUIUpdate) {
+                            const translationSelection = document.getElementById('parallel-translation-selection');
+                            const parallelToggle = document.getElementById('parallel-mode-toggle');
+                            console.log('updateCurrentMode - Auto-updating translation dropdowns, parallel mode:', parallelMode);
+                            if (parallelMode) {
+                                translationSelection.classList.remove('hidden');
+                                parallelToggle.checked = true;
+                            } else {
+                                translationSelection.classList.add('hidden');
+                                parallelToggle.checked = false;
+                            }
                         } else {
-                            translationSelection.classList.add('hidden');
-                            parallelToggle.checked = false;
+                            console.log('updateCurrentMode - Skipping auto-update due to manual UI update in progress');
                         }
                     })
                     .catch(() => {
@@ -576,11 +607,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set parallel mode toggle and translation selection visibility
                 const translationSelection = document.getElementById('parallel-translation-selection');
                 if (settings.parallel_mode !== undefined) {
+                    console.log('DOMContentLoaded - Setting parallel mode from server:', settings.parallel_mode);
                     document.getElementById('parallel-mode-toggle').checked = settings.parallel_mode;
                     // Show/hide translation selection based on parallel mode
                     if (settings.parallel_mode) {
+                        console.log('DOMContentLoaded - Showing translation dropdowns based on server settings');
                         translationSelection.classList.remove('hidden');
                     } else {
+                        console.log('DOMContentLoaded - Hiding translation dropdowns based on server settings');
                         translationSelection.classList.add('hidden');
                     }
                 }

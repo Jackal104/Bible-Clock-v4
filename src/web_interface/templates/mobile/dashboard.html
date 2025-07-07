@@ -524,13 +524,13 @@ function updateModeButtons(currentMode, parallelMode = false) {
     
     // Special logic for parallel mode
     if (parallelMode) {
-        // If parallel mode is enabled, hide the parallel mode button and the current base mode
+        // If parallel mode is enabled, hide the parallel mode button but keep the base mode visible
+        // so users can switch back to regular (non-parallel) mode
         if (modeButtons['parallel']) {
             modeButtons['parallel'].style.display = 'none';
         }
-        if (modeButtons[currentMode]) {
-            modeButtons[currentMode].style.display = 'none';
-        }
+        // Don't hide the current base mode - users need a way to switch back to non-parallel
+        // The current mode button will switch them back to regular mode without parallel
     } else {
         // If parallel mode is not enabled, just hide the current mode button
         if (modeButtons[currentMode]) {

@@ -1258,23 +1258,28 @@ class ImageGenerator:
             label_font = optimal_font  # Fallback to verse font
         
         if label_font:
-            self.logger.debug(f"Drawing translation labels at y={bottom_label_y}, display height={self.height}")
+            self.logger.info(f"Drawing translation labels at y={bottom_label_y}, display height={self.height}, verse_content_end_y={verse_content_end_y}")
             
-            # Left column label (primary translation) - smaller font
+            # Left column label (primary translation) - make it very visible
             left_label = f"({primary_label})"
             left_label_bbox = draw.textbbox((0, 0), left_label, font=label_font)
             left_label_width = left_label_bbox[2] - left_label_bbox[0]
             left_label_x = left_margin + (column_width // 2) - (left_label_width // 2)
-            draw.text((left_label_x, bottom_label_y), left_label, fill=32, font=label_font)  # Darker gray for better visibility
             
-            # Right column label (secondary translation) - larger font
+            # Ensure labels are visible - use black text on light background or add background
+            draw.text((left_label_x, bottom_label_y), left_label, fill=0, font=label_font)  # Black for maximum visibility
+            
+            # Right column label (secondary translation) - make it very visible
             right_label = f"({secondary_label})"
             right_label_bbox = draw.textbbox((0, 0), right_label, font=label_font)
             right_label_width = right_label_bbox[2] - right_label_bbox[0]
             right_label_x = right_margin + (column_width // 2) - (right_label_width // 2)
-            draw.text((right_label_x, bottom_label_y), right_label, fill=32, font=label_font)  # Darker gray for better visibility
             
-            self.logger.debug(f"Drew translation labels: '{left_label}' at ({left_label_x}, {bottom_label_y}), '{right_label}' at ({right_label_x}, {bottom_label_y})")
+            # Ensure labels are visible - use black text
+            draw.text((right_label_x, bottom_label_y), right_label, fill=0, font=label_font)  # Black for maximum visibility
+            
+            self.logger.info(f"Drew translation labels: '{left_label}' at ({left_label_x}, {bottom_label_y}), '{right_label}' at ({right_label_x}, {bottom_label_y})")
+            self.logger.info(f"Label positions - Left: x={left_label_x}, Right: x={right_label_x}, Y: {bottom_label_y}, Max Y allowed: {max_label_y}")
         else:
             self.logger.warning("No font available for translation labels - labels not drawn")
         

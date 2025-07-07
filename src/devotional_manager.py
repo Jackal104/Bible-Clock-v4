@@ -26,7 +26,7 @@ class DevotionalManager:
         self.max_cache_age_days = 30
         
         # Configurable interval settings
-        self.default_rotation_minutes = 15  # Default interval
+        self.default_rotation_minutes = 5  # Default interval
         self.config_file = Path('data/devotional_config.json')
         self._load_config()
         
@@ -408,12 +408,15 @@ class DevotionalManager:
         for artifact in artifacts:
             text = re.sub(artifact, '', text, flags=re.IGNORECASE)
         
-        # Remove date references and Faith's Checkbook titles
+        # Remove date references and Faith's Checkbook titles (comprehensive patterns)
         text = re.sub(r'^[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*', '', text)
         text = re.sub(r'^\d{1,2}[a-z]{0,2} [A-Z][a-z]+[,\s]*', '', text)
         text = re.sub(r'[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*\d{4}', '', text)
         text = re.sub(r'Faith\'s Checkbook\s*-\s*[A-Z][a-z]+\s*\d{1,2}[a-z]{0,2}[,\s]*', '', text, flags=re.IGNORECASE)
         text = re.sub(r'Faith\'s Checkbook[,\s]*', '', text, flags=re.IGNORECASE)
+        # Remove any standalone date patterns that might appear in the text
+        text = re.sub(r'\b[A-Z][a-z]+ \d{1,2}[a-z]{0,2}\b[,\s]*', '', text)
+        text = re.sub(r'\b\d{1,2}[a-z]{0,2} [A-Z][a-z]+\b[,\s]*', '', text)
         
         # Remove pagination references
         text = re.sub(r'pages?\s+\d+\s+of\s+\d+', '', text, flags=re.IGNORECASE)
@@ -469,8 +472,8 @@ class DevotionalManager:
         # Get current rotation info
         now = datetime.now()
         minutes_since_midnight = now.hour * 60 + now.minute
-        current_slot = (minutes_since_midnight // 15) % 96
-        next_rotation = self._get_next_rotation_time(now, 15)
+        current_slot = (minutes_since_midnight // self.rotation_minutes) % (1440 // self.rotation_minutes)
+        next_rotation = self._get_next_rotation_time(now, self.rotation_minutes)
         
         return {
             'total_cached': total_cached,
@@ -479,11 +482,11 @@ class DevotionalManager:
             'available_sources': list(self.sources.keys()),
             'rotation': {
                 'enabled': True,
-                'interval_minutes': 15,
+                'interval_minutes': self.rotation_minutes,
                 'current_slot': current_slot,
-                'total_slots': 96,
+                'total_slots': 1440 // self.rotation_minutes,
                 'next_change_at': next_rotation.strftime('%H:%M'),
-                'slots_per_day': 96
+                'slots_per_day': 1440 // self.rotation_minutes
             }
         }
 

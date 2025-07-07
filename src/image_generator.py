@@ -996,10 +996,10 @@ class ImageGenerator:
             return
         
         # Calculate current page based on time rotation
-        # Use a different rotation interval for pages (e.g., every 15 seconds)
+        # Use a different rotation interval for pages (e.g., every 10 seconds)
         from datetime import datetime
         now = datetime.now()
-        page_rotation_seconds = 15  # Change page every 15 seconds
+        page_rotation_seconds = 10  # Change page every 10 seconds
         seconds_since_midnight = now.hour * 3600 + now.minute * 60 + now.second
         page_slot = (seconds_since_midnight // page_rotation_seconds) % len(pages)
         current_page = page_slot + 1  # Pages are 1-indexed
@@ -1101,11 +1101,11 @@ class ImageGenerator:
         if len(wrapped_lines) <= max_lines_per_page:
             return [text]
         
-        # Split into pages
+        # Split into pages - use newlines to preserve line breaks
         pages = []
         for i in range(0, len(wrapped_lines), max_lines_per_page):
             page_lines = wrapped_lines[i:i + max_lines_per_page]
-            pages.append(' '.join(page_lines))
+            pages.append('\n'.join(page_lines))
         
         return pages
 
@@ -1139,18 +1139,19 @@ class ImageGenerator:
         # Use consistent font size for all pages
         page_font = self._get_font(self.verse_size)
         
-        # Wrap page content
-        wrapped_text = self._wrap_text(page_content, content_width, page_font)
+        # Split page content by newlines (preserve pagination line breaks)
+        page_lines = page_content.split('\n')
         
         # Draw page text
         y_position = content_start_y
-        for line in wrapped_text:
-            if page_font:
-                line_bbox = draw.textbbox((0, 0), line, font=page_font)
-                line_width = line_bbox[2] - line_bbox[0]
-                line_x = (self.width - line_width) // 2
-                draw.text((line_x, y_position), line, font=page_font, fill='black')
-                y_position += page_font.size + 20
+        for line in page_lines:
+            if line.strip():  # Only draw non-empty lines
+                if page_font:
+                    line_bbox = draw.textbbox((0, 0), line, font=page_font)
+                    line_width = line_bbox[2] - line_bbox[0]
+                    line_x = (self.width - line_width) // 2
+                    draw.text((line_x, y_position), line, font=page_font, fill='black')
+                    y_position += page_font.size + 20
         
         # Page indicator removed per user request - devotional will cycle through pages automatically
     

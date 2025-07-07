@@ -1126,7 +1126,13 @@ class VerseManager:
                     result['source_translation'] = source_code or translation
                     
                     # Add fallback notation if not the original translation
-                    if source_code and source_code.lower() != translation.lower():
+                    # Special case: treat NASB and NASB1995 as equivalent
+                    is_nasb_equivalent = (
+                        (translation.lower() == 'nasb' and source_code.lower() == 'nasb1995') or
+                        (translation.lower() == 'nasb1995' and source_code.lower() == 'nasb')
+                    )
+                    
+                    if source_code and source_code.lower() != translation.lower() and not is_nasb_equivalent:
                         result['text'] = f"[{translation.upper()} unavailable - showing {source_code.upper()}] {result['text']}"
                         result['translation'] = f"{translation.upper()} (fallback: {source_code.upper()})"
                     else:

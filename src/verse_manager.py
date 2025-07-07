@@ -141,12 +141,17 @@ class VerseManager:
             cacheable_translations = ['kjv', 'ylt', 'esv', 'amp', 'nlt', 'msg', 'nasb']
             
             for translation in cacheable_translations:
-                cache_path = Path(f'data/translations/bible_{translation}.json')
+                # Handle special case for NASB which uses nasb1995 file
+                file_name = translation
+                if translation == 'nasb':
+                    file_name = 'nasb1995'
+                
+                cache_path = Path(f'data/translations/bible_{file_name}.json')
                 try:
                     if cache_path.exists():
                         with open(cache_path, 'r') as f:
                             self.translation_caches[translation] = json.load(f)
-                        self.logger.debug(f"Loaded {translation.upper()} translation cache")
+                        self.logger.debug(f"Loaded {translation.upper()} translation cache from {file_name}")
                     else:
                         self.translation_caches[translation] = {}
                         self.logger.debug(f"Initialized empty cache for {translation.upper()}")
@@ -1077,7 +1082,7 @@ class VerseManager:
                 ('bible-api', 'kjv')        # Final: KJV fallback
             ],
             'nasb': [
-                ('local_cache', 'nasb1995'),    # Primary: Growing local cache
+                ('local_cache', 'nasb'),        # Primary: Growing local cache
                 ('web_scraping', 'NASB1995'),  # Secondary: Direct web scraping (reliable)
                 ('biblegateway', 'NASB1995'),   # Tertiary: BibleGateway API (NASB 1995)
                 ('bible_scraper', 'NASB1995'),  # Quaternary: YouVersion scraper (may have 404 issues)
@@ -2080,7 +2085,12 @@ getVerse();
     def _save_translation_cache(self, translation: str):
         """Save a specific translation cache to file."""
         try:
-            cache_path = Path(f'data/translations/bible_{translation}.json')
+            # Handle special case for NASB which uses nasb1995 file
+            file_name = translation
+            if translation == 'nasb':
+                file_name = 'nasb1995'
+            
+            cache_path = Path(f'data/translations/bible_{file_name}.json')
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             
             with open(cache_path, 'w') as f:

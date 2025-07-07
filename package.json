@@ -1,5 +1,27 @@
 {
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.41"
-  }
+    "@anthropic-ai/claude-code": "^1.0.41",
+    "bible-scraper": "^2.2.1"
+  },
+  "name": "bible-clockv4",
+  "version": "1.0.0",
+  "description": "A comprehensive Raspberry Pi-based e-ink display system that shows Bible verses corresponding to the current time, featuring a modern web interface, date-based biblical events, advanced voice control, and AI integration.",
+  "main": "debug_scraper.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jackal104/Bible-Clock-v4.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jackal104/Bible-Clock-v4/issues"
+  },
+  "homepage": "https://github.com/Jackal104/Bible-Clock-v4#readme"
 }

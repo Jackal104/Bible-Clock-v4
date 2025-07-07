@@ -1057,26 +1057,30 @@ class VerseManager:
             ],
             'nlt': [
                 ('local_cache', 'nlt'),     # Primary: Growing local cache
-                ('bible_scraper', 'NLT'),   # Secondary: YouVersion scraper
+                ('web_scraping', 'NLT'),    # Secondary: Direct web scraping (reliable)
                 ('biblegateway', 'NLT'),    # Tertiary: BibleGateway API
+                ('bible_scraper', 'NLT'),   # Quaternary: YouVersion scraper (may have 404 issues)
                 ('bible-api', 'kjv')        # Final: KJV fallback
             ],
             'msg': [
                 ('local_cache', 'msg'),     # Primary: Growing local cache
-                ('bible_scraper', 'MSG'),   # Secondary: YouVersion scraper
+                ('web_scraping', 'MSG'),    # Secondary: Direct web scraping (reliable)
                 ('biblegateway', 'MSG'),    # Tertiary: BibleGateway API
+                ('bible_scraper', 'MSG'),   # Quaternary: YouVersion scraper (may have 404 issues)
                 ('bible-api', 'kjv')        # Final: KJV fallback
             ],
             'esv': [
                 ('local_cache', 'esv'),     # Primary: Growing local cache
-                ('esv_api', None),          # Secondary: Official ESV API
-                ('bible_scraper', 'ESV'),   # Tertiary: YouVersion scraper
+                ('web_scraping', 'ESV'),    # Secondary: Direct web scraping (reliable)
+                ('esv_api', None),          # Tertiary: Official ESV API
+                ('bible_scraper', 'ESV'),   # Quaternary: YouVersion scraper (may have 404 issues)
                 ('bible-api', 'kjv')        # Final: KJV fallback
             ],
             'nasb': [
                 ('local_cache', 'nasb'),    # Primary: Growing local cache
-                ('bible_scraper', 'NASB1995'),  # Secondary: YouVersion scraper (NASB 1995)
+                ('web_scraping', 'NASB1995'),  # Secondary: Direct web scraping (reliable)
                 ('biblegateway', 'NASB1995'),   # Tertiary: BibleGateway API (NASB 1995)
+                ('bible_scraper', 'NASB1995'),  # Quaternary: YouVersion scraper (may have 404 issues)
                 ('bible-api', 'kjv')        # Final: KJV fallback
             ]
         }
@@ -1300,6 +1304,7 @@ class VerseManager:
     
     def _fetch_from_bible_scraper(self, book: str, chapter: int, verse: int, translation_code: str) -> Optional[Dict]:
         """Fetch verse using IonicaBizau/bible-scraper for YouVersion scraping."""
+        self.logger.info(f"Attempting to scrape {translation_code} verse: {book} {chapter}:{verse}")
         try:
             import subprocess
             import json
@@ -1308,9 +1313,10 @@ class VerseManager:
             
             # Check if Node.js and npm are available
             try:
-                subprocess.run(['node', '--version'], capture_output=True, check=True)
+                node_result = subprocess.run(['node', '--version'], capture_output=True, check=True)
+                self.logger.debug(f"Node.js version: {node_result.stdout.decode().strip()}")
             except (subprocess.CalledProcessError, FileNotFoundError):
-                self.logger.debug("Node.js not available for bible-scraper")
+                self.logger.warning("Node.js not available for bible-scraper")
                 return None
             
             # Create a temporary directory for bible-scraper
@@ -1321,8 +1327,17 @@ const BibleScraper = require('bible-scraper');
 
 async function getVerse() {{
     try {{
-        // AMP translation ID for YouVersion
-        const translationId = {{'AMP': 1588, 'NIV': 111, 'ESV': 59}};
+        // YouVersion translation IDs for web scraping
+        const translationId = {{
+            'AMP': 1588,
+            'NLT': 116,
+            'MSG': 97,
+            'ESV': 59,
+            'NASB': 100,        // NASB 1995
+            'NASB1995': 100,    // NASB 1995 (alternative name)
+            'NASB2020': 2692,   // NASB 2020
+            'NIV': 111          // NIV (existing)
+        }};
         const id = translationId['{translation_code}'] || 1588;
         
         const scraper = new BibleScraper(id);
@@ -1362,6 +1377,7 @@ getVerse();
                     f.write(scraper_script)
                 
                 # Install bible-scraper (this might take a moment on first run)
+                self.logger.debug(f"Installing bible-scraper npm package for {translation_code}")
                 install_result = subprocess.run(
                     ['npm', 'install'], 
                     cwd=temp_dir,
@@ -1370,8 +1386,10 @@ getVerse();
                 )
                 
                 if install_result.returncode != 0:
-                    self.logger.debug("Failed to install bible-scraper npm package")
+                    self.logger.warning(f"Failed to install bible-scraper npm package: {install_result.stderr.decode()}")
                     return None
+                else:
+                    self.logger.debug("bible-scraper npm package installed successfully")
                 
                 # Run the scraper script
                 result = subprocess.run(
@@ -1382,32 +1400,49 @@ getVerse();
                     text=True
                 )
                 
+                self.logger.debug(f"Scraper result code: {result.returncode}")
+                if result.stdout:
+                    self.logger.debug(f"Scraper stdout: {result.stdout}")
+                if result.stderr:
+                    self.logger.debug(f"Scraper stderr: {result.stderr}")
+                
                 if result.returncode == 0:
-                    output = json.loads(result.stdout.strip())
-                    if output.get('success') and output.get('data'):
-                        verse_data = output['data']
-                        verse_text = verse_data.get('text', '').strip()
+                    try:
+                        output = json.loads(result.stdout.strip())
+                        self.logger.debug(f"Scraper JSON output: {output}")
                         
-                        # Cache the verse for any translation
-                        if verse_text:
-                            self._cache_translation_verse(book, chapter, verse, verse_text, translation_code.lower())
-                        
-                        return {
-                            'reference': f"{book} {chapter:02d}:{verse:02d}",
-                            'text': verse_text,
-                            'book': book,
-                            'chapter': chapter,
-                            'verse': verse,
-                            'translation': translation_code,
-                            'api_source': 'bible_scraper_youversion'
-                        }
+                        if output.get('success') and output.get('data'):
+                            verse_data = output['data']
+                            verse_text = verse_data.get('text', '').strip()
+                            
+                            if verse_text:
+                                self.logger.info(f"Successfully scraped {translation_code} verse: {verse_text[:100]}...")
+                                # Cache the verse for any translation
+                                self._cache_translation_verse(book, chapter, verse, verse_text, translation_code.lower())
+                                
+                                return {
+                                    'reference': f"{book} {chapter:02d}:{verse:02d}",
+                                    'text': verse_text,
+                                    'book': book,
+                                    'chapter': chapter,
+                                    'verse': verse,
+                                    'translation': translation_code.upper(),
+                                    'api_source': 'bible_scraper_youversion'
+                                }
+                            else:
+                                self.logger.warning(f"bible-scraper returned empty text for {translation_code}")
+                        else:
+                            self.logger.warning(f"bible-scraper returned unsuccessful result: {output}")
+                    except json.JSONDecodeError as je:
+                        self.logger.error(f"Failed to parse scraper JSON output: {je}")
+                        self.logger.error(f"Raw output: {result.stdout}")
                 else:
-                    self.logger.debug(f"bible-scraper script failed: {result.stderr}")
+                    self.logger.warning(f"bible-scraper script failed with code {result.returncode}: {result.stderr}")
                     
         except subprocess.TimeoutExpired:
-            self.logger.debug("bible-scraper timed out")
+            self.logger.warning(f"bible-scraper timed out for {translation_code}")
         except Exception as e:
-            self.logger.debug(f"bible-scraper fetch failed: {e}")
+            self.logger.error(f"bible-scraper fetch failed for {translation_code}: {e}")
             
         return None
     
@@ -1656,7 +1691,12 @@ getVerse();
         """Fetch verse by scraping Bible websites directly."""
         try:
             import requests
-            from bs4 import BeautifulSoup
+            try:
+                from bs4 import BeautifulSoup
+                has_bs4 = True
+            except ImportError:
+                self.logger.debug("BeautifulSoup not available, using regex-based scraping")
+                has_bs4 = False
             import re
             
             # BibleGateway URL format for direct verse lookup
@@ -1673,22 +1713,48 @@ getVerse();
             response = requests.get(url, headers=headers, timeout=self.timeout)
             response.raise_for_status()
             
-            soup = BeautifulSoup(response.content, 'html.parser')
+            verse_text = None
             
-            # Find the passage content - BibleGateway uses specific classes
-            passage_content = soup.find('div', class_='passage-content')
-            if not passage_content:
-                # Try alternative selectors
-                passage_content = soup.find('div', class_='passage-text')
+            if has_bs4:
+                # Use BeautifulSoup for better parsing
+                soup = BeautifulSoup(response.content, 'html.parser')
+                
+                # Find the passage content - BibleGateway uses specific classes
+                passage_content = soup.find('div', class_='passage-content')
                 if not passage_content:
-                    passage_content = soup.find('div', class_='passage')
-            
-            if not passage_content:
-                self.logger.warning(f"Could not find passage content for {verse_ref} {translation_code}")
-                return None
-            
-            # Get all text from passage content and clean it
-            verse_text = passage_content.get_text().strip()
+                    # Try alternative selectors
+                    passage_content = soup.find('div', class_='passage-text')
+                    if not passage_content:
+                        passage_content = soup.find('div', class_='passage')
+                
+                if passage_content:
+                    verse_text = passage_content.get_text().strip()
+                else:
+                    self.logger.warning(f"Could not find passage content for {verse_ref} {translation_code}")
+            else:
+                # Use regex-based parsing when BeautifulSoup is not available
+                html_content = response.text
+                
+                # Try to extract text from passage content div using regex
+                passage_patterns = [
+                    r'<div[^>]*class="passage-content"[^>]*>(.*?)</div>',
+                    r'<div[^>]*class="passage-text"[^>]*>(.*?)</div>',
+                    r'<div[^>]*class="passage"[^>]*>(.*?)</div>',
+                    r'<span[^>]*class="text"[^>]*>(.*?)</span>'
+                ]
+                
+                for pattern in passage_patterns:
+                    match = re.search(pattern, html_content, re.DOTALL | re.IGNORECASE)
+                    if match:
+                        # Extract text and clean HTML tags
+                        raw_text = match.group(1)
+                        # Remove HTML tags
+                        verse_text = re.sub(r'<[^>]+>', '', raw_text).strip()
+                        if verse_text:
+                            break
+                
+                if not verse_text:
+                    self.logger.warning(f"Regex scraping failed for {verse_ref} {translation_code}")
             
             if not verse_text:
                 self.logger.warning(f"No text found in passage content for {verse_ref} {translation_code}")

@@ -248,6 +248,137 @@
           ]
         }
       ],
+      "07-01": [
+        {
+          "title": "The Visitation of Mary",
+          "description": "On this day, we remember Mary's visit to Elizabeth, celebrating the joy of two mothers blessed by God",
+          "verses": [
+            {"reference": "Luke 1:39-42", "text": "At that time Mary got ready and hurried to a town in the hill country of Judea, where she entered Zechariah's home and greeted Elizabeth. When Elizabeth heard Mary's greeting, the baby leaped in her womb, and Elizabeth was filled with the Holy Spirit."},
+            {"reference": "Luke 1:45", "text": "Blessed is she who has believed that the Lord would fulfill his promises to her!"},
+            {"reference": "Luke 1:46-47", "text": "And Mary said: 'My soul glorifies the Lord and my spirit rejoices in God my Savior.'"},
+            {"reference": "Psalm 139:13", "text": "For you created my inmost being; you knit me together in my mother's womb."}
+          ]
+        }
+      ],
+      "07-02": [
+        {
+          "title": "The Healing Ministry of Jesus",
+          "description": "Today we reflect on Jesus' compassionate healing ministry and His power over sickness",
+          "verses": [
+            {"reference": "Matthew 4:23", "text": "Jesus went throughout Galilee, teaching in their synagogues, proclaiming the good news of the kingdom, and healing every disease and sickness among the people."},
+            {"reference": "Isaiah 53:5", "text": "But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed."},
+            {"reference": "Matthew 8:16-17", "text": "When evening came, many who were demon-possessed were brought to him, and he drove out the spirits with a word and healed all the sick. This was to fulfill what was spoken through the prophet Isaiah: 'He took up our infirmities and bore our diseases.'"},
+            {"reference": "James 5:14-15", "text": "Is anyone among you sick? Let them call the elders of the church to pray over them and anoint them with oil in the name of the Lord. And the prayer offered in faith will make the sick person well; the Lord will raise them up."}
+          ]
+        }
+      ],
+      "07-03": [
+        {
+          "title": "Saint Thomas the Apostle",
+          "description": "Today we commemorate Saint Thomas, whose doubt led to one of the greatest declarations of faith in Christ's divinity",
+          "verses": [
+            {"reference": "John 20:28", "text": "Thomas said to him, 'My Lord and my God!'"},
+            {"reference": "John 20:29", "text": "Then Jesus told him, 'Because you have seen me, you have believed; blessed are those who have not seen and yet have believed.'"},
+            {"reference": "John 14:5-6", "text": "Thomas said to him, 'Lord, we don't know where you are going, so how can we know the way?' Jesus answered, 'I am the way and the truth and the life. No one comes to the Father except through me.'"},
+            {"reference": "2 Corinthians 5:7", "text": "For we live by faith, not by sight."}
+          ]
+        }
+      ],
+      "07-04": [
+        {
+          "title": "Freedom in Christ",
+          "description": "On this day, we reflect on the spiritual freedom found in Christ",
+          "verses": [
+            {"reference": "Galatians 5:1", "text": "It is for freedom that Christ has set us free. Stand firm, then, and do not let yourselves be burdened again by a yoke of slavery."},
+            {"reference": "John 8:36", "text": "So if the Son sets you free, you will be free indeed."},
+            {"reference": "2 Corinthians 3:17", "text": "Now the Lord is the Spirit, and where the Spirit of the Lord is, there is freedom."}
+          ]
+        }
+      ],
+      "07-05": [
+        {
+          "title": "The Feeding of the Five Thousand",
+          "description": "Today we remember Christ's miraculous feeding of the multitude, demonstrating His provision and compassion",
+          "verses": [
+            {"reference": "Matthew 14:19-20", "text": "And he directed the people to sit down on the grass. Taking the five loaves and the two fish and looking up to heaven, he gave thanks and broke the loaves. Then he gave them to the disciples, and the disciples gave them to the people. They all ate and were satisfied, and the disciples picked up twelve basketfuls of broken pieces that were left over."},
+            {"reference": "John 6:35", "text": "Then Jesus declared, 'I am the bread of life. Whoever comes to me will never go hungry, and whoever believes in me will never be thirsty.'"},
+            {"reference": "Philippians 4:19", "text": "And my God will meet all your needs according to the riches of his glory in Christ Jesus."},
+            {"reference": "Psalm 23:1", "text": "The Lord is my shepherd, I lack nothing."}
+          ]
+        }
+      ],
+      "07-06": [
+        {
+          "title": "Jesus Walking on Water",
+          "description": "Today we reflect on Jesus walking on water, demonstrating His power over nature and His call for us to trust Him",
+          "verses": [
+            {"reference": "Matthew 14:25-27", "text": "Shortly before dawn Jesus went out to them, walking on the lake. When the disciples saw him walking on the lake, they were terrified. 'It's a ghost,' they said, and cried out in fear. But Jesus immediately said to them: 'Take courage! It is I. Don't be afraid.'"},
+            {"reference": "Matthew 14:31", "text": "Immediately Jesus reached out his hand and caught him. 'You of little faith,' he said, 'why did you doubt?'"},
+            {"reference": "Isaiah 43:2", "text": "When you pass through the waters, I will be with you; and when you pass through the rivers, they will not sweep over you."},
+            {"reference": "Psalm 107:29", "text": "He stilled the storm to a whisper; the waves of the sea were hushed."}
+          ]
+        }
+      ],
+      "07-01": [
+        {
+          "title": "The Visitation of Mary",
+          "description": "On this day, we remember Mary's visit to Elizabeth, a moment of joy and recognition of God's plan",
+          "verses": [
+            {"reference": "Luke 1:42-43", "text": "In a loud voice she exclaimed: 'Blessed are you among women, and blessed is the child you will bear! But why am I so favored, that the mother of my Lord should come to me?'"},
+            {"reference": "Luke 1:46-47", "text": "And Mary said: 'My soul glorifies the Lord and my spirit rejoices in God my Savior.'"},
+            {"reference": "Psalm 139:13", "text": "For you created my inmost being; you knit me together in my mother's womb."},
+            {"reference": "Isaiah 7:14", "text": "Therefore the Lord himself will give you a sign: The virgin will conceive and give birth to a son, and will call him Immanuel."}
+          ]
+        }
+      ],
+      "07-02": [
+        {
+          "title": "The Healing Ministry of Jesus",
+          "description": "On this day, we reflect on Jesus' compassionate healing ministry and God's power to restore",
+          "verses": [
+            {"reference": "Matthew 8:16-17", "text": "When evening came, many who were demon-possessed were brought to him, and he drove out the spirits with a word and healed all the sick. This was to fulfill what was spoken through the prophet Isaiah: 'He took up our infirmities and bore our diseases.'"},
+            {"reference": "Isaiah 53:5", "text": "But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed."},
+            {"reference": "James 5:14-15", "text": "Is anyone among you sick? Let them call the elders of the church to pray over them and anoint them with oil in the name of the Lord. And the prayer offered in faith will make the sick person well; the Lord will raise them up."},
+            {"reference": "Psalm 103:2-3", "text": "Praise the Lord, my soul, and forget not all his benefits—who forgives all your sins and heals all your diseases."}
+          ]
+        }
+      ],
+      "07-03": [
+        {
+          "title": "Saint Thomas the Apostle",
+          "description": "On this day, we remember Thomas the Apostle, whose honest doubt led to profound faith",
+          "verses": [
+            {"reference": "John 20:28", "text": "Thomas said to him, 'My Lord and my God!'"},
+            {"reference": "John 20:29", "text": "Then Jesus told him, 'Because you have seen me, you have believed; blessed are those who have not seen and yet have believed.'"},
+            {"reference": "John 11:16", "text": "Then Thomas (also known as Didymus) said to the rest of the disciples, 'Let us also go, that we may die with him.'"},
+            {"reference": "Hebrews 11:1", "text": "Now faith is confidence in what we hope for and assurance about what we do not see."}
+          ]
+        }
+      ],
+      "07-05": [
+        {
+          "title": "The Feeding of the Five Thousand",
+          "description": "On this day, we remember Jesus' miracle of feeding five thousand people, demonstrating God's abundant provision",
+          "verses": [
+            {"reference": "Matthew 14:19-20", "text": "And he directed the people to sit down on the grass. Taking the five loaves and the two fish and looking up to heaven, he gave thanks and broke the loaves. Then he gave them to the disciples, and the disciples gave them to the people. They all ate and were satisfied, and the disciples picked up twelve basketfuls of broken pieces that were left over."},
+            {"reference": "John 6:35", "text": "Then Jesus declared, 'I am the bread of life. Whoever comes to me will never go hungry, and whoever believes in me will never be thirsty.'"},
+            {"reference": "Philippians 4:19", "text": "And my God will meet all your needs according to the riches of his glory in Christ Jesus."},
+            {"reference": "Psalm 23:1", "text": "The Lord is my shepherd, I lack nothing."}
+          ]
+        }
+      ],
+      "07-06": [
+        {
+          "title": "Jesus Walking on Water",
+          "description": "On this day, we remember Jesus walking on water, demonstrating His power over nature and our fears",
+          "verses": [
+            {"reference": "Matthew 14:25-27", "text": "Shortly before dawn Jesus went out to them, walking on the lake. When the disciples saw him walking on the lake, they were terrified. 'It's a ghost,' they said, and cried out in fear. But Jesus immediately said to them: 'Take courage! It is I. Don't be afraid.'"},
+            {"reference": "Mark 6:50", "text": "because they all saw him and were terrified. Immediately he spoke to them and said, 'Take courage! It is I. Don't be afraid.'"},
+            {"reference": "Isaiah 43:2", "text": "When you pass through the waters, I will be with you; and when you pass through the rivers, they will not sweep over you. When you walk through the fire, you will not be burned; the flames will not set you ablaze."},
+            {"reference": "Psalm 89:9", "text": "You rule over the surging sea; when its waves mount up, you still them."}
+          ]
+        }
+      ],
       "07-07": [
         {
           "title": "Early Christian Martyrs",
@@ -269,14 +400,735 @@
           ]
         }
       ],
+      "07-08": [
+        {
+          "title": "The Transfiguration Preparation",
+          "description": "On this day, we prepare our hearts to understand the glory of Christ, as shown in His transfiguration",
+          "verses": [
+            {"reference": "Matthew 17:2", "text": "There he was transfigured before them. His face shone like the sun, and his clothes became as white as the light."},
+            {"reference": "2 Peter 1:16-17", "text": "For we did not follow cleverly devised stories when we told you about the coming of our Lord Jesus Christ in power, but we were eyewitnesses of his majesty. He received honor and glory from God the Father when the voice came to him from the Majestic Glory, saying, 'This is my Son, whom I love; with him I am well pleased.'"},
+            {"reference": "2 Corinthians 3:18", "text": "And we all, who with unveiled faces contemplate the Lord's glory, are being transformed into his image with ever-increasing glory, which comes from the Lord, who is the Spirit."},
+            {"reference": "1 John 3:2", "text": "Dear friends, now we are children of God, and what we will be has not yet been made known. But we know that when Christ appears, we shall be like him, for we shall see him as he is."}
+          ]
+        }
+      ],
+      "07-09": [
+        {
+          "title": "The Parable of the Sower",
+          "description": "On this day, we reflect on Jesus' parable of the sower and the different types of hearts that receive God's word",
+          "verses": [
+            {"reference": "Matthew 13:8", "text": "Still other seed fell on good soil, where it produced a crop—a hundred, sixty or thirty times what was sown."},
+            {"reference": "Luke 8:15", "text": "But the seed on good soil stands for those with a noble and good heart, who hear the word, retain it, and by persevering produce a crop."},
+            {"reference": "Isaiah 55:11", "text": "so is my word that goes out from my mouth: It will not return to me empty, but will accomplish what I desire and achieve the purpose for which I sent it."},
+            {"reference": "1 Peter 1:23", "text": "For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God."}
+          ]
+        }
+      ],
+      "07-10": [
+        {
+          "title": "The Seven Deacons",
+          "description": "On this day, we remember the appointment of the first seven deacons to serve the early church",
+          "verses": [
+            {"reference": "Acts 6:3", "text": "Brothers and sisters, choose seven men from among you who are known to be full of the Spirit and wisdom. We will turn this responsibility over to them."},
+            {"reference": "Acts 6:5", "text": "This proposal pleased the whole group. They chose Stephen, a man full of faith and of the Holy Spirit; also Philip, Procorus, Nicanor, Timon, Parmenas, and Nicolas from Antioch, a convert to Judaism."},
+            {"reference": "1 Timothy 3:8", "text": "In the same way, deacons are to be worthy of respect, sincere, not indulging in much wine, and not pursuing dishonest gain."},
+            {"reference": "Mark 10:43-44", "text": "Not so with you. Instead, whoever wants to become great among you must be your servant, and whoever wants to be first must be slave of all."}
+          ]
+        }
+      ],
+      "07-08": [
+        {
+          "title": "The Transfiguration of Jesus",
+          "description": "Today we remember Jesus' transfiguration on the mountain, revealing His divine glory to the disciples",
+          "verses": [
+            {"reference": "Matthew 17:2", "text": "There he was transfigured before them. His face shone like the sun, and his clothes became as white as the light."},
+            {"reference": "Matthew 17:5", "text": "While he was still speaking, a bright cloud covered them, and a voice from the cloud said, 'This is my Son, whom I love; with him I am well pleased. Listen to him!'"},
+            {"reference": "2 Peter 1:16-17", "text": "For we did not follow cleverly devised stories when we told you about the coming of our Lord Jesus Christ in power, but we were eyewitnesses of his majesty. He received honor and glory from God the Father when the voice came to him from the Majestic Glory, saying, 'This is my Son, whom I love; with him I am well pleased.'"},
+            {"reference": "1 John 3:2", "text": "Dear friends, now we are children of God, and what we will be has not yet been made known. But we know that when Christ appears, we shall be like him, for we shall see him as he is."}
+          ]
+        }
+      ],
+      "07-09": [
+        {
+          "title": "The Parable of the Sower",
+          "description": "Today we reflect on Jesus' parable of the sower and the different responses to God's word",
+          "verses": [
+            {"reference": "Matthew 13:23", "text": "But the seed falling on good soil refers to someone who hears the word and understands it. This is the one who produces a crop, yielding a hundred, sixty or thirty times what was sown."},
+            {"reference": "Mark 4:20", "text": "Others, like seed sown on good soil, hear the word, accept it, and produce a crop—some thirty, some sixty, some a hundred times what was sown."},
+            {"reference": "Luke 8:15", "text": "But the seed on good soil stands for those with a noble and good heart, who hear the word, retain it, and by persevering produce a crop."},
+            {"reference": "Isaiah 55:11", "text": "So is my word that goes out from my mouth: It will not return to me empty, but will accomplish what I desire and achieve the purpose for which I sent it."}
+          ]
+        }
+      ],
+      "07-10": [
+        {
+          "title": "The Seven Deacons",
+          "description": "Today we remember the appointment of the first seven deacons, including Stephen, showing the early church's organization and service",
+          "verses": [
+            {"reference": "Acts 6:3", "text": "Brothers and sisters, choose seven men from among you who are known to be full of the Spirit and wisdom. We will turn this responsibility over to them."},
+            {"reference": "Acts 6:5", "text": "This proposal pleased the whole group. They chose Stephen, a man full of faith and of the Holy Spirit; also Philip, Procorus, Nicanor, Timon, Parmenas, and Nicolas from Antioch, a convert to Judaism."},
+            {"reference": "1 Peter 4:10", "text": "Each of you should use whatever gift you have received to serve others, as faithful stewards of God's grace in its various forms."},
+            {"reference": "Galatians 5:13", "text": "You, my brothers and sisters, were called to be free. But do not use your freedom to indulge the flesh; rather, serve one another humbly in love."}
+          ]
+        }
+      ],
+      "07-11": [
+        {
+          "title": "Saint Benedict of Nursia",
+          "description": "Today we commemorate Saint Benedict, the father of Western monasticism, who emphasized prayer, work, and community life",
+          "verses": [
+            {"reference": "Colossians 3:17", "text": "And whatever you do, whether in word or deed, do it all in the name of the Lord Jesus, giving thanks to God the Father through him."},
+            {"reference": "1 Thessalonians 5:17", "text": "Pray continually."},
+            {"reference": "Ecclesiastes 3:1", "text": "There is a time for everything, and a season for every activity under the heavens."},
+            {"reference": "Hebrews 10:25", "text": "Not giving up meeting together, as some are in the habit of doing, but encouraging one another—and all the more as you see the Day approaching."}
+          ]
+        }
+      ],
+      "07-12": [
+        {
+          "title": "The Healing of the Blind Man",
+          "description": "Today we remember Jesus healing the man born blind, demonstrating His power as the light of the world",
+          "verses": [
+            {"reference": "John 9:25", "text": "He replied, 'Whether he is a sinner or not, I don't know. One thing I do know. I was blind but now I see!'"},
+            {"reference": "John 9:5", "text": "While I am in the world, I am the light of the world."},
+            {"reference": "2 Corinthians 4:6", "text": "For God, who said, 'Let light shine out of darkness,' made his light shine in our hearts to give us the light of the knowledge of God's glory displayed in the face of Christ."},
+            {"reference": "Ephesians 5:8", "text": "For you were once darkness, but now you are light in the Lord. Live as children of light."}
+          ]
+        }
+      ],
+      "07-13": [
+        {
+          "title": "The Good Shepherd",
+          "description": "Today we reflect on Jesus as the Good Shepherd who lays down His life for His sheep",
+          "verses": [
+            {"reference": "John 10:11", "text": "I am the good shepherd. The good shepherd lays down his life for the sheep."},
+            {"reference": "John 10:14-15", "text": "I am the good shepherd; I know my sheep and my sheep know me—just as the Father knows me and I know the Father—and I lay down my life for the sheep."},
+            {"reference": "Psalm 23:1", "text": "The Lord is my shepherd, I lack nothing."},
+            {"reference": "1 Peter 2:25", "text": "For you were like sheep going astray, but now you have returned to the Shepherd and Overseer of your souls."}
+          ]
+        }
+      ],
+      "07-14": [
+        {
+          "title": "The Martyrdom of Saint Camillus",
+          "description": "Today we remember Saint Camillus de Lellis, who dedicated his life to caring for the sick and founded the Camillians",
+          "verses": [
+            {"reference": "Matthew 25:40", "text": "The King will reply, 'Truly I tell you, whatever you did for one of the least of these brothers and sisters of mine, you did for me.'"},
+            {"reference": "James 1:27", "text": "Religion that God our Father accepts as pure and faultless is this: to look after orphans and widows in their distress and to keep oneself from being polluted by the world."},
+            {"reference": "Galatians 6:2", "text": "Carry each other's burdens, and in this way you will fulfill the law of Christ."},
+            {"reference": "1 John 3:17", "text": "If anyone has material possessions and sees a brother or sister in need but has no pity on them, how can the love of God be in that person?"}
+          ]
+        }
+      ],
+      "07-15": [
+        {
+          "title": "The Parting of the Red Sea",
+          "description": "Today we remember God's miraculous deliverance of Israel through the Red Sea, showing His power to save",
+          "verses": [
+            {"reference": "Exodus 14:21", "text": "Then Moses stretched out his hand over the sea, and all that night the Lord drove the sea back with a strong east wind and turned it into dry land. The waters were divided."},
+            {"reference": "Exodus 14:29", "text": "But the Israelites went through the sea on dry ground, with a wall of water on their right and on their left."},
+            {"reference": "Psalm 77:19", "text": "Your path led through the sea, your way through the mighty waters, though your footprints were not seen."},
+            {"reference": "1 Corinthians 10:13", "text": "No temptation has overtaken you except what is common to mankind. And God is faithful; he will not let you be tempted beyond what you can bear. But when you are tempted, he will also provide a way out so that you can endure it."}
+          ]
+        }
+      ],
+      "07-16": [
+        {
+          "title": "The Burning Bush",
+          "description": "Today we remember God's call to Moses through the burning bush, showing His holy presence and divine calling",
+          "verses": [
+            {"reference": "Exodus 3:2", "text": "There the angel of the Lord appeared to him in flames of fire from within a bush. Moses saw that though the bush was on fire it did not burn up."},
+            {"reference": "Exodus 3:5", "text": "Do not come any closer, God said. Take off your sandals, for the place where you are standing is holy ground."},
+            {"reference": "Exodus 3:14", "text": "God said to Moses, 'I AM WHO I AM. This is what you are to say to the Israelites: I AM has sent me to you.'"},
+            {"reference": "Isaiah 6:8", "text": "Then I heard the voice of the Lord saying, 'Whom shall I send? And who will go for us?' And I said, 'Here am I. Send me!'"}
+          ]
+        }
+      ],
+      "07-17": [
+        {
+          "title": "The Wisdom of Solomon",
+          "description": "Today we reflect on Solomon's request for wisdom and God's generous response",
+          "verses": [
+            {"reference": "1 Kings 3:9", "text": "So give your servant a discerning heart to govern your people and to distinguish between right and wrong. For who is able to govern this great people of yours?"},
+            {"reference": "1 Kings 3:12", "text": "I will do what you have asked. I will give you a wise and discerning heart, so that there will never have been anyone like you, nor will there ever be."},
+            {"reference": "James 1:5", "text": "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you."},
+            {"reference": "Proverbs 2:6", "text": "For the Lord gives wisdom; from his mouth come knowledge and understanding."}
+          ]
+        }
+      ],
+      "07-18": [
+        {
+          "title": "The Beatitudes",
+          "description": "Today we reflect on Jesus' Beatitudes, which reveal the character of kingdom citizens",
+          "verses": [
+            {"reference": "Matthew 5:3", "text": "Blessed are the poor in spirit, for theirs is the kingdom of heaven."},
+            {"reference": "Matthew 5:8", "text": "Blessed are the pure in heart, for they will see God."},
+            {"reference": "Matthew 5:9", "text": "Blessed are the peacemakers, for they will be called children of God."},
+            {"reference": "Matthew 5:16", "text": "In the same way, let your light shine before others, that they may see your good deeds and glorify your Father in heaven."}
+          ]
+        }
+      ],
+      "07-19": [
+        {
+          "title": "The Conversion of Saul",
+          "description": "Today we remember Saul's dramatic conversion on the road to Damascus, showing God's transforming power",
+          "verses": [
+            {"reference": "Acts 9:4-5", "text": "He fell to the ground and heard a voice say to him, 'Saul, Saul, why do you persecute me?' 'Who are you, Lord?' Saul asked. 'I am Jesus, whom you are persecuting,' he replied."},
+            {"reference": "Acts 9:18", "text": "Immediately, something like scales fell from Saul's eyes, and he could see again. He got up and was baptized."},
+            {"reference": "2 Corinthians 5:17", "text": "Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!"},
+            {"reference": "1 Timothy 1:15", "text": "Here is a trustworthy saying that deserves full acceptance: Christ Jesus came into the world to save sinners—of whom I am the worst."}
+          ]
+        }
+      ],
+      "07-20": [
+        {
+          "title": "The Prophet Elijah",
+          "description": "Today we remember the prophet Elijah and his mighty works, including the contest on Mount Carmel",
+          "verses": [
+            {"reference": "1 Kings 18:39", "text": "When all the people saw this, they fell prostrate and cried, 'The Lord—he is God! The Lord—he is God!'"},
+            {"reference": "1 Kings 19:12", "text": "After the earthquake came a fire, but the Lord was not in the fire. And after the fire came a gentle whisper."},
+            {"reference": "James 5:17", "text": "Elijah was a human being, even as we are. He prayed earnestly that it would not rain, and it did not rain on the land for three and a half years."},
+            {"reference": "Malachi 4:5", "text": "See, I will send the prophet Elijah to you before that great and dreadful day of the Lord comes."}
+          ]
+        }
+      ],
+      "07-21": [
+        {
+          "title": "The Parable of the Mustard Seed",
+          "description": "Today we reflect on Jesus' parable of the mustard seed, showing how God's kingdom grows from small beginnings",
+          "verses": [
+            {"reference": "Matthew 13:31-32", "text": "He told them another parable: 'The kingdom of heaven is like a mustard seed, which a man took and planted in his field. Though it is the smallest of all seeds, yet when it grows, it is the largest of garden plants and becomes a tree, so that the birds come and perch in its branches.'"},
+            {"reference": "Mark 4:30-32", "text": "Again he said, 'What shall we say the kingdom of God is like, or what parable shall we use to describe it? It is like a mustard seed, which is the smallest of all seeds on earth. Yet when planted, it grows and becomes the largest of all garden plants, with such big branches that the birds can perch in its shade.'"},
+            {"reference": "Zechariah 4:10", "text": "Who dares despise the day of small things, since the seven eyes of the Lord that range throughout the earth will rejoice when they see the chosen capstone in the hand of Zerubbabel?"},
+            {"reference": "1 Corinthians 3:6", "text": "I planted the seed, Apollos watered it, but God has been making it grow."}
+          ]
+        }
+      ],
+      "07-22": [
+        {
+          "title": "Mary Magdalene",
+          "description": "Today we remember Mary Magdalene, the first witness to Jesus' resurrection and devoted follower",
+          "verses": [
+            {"reference": "John 20:16", "text": "Jesus said to her, 'Mary.' She turned toward him and cried out in Aramaic, 'Rabboni!' (which means 'Teacher')."},
+            {"reference": "John 20:18", "text": "Mary Magdalene went to the disciples with the news: 'I have seen the Lord!' And she told them that he had said these things to her."},
+            {"reference": "Luke 8:2", "text": "And also some women who had been cured of evil spirits and diseases: Mary (called Magdalene) from whom seven demons had come out."},
+            {"reference": "Romans 16:1", "text": "I commend to you our sister Phoebe, a deacon of the church in Cenchreae."}
+          ]
+        }
+      ],
+      "07-23": [
+        {
+          "title": "The Parable of the Pearl of Great Price",
+          "description": "Today we reflect on Jesus' parable of the pearl of great price, showing the supreme value of God's kingdom",
+          "verses": [
+            {"reference": "Matthew 13:45-46", "text": "Again, the kingdom of heaven is like a merchant looking for fine pearls. When he found one of great value, he went away and sold everything he had and bought it."},
+            {"reference": "Philippians 3:8", "text": "What is more, I consider everything a loss because of the surpassing worth of knowing Christ Jesus my Lord, for whose sake I have lost all things. I consider them garbage, that I may gain Christ."},
+            {"reference": "Matthew 6:21", "text": "For where your treasure is, there your heart will be also."},
+            {"reference": "Proverbs 8:11", "text": "For wisdom is more precious than rubies, and nothing you desire can compare with her."}
+          ]
+        }
+      ],
+      "07-24": [
+        {
+          "title": "The Multiplication of Loaves",
+          "description": "Today we remember Jesus' feeding miracles, showing His provision and the blessing of sharing",
+          "verses": [
+            {"reference": "Mark 6:41", "text": "Taking the five loaves and the two fish and looking up to heaven, he gave thanks and broke the loaves. Then he gave them to his disciples to distribute to the people. He also divided the two fish among them all."},
+            {"reference": "John 6:11", "text": "Jesus then took the loaves, gave thanks, and distributed to those who were seated as much as they wanted. He did the same with the fish."},
+            {"reference": "Matthew 15:36", "text": "Then he took the seven loaves and the fish, and when he had given thanks, he broke them and gave them to the disciples, and they in turn to the people."},
+            {"reference": "2 Corinthians 9:8", "text": "And God is able to bless you abundantly, so that in all things at all times, having all that you need, you will abound in every good work."}
+          ]
+        }
+      ],
+      "07-25": [
+        {
+          "title": "Saint James the Greater",
+          "description": "Today we commemorate Saint James the Greater, one of Jesus' closest disciples and the first apostle to be martyred",
+          "verses": [
+            {"reference": "Matthew 4:21-22", "text": "Going on from there, he saw two other brothers, James son of Zebedee and his brother John. They were in a boat with their father Zebedee, preparing their nets. Jesus called them, and immediately they left the boat and their father and followed him."},
+            {"reference": "Acts 12:2", "text": "He had James, the brother of John, put to death with the sword."},
+            {"reference": "Matthew 20:22", "text": "You don't know what you are asking, Jesus said to them. Can you drink the cup I am going to drink? We can, they answered."},
+            {"reference": "Mark 10:43-44", "text": "Not so with you. Instead, whoever wants to become great among you must be your servant, and whoever wants to be first must be slave of all."}
+          ]
+        }
+      ],
+      "07-26": [
+        {
+          "title": "The Parable of the Good Samaritan",
+          "description": "Today we reflect on Jesus' parable of the Good Samaritan, teaching us about true neighborly love",
+          "verses": [
+            {"reference": "Luke 10:33-34", "text": "But a Samaritan, as he traveled, came where the man was; and when he saw him, he took pity on him. He went to him and bandaged his wounds, pouring on oil and wine. Then he put the man on his own donkey, brought him to an inn and took care of him."},
+            {"reference": "Luke 10:36-37", "text": "Which of these three do you think was a neighbor to the man who fell into the hands of robbers? The expert in the law replied, 'The one who had mercy on him.' Jesus told him, 'Go and do likewise.'"},
+            {"reference": "1 John 3:18", "text": "Dear children, let us not love with words or speech but with actions and in truth."},
+            {"reference": "Galatians 6:10", "text": "Therefore, as we have opportunity, let us do good to all people, especially to those who belong to the family of believers."}
+          ]
+        }
+      ],
+      "07-27": [
+        {
+          "title": "The Parable of the Lost Sheep",
+          "description": "Today we reflect on Jesus' parable of the lost sheep, showing God's heart for the lost",
+          "verses": [
+            {"reference": "Luke 15:4", "text": "Suppose one of you has a hundred sheep and loses one of them. Doesn't he leave the ninety-nine in the open country and go after the lost sheep until he finds it?"},
+            {"reference": "Luke 15:6-7", "text": "Then he calls his friends and neighbors together and says, 'Rejoice with me; I have found my lost sheep.' I tell you that in the same way there will be more rejoicing in heaven over one sinner who repents than over ninety-nine righteous persons who do not need to repent."},
+            {"reference": "Ezekiel 34:11", "text": "For this is what the Sovereign Lord says: I myself will search for my sheep and look after them."},
+            {"reference": "1 Peter 2:25", "text": "For you were like sheep going astray, but now you have returned to the Shepherd and Overseer of your souls."}
+          ]
+        }
+      ],
+      "07-28": [
+        {
+          "title": "The Parable of the Prodigal Son",
+          "description": "Today we reflect on Jesus' parable of the prodigal son, demonstrating God's forgiveness and love",
+          "verses": [
+            {"reference": "Luke 15:20", "text": "So he got up and went to his father. But while he was still a long way off, his father saw him and was filled with compassion for him; he ran to his son, threw his arms around him and kissed him."},
+            {"reference": "Luke 15:24", "text": "For this son of mine was dead and is alive again; he was lost and is found. So they began to celebrate."},
+            {"reference": "1 John 1:9", "text": "If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness."},
+            {"reference": "Ephesians 2:13", "text": "But now in Christ Jesus you who once were far away have been brought near by the blood of Christ."}
+          ]
+        }
+      ],
+      "07-29": [
+        {
+          "title": "The Parable of the Pharisee and Tax Collector",
+          "description": "Today we reflect on Jesus' parable about humility and the danger of self-righteousness",
+          "verses": [
+            {"reference": "Luke 18:13", "text": "But the tax collector stood at a distance. He would not even look up to heaven, but beat his breast and said, 'God, have mercy on me, a sinner.'"},
+            {"reference": "Luke 18:14", "text": "I tell you that this man, rather than the other, went home justified before God. For all those who exalt themselves will be humbled, and those who humble themselves will be exalted."},
+            {"reference": "James 4:6", "text": "But he gives us more grace. That is why Scripture says: 'God opposes the proud but shows favor to the humble.'"},
+            {"reference": "1 Peter 5:5", "text": "All of you, clothe yourselves with humility toward one another, because, 'God opposes the proud but shows favor to the humble.'"}
+          ]
+        }
+      ],
+      "07-30": [
+        {
+          "title": "The Parable of the Workers in the Vineyard",
+          "description": "Today we reflect on Jesus' parable about God's grace and the equality of His kingdom",
+          "verses": [
+            {"reference": "Matthew 20:14-15", "text": "Take your pay and go. I want to give the one who was hired last the same as I gave you. Don't I have the right to do what I want with my own money? Or are you envious because I am generous?"},
+            {"reference": "Matthew 20:16", "text": "So the last will be first, and the first will be last."},
+            {"reference": "Romans 11:6", "text": "And if by grace, then it cannot be based on works; if it were, grace would no longer be grace."},
+            {"reference": "Ephesians 2:8-9", "text": "For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God—not by works, so that no one can boast."}
+          ]
+        }
+      ],
+      "07-31": [
+        {
+          "title": "Saint Ignatius of Loyola",
+          "description": "Today we commemorate Saint Ignatius of Loyola, founder of the Jesuits, who emphasized spiritual discernment and service",
+          "verses": [
+            {"reference": "Romans 12:2", "text": "Do not conform to the pattern of this world, but be transformed by the renewing of your mind. Then you will be able to test and approve what God's will is—his good, pleasing and perfect will."},
+            {"reference": "Philippians 2:13", "text": "For it is God who works in you to will and to act in order to fulfill his good purpose."},
+            {"reference": "1 Corinthians 10:31", "text": "So whether you eat or drink or whatever you do, do it all for the glory of God."},
+            {"reference": "Colossians 3:23", "text": "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters."}
+          ]
+        }
+      ],
+      "08-01": [
+        {
+          "title": "The Covenant with Abraham",
+          "description": "Today we remember God's covenant with Abraham, the foundation of faith for all believers",
+          "verses": [
+            {"reference": "Genesis 12:1-3", "text": "The Lord had said to Abram, 'Go from your country, your people and your father's household to the land I will show you. I will make you into a great nation, and I will bless you; I will make your name great, and you will be a blessing. I will bless those who bless you, and whoever curses you I will curse; and all peoples on earth will be blessed through you.'"},
+            {"reference": "Romans 4:16", "text": "Therefore, the promise comes by faith, so that it may be by grace and may be guaranteed to all Abraham's offspring—not only to those who are of the law but also to those who have the faith of Abraham. He is the father of us all."},
+            {"reference": "Galatians 3:29", "text": "If you belong to Christ, then you are Abraham's seed, and heirs according to the promise."},
+            {"reference": "Hebrews 11:8", "text": "By faith Abraham, when called to go to a place he would later receive as his inheritance, obeyed and went, even though he did not know where he was going."}
+          ]
+        }
+      ],
+      "08-02": [
+        {
+          "title": "The Dedication of the Temple",
+          "description": "Today we remember Solomon's dedication of the Temple, God's dwelling place among His people",
+          "verses": [
+            {"reference": "1 Kings 8:10-11", "text": "When the priests withdrew from the Holy Place, the cloud filled the temple of the Lord. And the priests could not perform their service because of the cloud, for the glory of the Lord filled his temple."},
+            {"reference": "2 Chronicles 7:1", "text": "When Solomon finished praying, fire came down from heaven and consumed the burnt offering and the sacrifices, and the glory of the Lord filled the temple."},
+            {"reference": "1 Corinthians 3:16", "text": "Don't you know that you yourselves are God's temple and that God's Spirit dwells in your midst?"},
+            {"reference": "Ephesians 2:21-22", "text": "In him the whole building is joined together and rises to become a holy temple in the Lord. And in him you too are being built together to become a dwelling in which God lives by his Spirit."}
+          ]
+        }
+      ],
+      "08-03": [
+        {
+          "title": "The Martyrdom of Saint Stephen",
+          "description": "Today we remember Saint Stephen, the first Christian martyr, who died with forgiveness on his lips",
+          "verses": [
+            {"reference": "Acts 7:59-60", "text": "While they were stoning him, Stephen prayed, 'Lord Jesus, receive my spirit.' Then he fell on his knees and cried out, 'Lord, do not hold this sin against them.' When he had said this, he fell asleep."},
+            {"reference": "Acts 6:8", "text": "Now Stephen, a man full of God's grace and power, performed great wonders and signs among the people."},
+            {"reference": "Matthew 5:44", "text": "But I tell you, love your enemies and pray for those who persecute you."},
+            {"reference": "Luke 23:34", "text": "Jesus said, 'Father, forgive them, for they do not know what they are doing.'"}
+          ]
+        }
+      ],
+      "08-04": [
+        {
+          "title": "The Miracle of Loaves and Fishes",
+          "description": "Today we reflect on Jesus' compassion and provision in the feeding of the five thousand",
+          "verses": [
+            {"reference": "Matthew 14:16-17", "text": "Jesus replied, 'They do not need to go away. You give them something to eat.' 'We have here only five loaves of bread and two fish,' they answered."},
+            {"reference": "Matthew 14:20", "text": "They all ate and were satisfied, and the disciples picked up twelve basketfuls of broken pieces that were left over."},
+            {"reference": "John 6:12", "text": "When they had all had enough to eat, he said to his disciples, 'Gather the pieces that are left over. Let nothing be wasted.'"},
+            {"reference": "Philippians 4:19", "text": "And my God will meet all your needs according to the riches of his glory in Christ Jesus."}
+          ]
+        }
+      ],
+      "08-05": [
+        {
+          "title": "The Calling of Matthew",
+          "description": "Today we remember Jesus calling Matthew the tax collector, showing that no one is beyond God's reach",
+          "verses": [
+            {"reference": "Matthew 9:9", "text": "As Jesus went on from there, he saw a man named Matthew sitting at the tax collector's booth. 'Follow me,' he told him, and Matthew got up and followed him."},
+            {"reference": "Luke 5:32", "text": "I have not come to call the righteous, but sinners to repentance."},
+            {"reference": "1 Timothy 1:15", "text": "Here is a trustworthy saying that deserves full acceptance: Christ Jesus came into the world to save sinners—of whom I am the worst."},
+            {"reference": "2 Corinthians 5:17", "text": "Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!"}
+          ]
+        }
+      ],
+      "08-06": [
+        {
+          "title": "The Transfiguration",
+          "description": "Today we commemorate the Transfiguration of Jesus, revealing His divine glory",
+          "verses": [
+            {"reference": "Matthew 17:1-2", "text": "After six days Jesus took with him Peter, James and John the brother of James, and led them up a high mountain by themselves. There he was transfigured before them. His face shone like the sun, and his clothes became as white as the light."},
+            {"reference": "Mark 9:7", "text": "Then a cloud appeared and covered them, and a voice came from the cloud: 'This is my Son, whom I love. Listen to him!'"},
+            {"reference": "2 Peter 1:17", "text": "He received honor and glory from God the Father when the voice came to him from the Majestic Glory, saying, 'This is my Son, whom I love; with him I am well pleased.'"},
+            {"reference": "John 1:14", "text": "The Word became flesh and made his dwelling among us. We have seen his glory, the glory of the one and only Son, who came from the Father, full of grace and truth."}
+          ]
+        }
+      ],
+      "08-07": [
+        {
+          "title": "The Parable of the Hidden Treasure",
+          "description": "Today we reflect on Jesus' parable of the hidden treasure, showing the value of God's kingdom",
+          "verses": [
+            {"reference": "Matthew 13:44", "text": "The kingdom of heaven is like treasure hidden in a field. When a man found it, he hid it again, and then in his joy went and sold all he had and bought that field."},
+            {"reference": "Proverbs 2:4", "text": "If you look for it as for silver and search for it as for hidden treasure."},
+            {"reference": "Colossians 2:3", "text": "In whom are hidden all the treasures of wisdom and knowledge."},
+            {"reference": "Matthew 6:21", "text": "For where your treasure is, there your heart will be also."}
+          ]
+        }
+      ],
+      "08-08": [
+        {
+          "title": "The Beatitudes - Blessed Are the Pure in Heart",
+          "description": "Today we focus on Jesus' blessing for the pure in heart, who will see God",
+          "verses": [
+            {"reference": "Matthew 5:8", "text": "Blessed are the pure in heart, for they will see God."},
+            {"reference": "Psalm 24:4", "text": "The one who has clean hands and a pure heart, who does not trust in an idol or swear by a false god."},
+            {"reference": "1 John 3:3", "text": "All who have this hope in him purify themselves, just as he is pure."},
+            {"reference": "James 4:8", "text": "Come near to God and he will come near to you. Wash your hands, you sinners, and purify your hearts, you double-minded."}
+          ]
+        }
+      ],
+      "08-09": [
+        {
+          "title": "The Parable of the Wise and Foolish Builders",
+          "description": "Today we reflect on Jesus' parable about building our lives on the solid foundation of His word",
+          "verses": [
+            {"reference": "Matthew 7:24-25", "text": "Therefore everyone who hears these words of mine and puts them into practice is like a wise man who built his house on the rock. The rain came down, the streams rose, and the winds blew and beat against that house; yet it did not fall, because it had its foundation on the rock."},
+            {"reference": "Luke 6:47-48", "text": "As for everyone who comes to me and hears my words and puts them into practice, I will show you what they are like. They are like a man building a house, who dug down deep and laid the foundation on rock."},
+            {"reference": "1 Corinthians 3:11", "text": "For no one can lay any foundation other than the one already laid, which is Jesus Christ."},
+            {"reference": "Isaiah 28:16", "text": "So this is what the Sovereign Lord says: 'See, I lay a stone in Zion, a tested stone, a precious cornerstone for a sure foundation; the one who relies on it will never be stricken with panic.'"}
+          ]
+        }
+      ],
+      "08-10": [
+        {
+          "title": "Saint Lawrence the Martyr",
+          "description": "Today we remember Saint Lawrence, deacon and martyr, who cared for the poor and died for his faith",
+          "verses": [
+            {"reference": "Matthew 25:35-36", "text": "For I was hungry and you gave me something to eat, I was thirsty and you gave me something to drink, I was a stranger and you invited me in, I needed clothes and you clothed me, I was sick and you looked after me, I was in prison and you came to visit me."},
+            {"reference": "James 1:27", "text": "Religion that God our Father accepts as pure and faultless is this: to look after orphans and widows in their distress and to keep oneself from being polluted by the world."},
+            {"reference": "1 Peter 4:19", "text": "So then, those who suffer according to God's will should commit themselves to their faithful Creator and continue to do good."},
+            {"reference": "2 Timothy 2:3", "text": "Join with me in suffering, like a good soldier of Christ Jesus."}
+          ]
+        }
+      ],
+      "08-11": [
+        {
+          "title": "The Parable of the Ten Virgins",
+          "description": "Today we reflect on Jesus' parable about being ready for His return",
+          "verses": [
+            {"reference": "Matthew 25:4", "text": "The wise ones, however, took oil in jars along with their lamps."},
+            {"reference": "Matthew 25:13", "text": "Therefore keep watch, because you do not know the day or the hour."},
+            {"reference": "1 Thessalonians 5:2", "text": "For you know very well that the day of the Lord will come like a thief in the night."},
+            {"reference": "Mark 13:33", "text": "Be on guard! Be alert! You do not know when that time will come."}
+          ]
+        }
+      ],
+      "08-12": [
+        {
+          "title": "The Parable of the Talents",
+          "description": "Today we reflect on Jesus' parable about using our gifts faithfully for God's kingdom",
+          "verses": [
+            {"reference": "Matthew 25:21", "text": "His master replied, 'Well done, good and faithful servant! You have been faithful with a few things; I will put you in charge of many things. Come and share your master's happiness!'"},
+            {"reference": "Luke 19:17", "text": "Well done, my good servant! his master replied. Because you have been trustworthy in a very small matter, take charge of ten cities."},
+            {"reference": "1 Corinthians 4:2", "text": "Now it is required that those who have been given a trust must prove faithful."},
+            {"reference": "1 Peter 4:10", "text": "Each of you should use whatever gift you have received to serve others, as faithful stewards of God's grace in its various forms."}
+          ]
+        }
+      ],
+      "08-13": [
+        {
+          "title": "The Parable of the Great Banquet",
+          "description": "Today we reflect on Jesus' parable about God's invitation to all people to enter His kingdom",
+          "verses": [
+            {"reference": "Luke 14:17", "text": "At the time of the banquet he sent his servant to tell those who had been invited, 'Come, for everything is now ready.'"},
+            {"reference": "Luke 14:21", "text": "Go out quickly into the streets and alleys of the town and bring in the poor, the crippled, the blind and the lame."},
+            {"reference": "Matthew 22:14", "text": "For many are invited, but few are chosen."},
+            {"reference": "Revelation 19:9", "text": "Then the angel said to me, 'Write this: Blessed are those who are invited to the wedding supper of the Lamb!' And he added, 'These are the true words of God.'"}
+          ]
+        }
+      ],
+      "08-14": [
+        {
+          "title": "The Parable of the Unforgiving Servant",
+          "description": "Today we reflect on Jesus' parable about the necessity of forgiveness",
+          "verses": [
+            {"reference": "Matthew 18:32-33", "text": "Then the master called the servant in. 'You wicked servant,' he said, 'I canceled all that debt of yours because you begged me to. Shouldn't you have had mercy on your fellow servant just as I had on you?'"},
+            {"reference": "Matthew 6:14-15", "text": "For if you forgive other people when they sin against you, your heavenly Father will also forgive you. But if you do not forgive others their sins, your Father will not forgive your sins."},
+            {"reference": "Ephesians 4:32", "text": "Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you."},
+            {"reference": "Colossians 3:13", "text": "Bear with each other and forgive one another if any of you has a grievance against someone. Forgive as the Lord forgave you."}
+          ]
+        }
+      ],
       "08-15": [
         {
-          "title": "Harvest Time",
-          "description": "On this day, we reflect on God's provision and spiritual harvest",
+          "title": "The Assumption of Mary",
+          "description": "Today we celebrate the Assumption of Mary, reflecting on hope and eternal life",
           "verses": [
-            {"reference": "Matthew 9:37-38", "text": "Then he said to his disciples, 'The harvest is plentiful but the workers are few. Ask the Lord of the harvest, therefore, to send out workers into his harvest field.'"},
-            {"reference": "Galatians 6:9", "text": "Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up."},
-            {"reference": "Psalm 126:5-6", "text": "Those who sow with tears will reap with songs of joy. Those who go out weeping, carrying seed to sow, will return with songs of joy, carrying sheaves with them."}
+            {"reference": "Luke 1:46-47", "text": "And Mary said: 'My soul glorifies the Lord and my spirit rejoices in God my Savior.'"},
+            {"reference": "Luke 1:48", "text": "For he has been mindful of the humble state of his servant. From now on all generations will call me blessed."},
+            {"reference": "1 Corinthians 15:54", "text": "When the perishable has been clothed with the imperishable, and the mortal with immortality, then the saying that is written will come true: 'Death has been swallowed up in victory.'"},
+            {"reference": "Revelation 12:1", "text": "A great sign appeared in heaven: a woman clothed with the sun, with the moon under her feet and a crown of twelve stars on her head."}
+          ]
+        }
+      ],
+      "08-16": [
+        {
+          "title": "The Parable of the Rich Fool",
+          "description": "Today we reflect on Jesus' parable about the danger of storing up earthly treasures",
+          "verses": [
+            {"reference": "Luke 12:20-21", "text": "But God said to him, 'You fool! This very night your life will be demanded from you. Then who will get what you have prepared for yourself?' This is how it will be with whoever stores up things for themselves but is not rich toward God."},
+            {"reference": "Matthew 6:19-20", "text": "Do not store up for yourselves treasures on earth, where moths and vermin destroy, and where thieves break in and steal. But store up for yourselves treasures in heaven, where moths and vermin do not destroy, and where thieves do not break in and steal."},
+            {"reference": "1 Timothy 6:17", "text": "Command those who are rich in this present world not to be arrogant nor to put their hope in wealth, which is so uncertain, but to put their hope in God, who richly provides us with everything for our enjoyment."},
+            {"reference": "Ecclesiastes 5:15", "text": "Everyone comes naked from their mother's womb, and as everyone comes, so they depart. They take nothing from their toil that they can carry in their hands."}
+          ]
+        }
+      ],
+      "08-17": [
+        {
+          "title": "The Parable of the Persistent Widow",
+          "description": "Today we reflect on Jesus' parable about persistent prayer and not giving up",
+          "verses": [
+            {"reference": "Luke 18:1", "text": "Then Jesus told his disciples a parable to show them that they should always pray and not give up."},
+            {"reference": "Luke 18:7-8", "text": "And will not God bring about justice for his chosen ones, who cry out to him day and night? Will he keep putting them off? I tell you, he will see that they get justice, and quickly."},
+            {"reference": "1 Thessalonians 5:17", "text": "Pray continually."},
+            {"reference": "Ephesians 6:18", "text": "And pray in the Spirit on all occasions with all kinds of prayers and requests. With this in mind, be alert and always keep on praying for all the Lord's people."}
+          ]
+        }
+      ],
+      "08-18": [
+        {
+          "title": "The Parable of the Friend at Midnight",
+          "description": "Today we reflect on Jesus' parable about persistent prayer and God's willingness to answer",
+          "verses": [
+            {"reference": "Luke 11:8", "text": "I tell you, even though he will not get up and give you the bread because of friendship, yet because of your shameless audacity he will surely get up and give you as much as you need."},
+            {"reference": "Luke 11:9", "text": "So I say to you: Ask and it will be given to you; seek and you will find; knock and the door will be opened to you."},
+            {"reference": "Matthew 7:7", "text": "Ask and it will be given to you; seek and you will find; knock and the door will be opened to you."},
+            {"reference": "James 1:5", "text": "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you."}
+          ]
+        }
+      ],
+      "08-19": [
+        {
+          "title": "The Parable of the Wicked Tenants",
+          "description": "Today we reflect on Jesus' parable about God's patience and the consequences of rejecting His messengers",
+          "verses": [
+            {"reference": "Matthew 21:42", "text": "Jesus said to them, 'Have you never read in the Scriptures: The stone the builders rejected has become the cornerstone; the Lord has done this, and it is marvelous in our eyes?'"},
+            {"reference": "Luke 20:17", "text": "Jesus looked directly at them and asked, 'Then what is the meaning of that which is written: The stone the builders rejected has become the cornerstone?'"},
+            {"reference": "1 Peter 2:7", "text": "Now to you who believe, this stone is precious. But to those who do not believe, 'The stone the builders rejected has become the cornerstone.'"},
+            {"reference": "Acts 4:11", "text": "Jesus is 'the stone you builders rejected, which has become the cornerstone.'"}
+          ]
+        }
+      ],
+      "08-20": [
+        {
+          "title": "The Parable of the Wedding Banquet",
+          "description": "Today we reflect on Jesus' parable about God's invitation and the importance of being properly prepared",
+          "verses": [
+            {"reference": "Matthew 22:8-9", "text": "Then he said to his servants, 'The wedding banquet is ready, but those I invited did not deserve to come. So go to the street corners and invite to the banquet anyone you find.'"},
+            {"reference": "Matthew 22:11-12", "text": "But when the king came in to see the guests, he noticed a man there who was not wearing wedding clothes. He asked, 'How did you get in here without wedding clothes, friend?' The man was speechless."},
+            {"reference": "Revelation 19:7", "text": "Let us rejoice and be glad and give him glory! For the wedding of the Lamb has come, and his bride has made herself ready."},
+            {"reference": "Isaiah 61:10", "text": "I delight greatly in the Lord; my soul rejoices in my God. For he has clothed me with garments of salvation and arrayed me in a robe of his righteousness."}
+          ]
+        }
+      ],
+      "08-21": [
+        {
+          "title": "The Parable of the Two Sons",
+          "description": "Today we reflect on Jesus' parable about actions speaking louder than words",
+          "verses": [
+            {"reference": "Matthew 21:28-29", "text": "What do you think? There was a man who had two sons. He went to the first and said, 'Son, go and work today in the vineyard.' 'I will not,' he answered, but later he changed his mind and went."},
+            {"reference": "Matthew 21:31", "text": "Which of the two did what his father wanted? The first, they answered. Jesus said to them, 'Truly I tell you, the tax collectors and the prostitutes are entering the kingdom of God ahead of you.'"},
+            {"reference": "James 2:17", "text": "In the same way, faith by itself, if it is not accompanied by action, is dead."},
+            {"reference": "1 John 3:18", "text": "Dear children, let us not love with words or speech but with actions and in truth."}
+          ]
+        }
+      ],
+      "08-22": [
+        {
+          "title": "The Parable of the Fig Tree",
+          "description": "Today we reflect on Jesus' parable about recognizing the signs of the times",
+          "verses": [
+            {"reference": "Matthew 24:32-33", "text": "Now learn this lesson from the fig tree: As soon as its twigs get tender and its leaves come out, you know that summer is near. Even so, when you see all these things, you know that it is near, right at the door."},
+            {"reference": "Luke 21:29-31", "text": "He told them this parable: 'Look at the fig tree and all the trees. When they sprout leaves, you can see for yourselves and know that summer is near. Even so, when you see these things happening, you know that the kingdom of God is near.'"},
+            {"reference": "Mark 13:28", "text": "Now learn this lesson from the fig tree: As soon as its twigs get tender and its leaves come out, you know that summer is near."},
+            {"reference": "Hebrews 10:25", "text": "Not giving up meeting together, as some are in the habit of doing, but encouraging one another—and all the more as you see the Day approaching."}
+          ]
+        }
+      ],
+      "08-23": [
+        {
+          "title": "The Parable of the Vine and Branches",
+          "description": "Today we reflect on Jesus' teaching about remaining connected to Him for spiritual fruitfulness",
+          "verses": [
+            {"reference": "John 15:5", "text": "I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit; apart from me you can do nothing."},
+            {"reference": "John 15:8", "text": "This is to my Father's glory, that you bear much fruit, showing yourselves to be my disciples."},
+            {"reference": "Galatians 5:22-23", "text": "But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness, gentleness and self-control. Against such things there is no law."},
+            {"reference": "Colossians 1:10", "text": "So that you may live a life worthy of the Lord and please him in every way: bearing fruit in every good work, growing in the knowledge of God."}
+          ]
+        }
+      ],
+      "08-24": [
+        {
+          "title": "Saint Bartholomew the Apostle",
+          "description": "Today we commemorate Saint Bartholomew, also known as Nathanael, who was called by Jesus",
+          "verses": [
+            {"reference": "John 1:47", "text": "When Jesus saw Nathanael approaching, he said of him, 'Here truly is an Israelite in whom there is no deceit.'"},
+            {"reference": "John 1:49", "text": "Then Nathanael declared, 'Rabbi, you are the Son of God; you are the king of Israel.'"},
+            {"reference": "Matthew 10:3", "text": "Philip and Bartholomew; Thomas and Matthew the tax collector; James son of Alphaeus, and Thaddaeus."},
+            {"reference": "Acts 1:13", "text": "When they arrived, they went upstairs to the room where they were staying. Those present were Peter, John, James and Andrew; Philip and Thomas, Bartholomew and Matthew; James son of Alphaeus and Simon the Zealot, and Judas son of James."}
+          ]
+        }
+      ],
+      "08-25": [
+        {
+          "title": "The Parable of the Dragnet",
+          "description": "Today we reflect on Jesus' parable about the final judgment and separation of good from evil",
+          "verses": [
+            {"reference": "Matthew 13:47-48", "text": "Once again, the kingdom of heaven is like a net that was let down into the lake and caught all kinds of fish. When it was full, the fishermen pulled it up on the shore. Then they sat down and collected the good fish in baskets, but threw the bad away."},
+            {"reference": "Matthew 13:49-50", "text": "This is how it will be at the end of the age. The angels will come and separate the wicked from the righteous and throw them into the blazing furnace, where there will be weeping and gnashing of teeth."},
+            {"reference": "Matthew 25:32", "text": "All the nations will be gathered before him, and he will separate the people one from another as a shepherd separates the sheep from the goats."},
+            {"reference": "2 Corinthians 5:10", "text": "For we must all appear before the judgment seat of Christ, so that each of us may receive what is due us for the things done while in the body, whether good or bad."}
+          ]
+        }
+      ],
+      "08-26": [
+        {
+          "title": "The Parable of the Growing Seed",
+          "description": "Today we reflect on Jesus' parable about the mysterious growth of God's kingdom",
+          "verses": [
+            {"reference": "Mark 4:26-27", "text": "He also said, 'This is what the kingdom of God is like. A man scatters seed on the ground. Night and day, whether he sleeps or gets up, the seed sprouts and grows, though he does not know how.'"},
+            {"reference": "Mark 4:28", "text": "All by itself the soil produces grain—first the stalk, then the head, then the full kernel in the head."},
+            {"reference": "1 Corinthians 3:6-7", "text": "I planted the seed, Apollos watered it, but God has been making it grow. So neither the one who plants nor the one who waters is anything, but only God, who makes things grow."},
+            {"reference": "Isaiah 55:10-11", "text": "As the rain and the snow come down from heaven, and do not return to it without watering the earth and making it bud and flourish, so that it yields seed for the sower and bread for the eater, so is my word that goes out from my mouth: It will not return to me empty, but will accomplish what I desire and achieve the purpose for which I sent it."}
+          ]
+        }
+      ],
+      "08-27": [
+        {
+          "title": "Saint Augustine of Hippo",
+          "description": "Today we commemorate Saint Augustine, the great theologian and Doctor of the Church",
+          "verses": [
+            {"reference": "Psalm 51:1", "text": "Have mercy on me, O God, according to your unfailing love; according to your great compassion blot out my transgressions."},
+            {"reference": "Romans 13:13-14", "text": "Let us behave decently, as in the daytime, not in carousing and drunkenness, not in sexual immorality and debauchery, not in dissension and jealousy. Rather, clothe yourselves with the Lord Jesus Christ, and do not think about how to gratify the desires of the flesh."},
+            {"reference": "Psalm 27:8", "text": "My heart says of you, 'Seek his face!' Your face, Lord, I will seek."},
+            {"reference": "1 John 1:9", "text": "If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness."}
+          ]
+        }
+      ],
+      "08-28": [
+        {
+          "title": "The Parable of the Weeds",
+          "description": "Today we reflect on Jesus' parable about good and evil growing together until the harvest",
+          "verses": [
+            {"reference": "Matthew 13:24-25", "text": "Jesus told them another parable: 'The kingdom of heaven is like a man who sowed good seed in his field. But while everyone was sleeping, his enemy came and sowed weeds among the wheat, and went away.'"},
+            {"reference": "Matthew 13:30", "text": "Let both grow together until the harvest. At that time I will tell the harvesters: First collect the weeds and tie them in bundles to be burned; then gather the wheat and bring it into my barn."},
+            {"reference": "Matthew 13:39", "text": "And the enemy who sows them is the devil. The harvest is the end of the age, and the harvesters are angels."},
+            {"reference": "Galatians 6:7", "text": "Do not be deceived: God cannot be mocked. A man reaps what he sows."}
+          ]
+        }
+      ],
+      "08-29": [
+        {
+          "title": "The Martyrdom of John the Baptist",
+          "description": "Today we remember the martyrdom of John the Baptist, who remained faithful unto death",
+          "verses": [
+            {"reference": "Matthew 14:10", "text": "And he had John beheaded in the prison."},
+            {"reference": "Mark 6:20", "text": "Because Herod feared John and protected him, knowing him to be a righteous and holy man."},
+            {"reference": "Matthew 11:11", "text": "Truly I tell you, among those born of women there has not risen anyone greater than John the Baptist."},
+            {"reference": "Luke 7:28", "text": "I tell you, among those born of women there is no one greater than John; yet the one who is least in the kingdom of God is greater than he."}
+          ]
+        }
+      ],
+      "08-30": [
+        {
+          "title": "The Parable of the Leaven",
+          "description": "Today we reflect on Jesus' parable about the transforming power of God's kingdom",
+          "verses": [
+            {"reference": "Matthew 13:33", "text": "He told them still another parable: 'The kingdom of heaven is like yeast that a woman took and mixed into about sixty pounds of flour until it worked all through the dough.'"},
+            {"reference": "Luke 13:21", "text": "It is like yeast that a woman took and mixed into about sixty pounds of flour until it worked all through the dough."},
+            {"reference": "1 Corinthians 5:6", "text": "Your boasting is not good. Don't you know that a little yeast leavens the whole batch of dough?"},
+            {"reference": "Galatians 5:9", "text": "A little yeast works through the whole batch of dough."}
+          ]
+        }
+      ],
+      "08-31": [
+        {
+          "title": "The Parable of the Narrow Door",
+          "description": "Today we reflect on Jesus' teaching about the narrow path to eternal life",
+          "verses": [
+            {"reference": "Luke 13:24", "text": "Make every effort to enter through the narrow door, because many, I tell you, will try to enter and will not be able to."},
+            {"reference": "Matthew 7:13-14", "text": "Enter through the narrow gate. For wide is the gate and broad is the road that leads to destruction, and many enter through it. But small is the gate and narrow the road that leads to life, and only a few find it."},
+            {"reference": "John 14:6", "text": "Jesus answered, 'I am the way and the truth and the life. No one comes to the Father except through me.'"},
+            {"reference": "Acts 4:12", "text": "Salvation is found in no one else, for there is no other name under heaven given to mankind by which we must be saved."}
+          ]
+        }
+      ],
+      "09-01": [
+        {
+          "title": "Creation - The Beginning",
+          "description": "Today we celebrate God's creation and His sovereignty over all things",
+          "verses": [
+            {"reference": "Genesis 1:1", "text": "In the beginning God created the heavens and the earth."},
+            {"reference": "Psalm 19:1", "text": "The heavens declare the glory of God; the skies proclaim the work of his hands."},
+            {"reference": "Romans 1:20", "text": "For since the creation of the world God's invisible qualities—his eternal power and divine nature—have been clearly seen, being understood from what has been made, so that people are without excuse."},
+            {"reference": "Colossians 1:16", "text": "For in him all things were created: things in heaven and on earth, visible and invisible, whether thrones or powers or rulers or authorities; all things have been created through him and for him."}
+          ]
+        }
+      ],
+      "09-02": [
+        {
+          "title": "The Great Commission",
+          "description": "Today we remember Jesus' command to make disciples of all nations",
+          "verses": [
+            {"reference": "Matthew 28:19-20", "text": "Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, and teaching them to obey everything I have commanded you. And surely I am with you always, to the very end of the age."},
+            {"reference": "Mark 16:15", "text": "He said to them, 'Go into all the world and preach the gospel to all creation.'"},
+            {"reference": "Acts 1:8", "text": "But you will receive power when the Holy Spirit comes on you; and you will be my witnesses in Jerusalem, and in all Judea and Samaria, and to the ends of the earth."},
+            {"reference": "Romans 10:14", "text": "How, then, can they call on the one they have not believed in? And how can they believe in the one of whom they have not heard? And how can they hear without someone preaching to them?"}
+          ]
+        }
+      ],
+      "09-03": [
+        {
+          "title": "Saint Gregory the Great",
+          "description": "Today we commemorate Pope Saint Gregory the Great, a Doctor of the Church known for his pastoral care",
+          "verses": [
+            {"reference": "1 Peter 5:2-3", "text": "Be shepherds of God's flock that is under your care, watching over them—not because you must, but because you are willing, as God wants you to be; not pursuing dishonest gain, but eager to serve; not lording it over those entrusted to you, but being examples to the flock."},
+            {"reference": "Ephesians 4:11-12", "text": "So Christ himself gave the apostles, the prophets, the evangelists, the pastors and teachers, to equip his people for works of service, so that the body of Christ may be built up."},
+            {"reference": "2 Timothy 4:2", "text": "Preach the word; be prepared in season and out of season; correct, rebuke and encourage—with great patience and careful instruction."},
+            {"reference": "Hebrews 13:7", "text": "Remember your leaders, who spoke the word of God to you. Consider the outcome of their way of life and imitate their faith."}
           ]
         }
       ],

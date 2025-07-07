@@ -113,6 +113,18 @@
           ]
         }
       ],
+      "02-01": [
+        {
+          "title": "Saint Brigid of Ireland",
+          "description": "On this day, we honor Saint Brigid, one of the patron saints of Ireland, known for her generosity and care for the poor",
+          "verses": [
+            {"reference": "Proverbs 31:20", "text": "She opens her arms to the poor and extends her hands to the needy."},
+            {"reference": "Matthew 25:40", "text": "The King will reply, 'Truly I tell you, whatever you did for one of the least of these brothers and sisters of mine, you did for me.'"},
+            {"reference": "Galatians 6:2", "text": "Carry each other's burdens, and in this way you will fulfill the law of Christ."},
+            {"reference": "James 2:17", "text": "In the same way, faith by itself, if it is not accompanied by action, is dead."}
+          ]
+        }
+      ],
       "02-14": [
         {
           "title": "Love - God's Greatest Commandment",
@@ -433,6 +445,78 @@
             {"reference": "Acts 6:5", "text": "This proposal pleased the whole group. They chose Stephen, a man full of faith and of the Holy Spirit; also Philip, Procorus, Nicanor, Timon, Parmenas, and Nicolas from Antioch, a convert to Judaism."},
             {"reference": "1 Timothy 3:8", "text": "In the same way, deacons are to be worthy of respect, sincere, not indulging in much wine, and not pursuing dishonest gain."},
             {"reference": "Mark 10:43-44", "text": "Not so with you. Instead, whoever wants to become great among you must be your servant, and whoever wants to be first must be slave of all."}
+          ]
+        }
+      ],
+      "07-11": [
+        {
+          "title": "Saint Benedict of Nursia",
+          "description": "On this day, we honor Saint Benedict, founder of Western monasticism and author of the Rule of Saint Benedict",
+          "verses": [
+            {"reference": "1 Corinthians 14:40", "text": "But everything should be done in a fitting and orderly way."},
+            {"reference": "Colossians 3:23", "text": "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters."},
+            {"reference": "Matthew 6:33", "text": "But seek first his kingdom and his righteousness, and all these things will be given to you as well."},
+            {"reference": "Psalm 46:10", "text": "Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth."}
+          ]
+        }
+      ],
+      "07-12": [
+        {
+          "title": "The Healing of the Blind Man",
+          "description": "On this day, we reflect on Jesus healing the man born blind, showing how God brings light to darkness",
+          "verses": [
+            {"reference": "John 9:6-7", "text": "After saying this, he spit on the ground, made some mud with the saliva, and put it on the man's eyes. 'Go,' he told him, 'wash in the Pool of Siloam' (this word means 'Sent'). So the man went and washed, and came home seeing."},
+            {"reference": "John 9:25", "text": "He replied, 'Whether he is a sinner or not, I don't know. One thing I do know. I was blind but now I see!'"},
+            {"reference": "2 Corinthians 4:6", "text": "For God, who said, 'Let light shine out of darkness,' made his light shine in our hearts to give us the light of the knowledge of God's glory displayed in the face of Christ."},
+            {"reference": "Ephesians 5:8", "text": "For you were once darkness, but now you are light in the Lord. Live as children of light."}
+          ]
+        }
+      ],
+      "07-13": [
+        {
+          "title": "The Good Shepherd",
+          "description": "On this day, we meditate on Jesus as the Good Shepherd who lays down His life for the sheep",
+          "verses": [
+            {"reference": "John 10:11", "text": "I am the good shepherd. The good shepherd lays down his life for the sheep."},
+            {"reference": "John 10:14-15", "text": "I am the good shepherd; I know my sheep and my sheep know me—just as the Father knows me and I know the Father—and I lay down my life for the sheep."},
+            {"reference": "Psalm 23:1", "text": "The Lord is my shepherd, I lack nothing."},
+            {"reference": "1 Peter 2:25", "text": "For 'you were like sheep going astray,' but now you have returned to the Shepherd and Overseer of your souls."}
+          ]
+        }
+      ],
+      "07-14": [
+        {
+          "title": "Saint Camillus de Lellis",
+          "description": "On this day, we remember Saint Camillus, patron saint of the sick and those who care for them",
+          "verses": [
+            {"reference": "Matthew 25:36", "text": "I needed clothes and you clothed me, I was sick and you looked after me, I was in prison and you came to visit me."},
+            {"reference": "James 5:14", "text": "Is anyone among you sick? Let them call the elders of the church to pray over them and anoint them with oil in the name of the Lord."},
+            {"reference": "Luke 10:34", "text": "He went to him and bandaged his wounds, pouring on oil and wine. Then he put the man on his own donkey, brought him to an inn and took care of him."},
+            {"reference": "1 Corinthians 12:26", "text": "If one part suffers, every part suffers with it; if one part is honored, every part rejoices with it."}
+          ]
+        }
+      ],
+      "07-15": [
+        {
+          "title": "The Parting of the Red Sea",
+          "description": "On this day, we remember God's mighty deliverance of the Israelites through the Red Sea",
+          "verses": [
+            {"reference": "Exodus 14:21-22", "text": "Then Moses stretched out his hand over the sea, and all that night the Lord drove the sea back with a strong east wind and turned it into dry land. The waters were divided, and the Israelites went through the sea on dry ground, with a wall of water on their right and on their left."},
+            {"reference": "Exodus 15:2", "text": "The Lord is my strength and my defense; he has become my salvation. He is my God, and I will praise him, my father's God, and I will exalt him."},
+            {"reference": "Psalm 106:9", "text": "He rebuked the Red Sea, and it dried up; he led them through the depths as through a desert."},
+            {"reference": "1 Corinthians 10:13", "text": "No temptation has overtaken you except what is common to mankind. And God is faithful; he will not let you be tempted beyond what you can bear. But when you are tempted, he will also provide a way out so that you can endure it."}
+          ]
+        }
+      ],
+      "07-16": [
+        {
+          "title": "The Burning Bush",
+          "description": "On this day, we remember Moses' encounter with God at the burning bush, where he received his calling",
+          "verses": [
+            {"reference": "Exodus 3:2-4", "text": "There the angel of the Lord appeared to him in flames of fire from within a bush. Moses saw that though the bush was on fire it did not burn up. So Moses thought, 'I will go over and see this strange sight—why the bush does not burn up.' When the Lord saw that he had gone over to look, God called to him from within the bush, 'Moses! Moses!' And Moses said, 'Here I am.'"},
+            {"reference": "Exodus 3:14", "text": "God said to Moses, 'I AM WHO I AM. This is what you are to say to the Israelites: I AM has sent me to you.'"},
+            {"reference": "Isaiah 6:8", "text": "Then I heard the voice of the Lord saying, 'Whom shall I send? And who will go for us?' And I said, 'Here am I. Send me!'"},
+            {"reference": "Romans 11:29", "text": "for God's gifts and his call are irrevocable."}
           ]
         }
       ],
@@ -1272,6 +1356,30 @@
           ]
         }
       ],
+      "01-09": [
+        {
+          "title": "The Baptism of Jesus",
+          "description": "On this day, we remember the baptism of Jesus by John the Baptist, marking the beginning of His public ministry",
+          "verses": [
+            {"reference": "Matthew 3:16-17", "text": "As soon as Jesus was baptized, he went up out of the water. At that moment heaven was opened, and he saw the Spirit of God descending like a dove and alighting on him. And a voice from heaven said, 'This is my Son, whom I love; with him I am well pleased.'"},
+            {"reference": "Mark 1:9-11", "text": "At that time Jesus came from Nazareth in Galilee and was baptized by John in the Jordan. Just as Jesus was coming up out of the water, he saw heaven being torn open and the Spirit descending on him like a dove. And a voice came from heaven: 'You are my Son, whom I love; with you I am well pleased.'"},
+            {"reference": "Romans 6:4", "text": "We were therefore buried with him through baptism into death in order that, just as Christ was raised from the dead through the glory of the Father, we too may live a new life."},
+            {"reference": "Galatians 3:27", "text": "for all of you who were baptized into Christ have clothed yourselves with Christ."}
+          ]
+        }
+      ],
+      "01-10": [
+        {
+          "title": "Jesus in the Temple",
+          "description": "On this day, we remember young Jesus teaching in the temple, showing His wisdom and dedication to God",
+          "verses": [
+            {"reference": "Luke 2:46-47", "text": "After three days they found him in the temple courts, sitting among the teachers, listening to them and asking them questions. Everyone who heard him was amazed at his understanding and his answers."},
+            {"reference": "Luke 2:49", "text": "'Why were you searching for me?' he asked. 'Didn't you know I had to be in my Father's house?'"},
+            {"reference": "Psalm 119:99", "text": "I have more insight than all my teachers, for I meditate on your statutes."},
+            {"reference": "Proverbs 22:6", "text": "Start children off on the way they should go, and even when they are old they will not turn from it."}
+          ]
+        }
+      ],
       "february": [
         {
           "title": "Love and Relationships",
@@ -1279,6 +1387,30 @@
           "verses": [
             {"reference": "1 Corinthians 13:4-7", "text": "Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It does not dishonor others, it is not self-seeking, it is not easily angered, it keeps no record of wrongs. Love does not delight in evil but rejoices with the truth. It always protects, always trusts, always hopes, always perseveres."},
             {"reference": "1 John 4:19", "text": "We love because he first loved us."}
+          ]
+        }
+      ],
+      "03-17": [
+        {
+          "title": "Saint Patrick",
+          "description": "On this day, we remember Saint Patrick, the patron saint of Ireland, who brought Christianity to the Irish people",
+          "verses": [
+            {"reference": "Matthew 28:19-20", "text": "Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, and teaching them to obey everything I have commanded you. And surely I am with you always, to the very end of the age."},
+            {"reference": "Acts 1:8", "text": "But you will receive power when the Holy Spirit comes on you; and you will be my witnesses in Jerusalem, and in all Judea and Samaria, and to the ends of the earth."},
+            {"reference": "Romans 10:14", "text": "How, then, can they call on the one they have not believed in? And how can they believe in the one of whom they have not heard? And how can they hear without someone preaching to them?"},
+            {"reference": "1 Corinthians 9:16", "text": "For when I preach the gospel, I cannot boast, since I am compelled to preach. Woe to me if I do not preach the gospel!"}
+          ]
+        }
+      ],
+      "03-19": [
+        {
+          "title": "Saint Joseph",
+          "description": "On this day, we honor Saint Joseph, the earthly father of Jesus and patron of workers",
+          "verses": [
+            {"reference": "Matthew 1:20", "text": "But after he had considered this, an angel of the Lord appeared to him in a dream and said, 'Joseph son of David, do not be afraid to take Mary home as your wife, because what is conceived in her is from the Holy Spirit.'"},
+            {"reference": "Matthew 2:13", "text": "When they had gone, an angel of the Lord appeared to Joseph in a dream. 'Get up,' he said, 'take the child and his mother and escape to Egypt. Stay there until I tell you, for Herod is going to search for the child to kill him.'"},
+            {"reference": "Colossians 3:23", "text": "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters."},
+            {"reference": "Proverbs 20:7", "text": "The righteous lead blameless lives; blessed are their children after them."}
           ]
         }
       ],
@@ -1302,6 +1434,18 @@
           ]
         }
       ],
+      "04-25": [
+        {
+          "title": "Saint Mark the Evangelist",
+          "description": "On this day, we honor Saint Mark, author of the second Gospel and companion of Saint Peter",
+          "verses": [
+            {"reference": "Mark 1:1", "text": "The beginning of the good news about Jesus the Messiah, the Son of God."},
+            {"reference": "2 Timothy 4:11", "text": "Only Luke is with me. Get Mark and bring him with you, because he is helpful to me in my ministry."},
+            {"reference": "Mark 16:15", "text": "He said to them, 'Go into all the world and preach the gospel to all creation.'"},
+            {"reference": "1 Peter 5:13", "text": "She who is in Babylon, chosen together with you, sends you her greetings, and so does my son Mark."}
+          ]
+        }
+      ],
       "may": [
         {
           "title": "Mothers and Family",
@@ -1309,6 +1453,18 @@
           "verses": [
             {"reference": "Proverbs 31:28", "text": "Her children arise and call her blessed; her husband also, and he praises her."},
             {"reference": "Ephesians 6:2-3", "text": "Honor your father and mother—which is the first commandment with a promise—so that it may go well with you and that you may enjoy long life on the earth."}
+          ]
+        }
+      ],
+      "05-03": [
+        {
+          "title": "Saints Philip and James",
+          "description": "On this day, we remember the apostles Philip and James, faithful disciples of Jesus",
+          "verses": [
+            {"reference": "John 14:8-9", "text": "Philip said, 'Lord, show us the Father and that will be enough for us.' Jesus answered: 'Don't you know me, Philip, even after I have been among you such a long time? Anyone who has seen me has seen the Father.'"},
+            {"reference": "John 1:45-46", "text": "Philip found Nathanael and told him, 'We have found the one Moses wrote about in the Law, and about whom the prophets also wrote—Jesus of Nazareth, the son of Joseph.' 'Nazareth! Can anything good come from there?' Nathanael asked. 'Come and see,' said Philip."},
+            {"reference": "Acts 1:13", "text": "When they arrived, they went upstairs to the room where they were staying. Those present were Peter, John, James and Andrew; Philip and Thomas, Bartholomew and Matthew; James son of Alphaeus and Simon the Zealot, and Judas son of James."},
+            {"reference": "Ephesians 2:20", "text": "built on the foundation of the apostles and prophets, with Christ Jesus himself as the chief cornerstone."}
           ]
         }
       ],
@@ -1383,6 +1539,102 @@
         }
       ]
     },
+    "09-21": [
+      {
+        "title": "Saint Matthew the Apostle",
+        "description": "On this day, we honor Saint Matthew, the tax collector who became an apostle and Gospel writer",
+        "verses": [
+          {"reference": "Matthew 9:9", "text": "As Jesus went on from there, he saw a man named Matthew sitting at the tax collector's booth. 'Follow me,' he told him, and Matthew got up and followed him."},
+          {"reference": "Matthew 1:1", "text": "This is the genealogy of Jesus the Messiah the son of David, the son of Abraham."},
+          {"reference": "Luke 5:32", "text": "I have not come to call the righteous, but sinners to repentance."},
+          {"reference": "1 Timothy 1:15", "text": "Here is a trustworthy saying that deserves full acceptance: Christ Jesus came into the world to save sinners—of whom I am the worst."}
+        ]
+      }
+    ],
+    "09-29": [
+      {
+        "title": "Saints Michael, Gabriel, and Raphael",
+        "description": "On this day, we honor the archangels Michael, Gabriel, and Raphael, God's mighty messengers",
+        "verses": [
+          {"reference": "Revelation 12:7", "text": "Then war broke out in heaven. Michael and his angels fought against the dragon, and the dragon and his angels fought back."},
+          {"reference": "Luke 1:26", "text": "In the sixth month of Elizabeth's pregnancy, God sent the angel Gabriel to Nazareth, a town in Galilee."},
+          {"reference": "Hebrews 1:14", "text": "Are not all angels ministering spirits sent to serve those who will inherit salvation?"},
+          {"reference": "Psalm 91:11", "text": "For he will command his angels concerning you to guard you in all your ways."}
+        ]
+      }
+    ],
+    "10-18": [
+      {
+        "title": "Saint Luke the Evangelist",
+        "description": "On this day, we honor Saint Luke, the beloved physician who wrote the Gospel of Luke and Acts",
+        "verses": [
+          {"reference": "Luke 1:3-4", "text": "With this in mind, since I myself have carefully investigated everything from the beginning, I too decided to write an orderly account for you, most excellent Theophilus, so that you may know the certainty of the things you have been taught."},
+          {"reference": "Colossians 4:14", "text": "Our dear friend Luke, the doctor, and Demas send greetings."},
+          {"reference": "Acts 1:1", "text": "In my former book, Theophilus, I wrote about all that Jesus began to do and to teach."},
+          {"reference": "2 Timothy 4:11", "text": "Only Luke is with me. Get Mark and bring him with you, because he is helpful to me in my ministry."}
+        ]
+      }
+    ],
+    "10-28": [
+      {
+        "title": "Saints Simon and Jude",
+        "description": "On this day, we remember the apostles Simon and Jude, faithful witnesses to Christ",
+        "verses": [
+          {"reference": "Jude 1:3", "text": "Dear friends, although I was very eager to write to you about the salvation we share, I felt compelled to write and urge you to contend for the faith that was once for all entrusted to God's holy people."},
+          {"reference": "Ephesians 2:20", "text": "built on the foundation of the apostles and prophets, with Christ Jesus himself as the chief cornerstone."},
+          {"reference": "Matthew 10:2-4", "text": "These are the names of the twelve apostles: first, Simon (who is called Peter) and his brother Andrew; James son of Zebedee, and his brother John; Philip and Bartholomew; Thomas and Matthew the tax collector; James son of Alphaeus, and Thaddaeus; Simon the Zealot and Judas Iscariot, who betrayed him."},
+          {"reference": "Jude 1:24-25", "text": "To him who is able to keep you from stumbling and to present you before his glorious presence without fault and with great joy— to the only God our Savior be glory, majesty, power and authority, through Jesus Christ our Lord, before all ages, now and forevermore! Amen."}
+        ]
+      }
+    ],
+    "11-01": [
+      {
+        "title": "All Saints Day",
+        "description": "On this day, we honor all the saints, known and unknown, who have gone before us in faith",
+        "verses": [
+          {"reference": "Revelation 7:9", "text": "After this I looked, and there before me was a great multitude that no one could count, from every nation, tribe, people and language, standing before the throne and before the Lamb. They were wearing white robes and were holding palm branches in their hands."},
+          {"reference": "Hebrews 12:1", "text": "Therefore, since we are surrounded by such a great cloud of witnesses, let us throw off everything that hinders and the sin that so easily entangles. And let us run with perseverance the race marked out for us."},
+          {"reference": "1 Peter 2:9", "text": "But you are a chosen people, a royal priesthood, a holy nation, God's special possession, that you may declare the praises of him who called you out of darkness into his wonderful light."},
+          {"reference": "Ephesians 1:1", "text": "Paul, an apostle of Christ Jesus by the will of God, To God's holy people in Ephesus, the faithful in Christ Jesus."}
+        ]
+      }
+    ],
+    "11-30": [
+      {
+        "title": "Saint Andrew the Apostle",
+        "description": "On this day, we honor Saint Andrew, the first apostle called by Jesus and brother of Peter",
+        "verses": [
+          {"reference": "John 1:40-42", "text": "Andrew, Simon Peter's brother, was one of the two who heard what John had said and who had followed Jesus. The first thing Andrew did was to find his brother Simon and tell him, 'We have found the Messiah' (that is, the Christ). And he brought him to Jesus."},
+          {"reference": "Matthew 4:19", "text": "'Come, follow me,' Jesus said, 'and I will send you out to fish for people.'"},
+          {"reference": "John 6:8-9", "text": "Another of his disciples, Andrew, Simon Peter's brother, spoke up, 'Here is a boy with five small barley loaves and two small fish, but how far will they go among so many?'"},
+          {"reference": "John 12:22", "text": "Philip went to tell Andrew; Andrew and Philip in turn told Jesus."}
+        ]
+      }
+    ],
+    "12-06": [
+      {
+        "title": "Saint Nicholas",
+        "description": "On this day, we honor Saint Nicholas, the generous bishop known for his care for children and the poor",
+        "verses": [
+          {"reference": "Acts 20:35", "text": "In everything I did, I showed you that by this kind of hard work we must help the weak, remembering the words the Lord Jesus himself said: 'It is more blessed to give than to receive.'"},
+          {"reference": "Matthew 19:14", "text": "Jesus said, 'Let the little children come to me, and do not hinder them, for the kingdom of heaven belongs to such as these.'"},
+          {"reference": "Proverbs 11:25", "text": "A generous person will prosper; whoever refreshes others will be refreshed."},
+          {"reference": "2 Corinthians 9:7", "text": "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."}
+        ]
+      }
+    ],
+    "12-26": [
+      {
+        "title": "Saint Stephen the First Martyr",
+        "description": "On this day, we remember Saint Stephen, the first Christian martyr, who died for his faith with forgiveness in his heart",
+        "verses": [
+          {"reference": "Acts 7:59-60", "text": "While they were stoning him, Stephen prayed, 'Lord Jesus, receive my spirit.' Then he fell on his knees and cried out, 'Lord, do not hold this sin against them.' When he had said this, he fell asleep."},
+          {"reference": "Acts 6:8", "text": "Now Stephen, a man full of God's grace and power, performed great wonders and signs among the people."},
+          {"reference": "Matthew 5:44", "text": "But I tell you, love your enemies and pray for those who persecute you."},
+          {"reference": "Revelation 2:10", "text": "Do not be afraid of what you are about to suffer. I tell you, the devil will put some of you in prison to test you, and you will suffer persecution for ten days. Be faithful, even to the point of death, and I will give you life as your victor's crown."}
+        ]
+      }
+    ],
     "seasonal_themes": {
       "spring": [
         {

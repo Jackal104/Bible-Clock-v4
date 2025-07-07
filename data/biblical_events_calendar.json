@@ -248,6 +248,27 @@
           ]
         }
       ],
+      "07-07": [
+        {
+          "title": "Early Christian Martyrs",
+          "description": "On this day, we remember the early Christian martyrs who died for their faith, including Saints Peregrinus, Lucian, and companions who were drowned for confessing Christ",
+          "verses": [
+            {"reference": "Matthew 5:10", "text": "Blessed are those who are persecuted because of righteousness, for theirs is the kingdom of heaven."},
+            {"reference": "Romans 8:35-37", "text": "Who shall separate us from the love of Christ? Shall trouble or hardship or persecution or famine or nakedness or danger or sword? No, in all these things we are more than conquerors through him who loved us."},
+            {"reference": "Revelation 2:10", "text": "Do not be afraid of what you are about to suffer. I tell you, the devil will put some of you in prison to test you, and you will suffer persecution for ten days. Be faithful, even to the point of death, and I will give you life as your victor's crown."},
+            {"reference": "2 Timothy 3:12", "text": "In fact, everyone who wants to live a godly life in Christ Jesus will be persecuted."}
+          ]
+        },
+        {
+          "title": "Faithfulness Under Trial",
+          "description": "This day reminds us of the importance of remaining faithful to God during times of trial and persecution",
+          "verses": [
+            {"reference": "James 1:12", "text": "Blessed is the one who perseveres under trial because, having stood the test, that person will receive the crown of life that the Lord has promised to those who love him."},
+            {"reference": "1 Peter 4:16", "text": "However, if you suffer as a Christian, do not be ashamed, but praise God that you bear that name."},
+            {"reference": "Acts 5:41", "text": "The apostles left the Sanhedrin, rejoicing because they had been counted worthy of suffering disgrace for the Name."}
+          ]
+        }
+      ],
       "08-15": [
         {
           "title": "Harvest Time",

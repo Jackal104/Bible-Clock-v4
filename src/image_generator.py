@@ -918,71 +918,33 @@ class ImageGenerator:
         }
     
     def _draw_date_event(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
-        """Draw a date-based biblical event."""
-        y_position = margin
+        """Draw a date-based biblical event with pagination support."""
+        # Check if we need pagination for the content
+        full_content = self._build_date_content(verse_data)
+        pages = self._paginate_date_content(full_content, content_width, margin)
         
-        # Draw event name at top
-        event_name = verse_data.get('event_name', 'Biblical Event')
-        if self.title_font:
-            title_bbox = draw.textbbox((0, 0), event_name, font=self.title_font)
-            title_width = title_bbox[2] - title_bbox[0]
-            title_x = (self.width - title_width) // 2
-            draw.text((title_x, y_position), event_name, fill=0, font=self.title_font)
-            y_position += title_bbox[3] - title_bbox[1] + 40
+        if not pages or len(pages) == 1:
+            # Single page - use original layout with better spacing
+            self._draw_date_event_single_page(draw, verse_data, margin, content_width)
+            return
         
-        # Draw date match type indicator
-        match_type = verse_data.get('date_match', 'exact')
-        match_text = {
-            'exact': f"Today - {datetime.now().strftime('%B %d')}",
-            'week': f"This Week - {datetime.now().strftime('%B %d')}",
-            'month': f"This Month - {datetime.now().strftime('%B')}",
-            'season': f"This Season - {datetime.now().strftime('%B')}",
-            'fallback': f"Daily Blessing - {datetime.now().strftime('%B %d')}"
-        }.get(match_type, "Today")
+        # Multiple pages - use pagination with 10-second cycling
+        from datetime import datetime
+        now = datetime.now()
+        page_rotation_seconds = 10  # Same as devotional mode
+        seconds_since_midnight = now.hour * 3600 + now.minute * 60 + now.second
+        page_slot = (seconds_since_midnight // page_rotation_seconds) % len(pages)
+        current_page = page_slot + 1
         
-        if self.reference_font:
-            ref_bbox = draw.textbbox((0, 0), match_text, font=self.reference_font)
-            ref_width = ref_bbox[2] - ref_bbox[0]
-            ref_x = (self.width - ref_width) // 2
-            draw.text((ref_x, y_position), match_text, fill=64, font=self.reference_font)
-            y_position += ref_bbox[3] - ref_bbox[1] + 30
+        # Update verse_data with page information
+        verse_data['current_page'] = current_page
+        verse_data['total_pages'] = len(pages)
         
-        # Draw reference
-        reference = verse_data['reference']
-        if self.reference_font:
-            ref_bbox = draw.textbbox((0, 0), reference, font=self.reference_font)
-            ref_width = ref_bbox[2] - ref_bbox[0]
-            ref_x = (self.width - ref_width) // 2
-            draw.text((ref_x, y_position), reference, fill=0, font=self.reference_font)
-            y_position += ref_bbox[3] - ref_bbox[1] + 40
+        # Draw the current page
+        page_content = pages[page_slot]
+        self._draw_date_event_page(draw, verse_data, page_content, margin, content_width)
         
-        # Draw verse text
-        verse_text = verse_data['text']
-        wrapped_text = self._wrap_text(verse_text, content_width, self.verse_font)
-        
-        for line in wrapped_text:
-            if self.verse_font:
-                line_bbox = draw.textbbox((0, 0), line, font=self.verse_font)
-                line_width = line_bbox[2] - line_bbox[0]
-                line_x = (self.width - line_width) // 2
-                draw.text((line_x, y_position), line, fill=0, font=self.verse_font)
-                y_position += line_bbox[3] - line_bbox[1] + 20
-        
-        # Draw event description if space allows
-        if y_position < self.height - 200:
-            y_position += 40
-            description = verse_data.get('event_description', '')
-            if description:
-                wrapped_desc = self._wrap_text(description, content_width, self.reference_font)
-                for line in wrapped_desc[:2]:  # Max 2 lines for description
-                    if self.reference_font:
-                        line_bbox = draw.textbbox((0, 0), line, font=self.reference_font)
-                        line_width = line_bbox[2] - line_bbox[0]
-                        line_x = (self.width - line_width) // 2
-                        draw.text((line_x, y_position), line, fill=96, font=self.reference_font)
-                        y_position += line_bbox[3] - line_bbox[1] + 15
-        
-        # Add verse reference in bottom-right corner
+        # Add verse reference display
         self._add_verse_reference_display(draw, verse_data)
     
     def _draw_devotional(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
@@ -1108,6 +1070,203 @@ class ImageGenerator:
             pages.append('\n'.join(page_lines))
         
         return pages
+
+    def _build_date_content(self, verse_data: Dict) -> str:
+        """Build full content string for date events."""
+        content_parts = []
+        
+        # Event name
+        event_name = verse_data.get('event_name', 'Biblical Event')
+        content_parts.append(event_name)
+        
+        # Date match type
+        match_type = verse_data.get('date_match', 'exact')
+        match_text = {
+            'exact': f"Today - {datetime.now().strftime('%B %d')}",
+            'week': f"This Week - {datetime.now().strftime('%B %d')}",
+            'month': f"This Month - {datetime.now().strftime('%B')}",
+            'season': f"This Season - {datetime.now().strftime('%B')}",
+            'fallback': f"Daily Blessing - {datetime.now().strftime('%B %d')}"
+        }.get(match_type, "Today")
+        content_parts.append(match_text)
+        
+        # Reference
+        content_parts.append(verse_data['reference'])
+        
+        # Verse text
+        content_parts.append(verse_data['text'])
+        
+        # Event description
+        description = verse_data.get('event_description', '')
+        if description:
+            content_parts.append(description)
+        
+        return '\n\n'.join(content_parts)
+
+    def _paginate_date_content(self, content: str, content_width: int, margin: int) -> List[str]:
+        """Split date content into pages that fit the display."""
+        # Use similar logic to devotional pagination
+        test_font = self._get_font(self.verse_size)
+        
+        # Calculate available space (similar to devotional)
+        ref_bbox = (0, 0, 0, 100)
+        ref_height = ref_bbox[3] - ref_bbox[1]
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        ref_y = base_margin + self.reference_y_offset
+        min_gap = 40
+        reference_bottom = ref_y + ref_height + min_gap
+        available_height = self.height - reference_bottom - margin - 60
+        
+        # Calculate max lines per page
+        line_height = test_font.size + 20 if test_font else 30
+        max_lines_per_page = max(3, available_height // line_height)
+        
+        # Wrap text and split into pages
+        wrapped_lines = self._wrap_text(content, content_width, test_font)
+        
+        # If text fits on one page, return single page
+        if len(wrapped_lines) <= max_lines_per_page:
+            return [content]
+        
+        # Split into pages - use newlines to preserve line breaks
+        pages = []
+        for i in range(0, len(wrapped_lines), max_lines_per_page):
+            page_lines = wrapped_lines[i:i + max_lines_per_page]
+            pages.append('\n'.join(page_lines))
+        
+        return pages
+
+    def _draw_date_event_single_page(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
+        """Draw date event on single page with proper spacing."""
+        # Calculate reference position and reserve space
+        ref_text = verse_data.get('reference', 'Unknown')
+        ref_bbox = draw.textbbox((0, 0), ref_text, font=self.reference_font) if self.reference_font else (0, 0, 0, 100)
+        ref_height = ref_bbox[3] - ref_bbox[1]
+        
+        # Get margin based on decorative border
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        # Calculate proper starting position
+        ref_y = base_margin + self.reference_y_offset
+        min_gap = 40
+        content_start_y = ref_y + ref_height + min_gap
+        y_position = content_start_y
+        
+        # Draw event name
+        event_name = verse_data.get('event_name', 'Biblical Event')
+        if self.title_font:
+            title_bbox = draw.textbbox((0, 0), event_name, font=self.title_font)
+            title_width = title_bbox[2] - title_bbox[0]
+            title_x = (self.width - title_width) // 2
+            draw.text((title_x, y_position), event_name, fill=0, font=self.title_font)
+            y_position += title_bbox[3] - title_bbox[1] + 30
+        
+        # Draw date match type
+        match_type = verse_data.get('date_match', 'exact')
+        match_text = {
+            'exact': f"Today - {datetime.now().strftime('%B %d')}",
+            'week': f"This Week - {datetime.now().strftime('%B %d')}",
+            'month': f"This Month - {datetime.now().strftime('%B')}",
+            'season': f"This Season - {datetime.now().strftime('%B')}",
+            'fallback': f"Daily Blessing - {datetime.now().strftime('%B %d')}"
+        }.get(match_type, "Today")
+        
+        if self.reference_font and y_position + 50 < self.height - margin:
+            ref_bbox = draw.textbbox((0, 0), match_text, font=self.reference_font)
+            ref_width = ref_bbox[2] - ref_bbox[0]
+            ref_x = (self.width - ref_width) // 2
+            draw.text((ref_x, y_position), match_text, fill=64, font=self.reference_font)
+            y_position += ref_bbox[3] - ref_bbox[1] + 25
+        
+        # Draw verse reference
+        reference = verse_data['reference']
+        if self.reference_font and y_position + 50 < self.height - margin:
+            ref_bbox = draw.textbbox((0, 0), reference, font=self.reference_font)
+            ref_width = ref_bbox[2] - ref_bbox[0]
+            ref_x = (self.width - ref_width) // 2
+            draw.text((ref_x, y_position), reference, fill=0, font=self.reference_font)
+            y_position += ref_bbox[3] - ref_bbox[1] + 30
+        
+        # Draw verse text with bounds checking
+        verse_text = verse_data['text']
+        wrapped_text = self._wrap_text(verse_text, content_width, self.verse_font)
+        
+        for line in wrapped_text:
+            if y_position + 50 < self.height - margin and self.verse_font:
+                line_bbox = draw.textbbox((0, 0), line, font=self.verse_font)
+                line_width = line_bbox[2] - line_bbox[0]
+                line_x = (self.width - line_width) // 2
+                draw.text((line_x, y_position), line, fill=0, font=self.verse_font)
+                y_position += line_bbox[3] - line_bbox[1] + 20
+            else:
+                break  # Stop if we run out of space
+        
+        # Draw event description only if space allows
+        description = verse_data.get('event_description', '')
+        if description and y_position + 100 < self.height - margin:
+            y_position += 30
+            wrapped_desc = self._wrap_text(description, content_width, self.reference_font)
+            lines_drawn = 0
+            for line in wrapped_desc:
+                if lines_drawn >= 2 or y_position + 40 >= self.height - margin:
+                    break  # Max 2 lines or stop if no space
+                if self.reference_font:
+                    line_bbox = draw.textbbox((0, 0), line, font=self.reference_font)
+                    line_width = line_bbox[2] - line_bbox[0]
+                    line_x = (self.width - line_width) // 2
+                    draw.text((line_x, y_position), line, fill=96, font=self.reference_font)
+                    y_position += line_bbox[3] - line_bbox[1] + 15
+                    lines_drawn += 1
+
+    def _draw_date_event_page(self, draw: ImageDraw.Draw, verse_data: Dict, page_content: str, margin: int, content_width: int):
+        """Draw a single page of date event content."""
+        # Calculate positioning similar to devotional
+        ref_text = verse_data.get('reference', 'Unknown')
+        ref_bbox = draw.textbbox((0, 0), ref_text, font=self.reference_font) if self.reference_font else (0, 0, 0, 100)
+        ref_height = ref_bbox[3] - ref_bbox[1]
+        
+        has_decorative_border = self.current_background_index > 0
+        base_margin = self.reference_margin if hasattr(self, 'reference_margin') else 20
+        if has_decorative_border:
+            base_margin = max(base_margin, 80)
+        
+        ref_y = base_margin + self.reference_y_offset
+        min_gap = 40
+        reference_bottom = ref_y + ref_height + min_gap
+        
+        # Draw page title
+        event_name = verse_data.get('event_name', 'Biblical Event')
+        content_start_y = reference_bottom
+        if self.title_font:
+            title_bbox = draw.textbbox((0, 0), event_name, font=self.title_font)
+            title_width = title_bbox[2] - title_bbox[0]
+            title_x = (self.width - title_width) // 2
+            draw.text((title_x, content_start_y), event_name, fill=0, font=self.title_font)
+            content_start_y += title_bbox[3] - title_bbox[1] + 30
+        
+        # Use consistent font size for all pages
+        page_font = self._get_font(self.verse_size)
+        
+        # Split page content by newlines (preserve pagination line breaks)
+        page_lines = page_content.split('\n')
+        
+        # Draw page text
+        y_position = content_start_y
+        for line in page_lines:
+            if line.strip():  # Only draw non-empty lines
+                if page_font:
+                    line_bbox = draw.textbbox((0, 0), line, font=page_font)
+                    line_width = line_bbox[2] - line_bbox[0]
+                    line_x = (self.width - line_width) // 2
+                    draw.text((line_x, y_position), line, font=page_font, fill='black')
+                    y_position += page_font.size + 20
 
     def _draw_devotional_page(self, draw: ImageDraw.Draw, verse_data: Dict, page_content: str, margin: int, content_width: int):
         """Draw a single page of devotional content."""

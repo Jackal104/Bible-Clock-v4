@@ -566,61 +566,62 @@ class VerseManager:
         }
     
     def _get_date_based_verse(self) -> Dict:
-        """Get verse based on today's date and biblical events with 15-minute cycling."""
+        """Get verse based on today's date and biblical events with enhanced hierarchical cycling."""
         now = datetime.now()
         today = now.date()
         
-        # Calculate which verse to show based on 15-minute intervals
-        # This gives us 4 verses per hour, 96 verse slots per day
-        quarter_hour = now.minute // 15  # 0, 1, 2, or 3
-        hour = now.hour
-        verse_index = (hour * 4) + quarter_hour  # 0-95
+        # Calculate which event and verse to show based on 5-minute intervals for more variety
+        # This gives us 12 verse slots per hour, 288 verse slots per day
+        minutes_since_midnight = now.hour * 60 + now.minute
+        verse_slot = minutes_since_midnight // 5  # 5-minute intervals
         
-        # First, try to get verses for exact date (MM-DD format)
-        date_key = f"{today.month:02d}-{today.day:02d}"
-        available_verses = []
+        # Hierarchical event selection: day -> week -> month -> season
+        selected_events = []
         match_type = "exact"
-        event_info = None
         
+        # 1. First priority: Exact date events (MM-DD format)
+        date_key = f"{today.month:02d}-{today.day:02d}"
         if date_key in self.biblical_events_calendar.get('events', {}):
             events = self.biblical_events_calendar['events'][date_key]
-            for event in events:
-                event_info = event
-                available_verses.extend(event['verses'])
+            selected_events.extend(events)
+            match_type = "exact"
         
-        # If no exact date match, try weekly theme
-        if not available_verses:
+        # 2. Second priority: Weekly themes (if no daily events or to supplement)
+        if not selected_events:
             weekday_name = calendar.day_name[today.weekday()].lower()
             weekly_themes = self.biblical_events_calendar.get('weekly_themes', {})
             if weekday_name in weekly_themes:
-                for theme in weekly_themes[weekday_name]:
-                    event_info = theme
-                    available_verses.extend(theme['verses'])
-                match_type = "weekly"
+                selected_events.extend(weekly_themes[weekday_name])
+                match_type = "week"
         
-        # If no weekly match, try monthly theme
-        if not available_verses:
+        # 3. Third priority: Monthly themes (if no weekly events)
+        if not selected_events:
             month_name = calendar.month_name[today.month].lower()
             monthly_themes = self.biblical_events_calendar.get('monthly_themes', {})
             if month_name in monthly_themes:
-                for theme in monthly_themes[month_name]:
-                    event_info = theme
-                    available_verses.extend(theme['verses'])
-                match_type = "monthly"
+                selected_events.extend(monthly_themes[month_name])
+                match_type = "month"
         
-        # If no monthly match, try seasonal theme
-        if not available_verses:
+        # 4. Fourth priority: Seasonal themes (final fallback)
+        if not selected_events:
             season = self._get_current_season(today)
             seasonal_themes = self.biblical_events_calendar.get('seasonal_themes', {})
             if season in seasonal_themes:
-                for theme in seasonal_themes[season]:
-                    event_info = theme
-                    available_verses.extend(theme['verses'])
-                match_type = "seasonal"
+                selected_events.extend(seasonal_themes[season])
+                match_type = "season"
+        
+        # 5. Final fallback: Random verse
+        if not selected_events:
+            return self._get_fallback_verse(match_type="fallback")
+        
+        # Cycle through events based on time slot
+        event_index = verse_slot % len(selected_events)
+        current_event = selected_events[event_index]
         
         # If we have verses, cycle through them based on time
         if available_verses:
-            verse = available_verses[verse_index % len(available_verses)]
+            verse_in_event = verse_slot % len(available_verses)
+            verse = available_verses[verse_in_event]
             
             # Parse reference to extract book, chapter, verse
             ref_parts = verse['reference'].split()
@@ -640,21 +641,30 @@ class VerseManager:
                 'chapter': chapter,
                 'verse': verse_num,
                 'is_date_event': True,
-                'event_name': event_info.get('title', f"Biblical Event for {today.strftime('%B %d')}"),
-                'event_description': event_info.get('description', 'Biblical wisdom for today'),
+                'event_name': current_event.get('title', f"Biblical Event for {today.strftime('%B %d')}"),
+                'event_description': current_event.get('description', 'Biblical wisdom for today'),
                 'date_match': match_type,
-                'verse_cycle_position': f"{verse_index % len(available_verses) + 1} of {len(available_verses)}",
-                'next_verse_minutes': 15 - (now.minute % 15)
+                'verse_cycle_position': f"{verse_in_event + 1} of {len(available_verses)}",
+                'event_cycle_position': f"{event_index + 1} of {len(selected_events)}",
+                'next_change_minutes': 5 - (now.minute % 5)  # 5-minute intervals
             }
         
         # Ultimate fallback to random verse with date context
+        return self._get_fallback_verse(match_type="fallback")
+    
+    def _get_fallback_verse(self, match_type: str) -> Dict:
+        """Get fallback verse for date mode."""
+        now = datetime.now()
+        today = now.date()
+        
         fallback = random.choice(self.fallback_verses)
         fallback['is_date_event'] = True
         fallback['event_name'] = f"Daily Blessing for {today.strftime('%B %d')}"
         fallback['event_description'] = "God's word for today"
-        fallback['date_match'] = 'fallback'
+        fallback['date_match'] = match_type
         fallback['verse_cycle_position'] = "1 of 1"
-        fallback['next_verse_minutes'] = 15 - (now.minute % 15)
+        fallback['event_cycle_position'] = "1 of 1"
+        fallback['next_change_minutes'] = 5 - (now.minute % 5)
         
         return fallback
     

@@ -154,9 +154,10 @@ class DevotionalManager:
         if not cache_keys:
             return None
         
-        # Use slot to deterministically select devotional, but cycle through all available
-        # This ensures different devotionals are shown in different time slots
-        selected_index = slot % len(cache_keys)
+        # Use slot to randomly select devotional with proper randomization
+        # This ensures truly random devotionals are shown in different time slots
+        random.seed(slot)  # Use slot as seed for consistency within the same time slot
+        selected_index = random.randint(0, len(cache_keys) - 1)
         selected_key = cache_keys[selected_index]
         
         devotional = self.devotional_cache[selected_key].copy()
@@ -407,10 +408,12 @@ class DevotionalManager:
         for artifact in artifacts:
             text = re.sub(artifact, '', text, flags=re.IGNORECASE)
         
-        # Remove date references
+        # Remove date references and Faith's Checkbook titles
         text = re.sub(r'^[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*', '', text)
         text = re.sub(r'^\d{1,2}[a-z]{0,2} [A-Z][a-z]+[,\s]*', '', text)
         text = re.sub(r'[A-Z][a-z]+ \d{1,2}[a-z]{0,2}[,\s]*\d{4}', '', text)
+        text = re.sub(r'Faith\'s Checkbook\s*-\s*[A-Z][a-z]+\s*\d{1,2}[a-z]{0,2}[,\s]*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'Faith\'s Checkbook[,\s]*', '', text, flags=re.IGNORECASE)
         
         # Remove pagination references
         text = re.sub(r'pages?\s+\d+\s+of\s+\d+', '', text, flags=re.IGNORECASE)

@@ -1077,7 +1077,7 @@ class VerseManager:
                 ('bible-api', 'kjv')        # Final: KJV fallback
             ],
             'nasb': [
-                ('local_cache', 'nasb'),    # Primary: Growing local cache
+                ('local_cache', 'nasb1995'),    # Primary: Growing local cache
                 ('web_scraping', 'NASB1995'),  # Secondary: Direct web scraping (reliable)
                 ('biblegateway', 'NASB1995'),   # Tertiary: BibleGateway API (NASB 1995)
                 ('bible_scraper', 'NASB1995'),  # Quaternary: YouVersion scraper (may have 404 issues)

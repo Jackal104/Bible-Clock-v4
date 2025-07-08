@@ -1456,9 +1456,11 @@ class ImageGenerator:
             current_date = verse_data.get('current_date', now.strftime('%A, %B %d, %Y'))
             display_text = f"{current_time} - {current_date}"
         elif verse_data.get('is_date_event'):
-            # Show the actual date instead of reference for date-based mode
+            # Show both time and date for date-based mode
             now = datetime.now()
-            display_text = now.strftime('%B %d, %Y')
+            current_time = verse_data.get('current_time', now.strftime('%I:%M %p'))
+            current_date = now.strftime('%B %d, %Y')
+            display_text = f"{current_time} - {current_date}"
         elif verse_data.get('is_summary'):
             # For book summaries, show current time in the preferred format
             now = datetime.now()

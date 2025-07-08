@@ -91,9 +91,8 @@ class DisplayManager:
             )
             
             if not needs_update:
-                self.logger.info("Image unchanged, skipping update - forcing refresh anyway")
-                # Force update anyway for debugging automatic updates
-                needs_update = True
+                self.logger.info("Image unchanged, skipping update")
+                return
             
             if self.simulation_mode:
                 self._simulate_display(image)

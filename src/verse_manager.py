@@ -647,7 +647,9 @@ class VerseManager:
                 'date_match': match_type,
                 'verse_cycle_position': f"{verse_in_event + 1} of {len(available_verses)}",
                 'event_cycle_position': f"{event_index + 1} of {len(selected_events)}",
-                'next_change_minutes': 5 - (now.minute % 5)  # 5-minute intervals
+                'next_change_minutes': 5 - (now.minute % 5),  # 5-minute intervals
+                'current_time': now.strftime('%I:%M %p'),
+                'current_date': now.strftime('%B %d, %Y')
             }
         
         # Ultimate fallback to random verse with date context

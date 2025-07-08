@@ -1153,14 +1153,28 @@ class ImageGenerator:
         if has_decorative_border:
             base_margin = max(base_margin, 80)
         
-        # Calculate proper starting position
-        ref_y = base_margin + self.reference_y_offset
-        min_gap = 40
-        content_start_y = ref_y + ref_height + min_gap
+        # Calculate proper starting position accounting for mirroring
+        mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
+        will_be_mirrored = mirror_setting == 'true'
+        
+        if will_be_mirrored and self.reference_position == 'center-top':
+            # For mirrored displays with center-top reference, the reference will appear at the bottom
+            # so content should start from the top
+            content_start_y = base_margin + self.reference_y_offset
+        else:
+            # Standard logic - reference at top, content below
+            ref_y = base_margin + self.reference_y_offset
+            min_gap = 40
+            content_start_y = ref_y + ref_height + min_gap
+        
         y_position = content_start_y
         
         # Time and date will be displayed in the reference position by _add_verse_reference_display
         # No need to duplicate it here
+        
+        # IMPORTANT: For Date Mode, ensure reference display is called FIRST to avoid overlapping
+        # This ensures the time-date format is drawn before other content
+        self._add_verse_reference_display(draw, verse_data)
         
         # Draw event name as subtitle
         event_name = verse_data.get('event_name', 'Biblical Event')
@@ -1227,6 +1241,8 @@ class ImageGenerator:
                     draw.text((line_x, y_position), line, fill=96, font=self.reference_font)
                     y_position += line_bbox[3] - line_bbox[1] + 15
                     lines_drawn += 1
+        
+        # Reference display already called at the beginning to ensure proper positioning
 
     def _draw_date_event_page(self, draw: ImageDraw.Draw, verse_data: Dict, page_content: str, margin: int, content_width: int):
         """Draw a single page of date event content."""
@@ -1489,6 +1505,10 @@ class ImageGenerator:
             if has_decorative_border:
                 base_margin = max(base_margin, 80)  # Ensure enough margin for decorative borders and transformations
             
+            # Check if display will be mirrored to adjust positioning accordingly
+            mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
+            will_be_mirrored = mirror_setting == 'true'
+            
             # Calculate position based on reference_position setting
             if self.reference_position == 'bottom-right':
                 x = self.width - text_width - base_margin
@@ -1504,22 +1524,34 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                y = base_margin + self.reference_y_offset  # Use the y_offset setting (20 pixels from top)
+                if will_be_mirrored:
+                    # For mirrored displays, position at bottom so it appears at top after flip
+                    y = self.height - text_height - base_margin - self.reference_y_offset
+                else:
+                    # For non-mirrored displays, position at top
+                    y = base_margin + self.reference_y_offset
             elif self.reference_position == 'center-bottom':
                 x = (self.width - text_width) // 2
-                # Position lower than very bottom - about 80% down for top-middle appearance after rotation
-                y = self.height - text_height - (base_margin * 4)
+                if will_be_mirrored:
+                    # For mirrored displays, position at top so it appears at bottom after flip
+                    y = base_margin + self.reference_y_offset
+                else:
+                    # Position lower than very bottom - about 80% down for top-middle appearance after rotation
+                    y = self.height - text_height - (base_margin * 4)
             elif self.reference_position == 'top-center-right':
                 # Position in upper area, centered horizontally but offset to the right
                 x = (self.width // 2) + (text_width // 2)  # Center + half text width to shift right
-                y = base_margin
+                if will_be_mirrored:
+                    # For mirrored displays, position at bottom so it appears at top after flip
+                    y = self.height - text_height - base_margin
+                else:
+                    y = base_margin
             else:  # custom or fallback to bottom-right
                 x = self.width - text_width - base_margin
                 y = self.height - text_height - base_margin
             
-            # Apply custom offsets
+            # Apply custom X offset only (Y offset is already applied in positioning logic above)
             x += self.reference_x_offset
-            y += self.reference_y_offset
             
             # Ensure text stays within bounds
             x = max(base_margin, min(x, self.width - text_width - base_margin))

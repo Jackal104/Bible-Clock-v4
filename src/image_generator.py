@@ -1159,19 +1159,8 @@ class ImageGenerator:
         content_start_y = ref_y + ref_height + min_gap
         y_position = content_start_y
         
-        # Draw time-date format prominently (user expects to see time)
-        from datetime import datetime
-        now = datetime.now()
-        current_time = verse_data.get('current_time', now.strftime('%I:%M %p'))
-        current_date = now.strftime('%B %d, %Y')
-        time_date_text = f"{current_time} - {current_date}"
-        
-        if self.title_font:
-            title_bbox = draw.textbbox((0, 0), time_date_text, font=self.title_font)
-            title_width = title_bbox[2] - title_bbox[0]
-            title_x = (self.width - title_width) // 2
-            draw.text((title_x, y_position), time_date_text, fill=0, font=self.title_font)
-            y_position += title_bbox[3] - title_bbox[1] + 30
+        # Time and date will be displayed in the reference position by _add_verse_reference_display
+        # No need to duplicate it here
         
         # Draw event name as subtitle
         event_name = verse_data.get('event_name', 'Biblical Event')
@@ -1182,15 +1171,15 @@ class ImageGenerator:
             draw.text((event_x, y_position), event_name, fill=0, font=self.reference_font)
             y_position += event_bbox[3] - event_bbox[1] + 20
         
-        # Draw date match type
+        # Draw date match type (without redundant date info)
         match_type = verse_data.get('date_match', 'exact')
         match_text = {
-            'exact': f"Today - {datetime.now().strftime('%B %d')}",
-            'week': f"This Week - {datetime.now().strftime('%B %d')}",
-            'month': f"This Month - {datetime.now().strftime('%B')}",
-            'season': f"This Season - {datetime.now().strftime('%B')}",
-            'fallback': f"Daily Blessing - {datetime.now().strftime('%B %d')}"
-        }.get(match_type, "Today")
+            'exact': "Today's Event",
+            'week': "This Week's Event",
+            'month': "This Month's Event", 
+            'season': "This Season's Event",
+            'fallback': "Daily Blessing"
+        }.get(match_type, "Today's Event")
         
         if self.reference_font and y_position + 50 < self.height - margin:
             ref_bbox = draw.textbbox((0, 0), match_text, font=self.reference_font)

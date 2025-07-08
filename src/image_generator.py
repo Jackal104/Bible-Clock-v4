@@ -1079,15 +1079,15 @@ class ImageGenerator:
         event_name = verse_data.get('event_name', 'Biblical Event')
         content_parts.append(event_name)
         
-        # Date match type
+        # Date match type (without redundant date info)
         match_type = verse_data.get('date_match', 'exact')
         match_text = {
-            'exact': f"Today - {datetime.now().strftime('%B %d')}",
-            'week': f"This Week - {datetime.now().strftime('%B %d')}",
-            'month': f"This Month - {datetime.now().strftime('%B')}",
-            'season': f"This Season - {datetime.now().strftime('%B')}",
-            'fallback': f"Daily Blessing - {datetime.now().strftime('%B %d')}"
-        }.get(match_type, "Today")
+            'exact': "Today's Event",
+            'week': "This Week's Event",
+            'month': "This Month's Event",
+            'season': "This Season's Event",
+            'fallback': "Daily Blessing"
+        }.get(match_type, "Today's Event")
         content_parts.append(match_text)
         
         # Reference

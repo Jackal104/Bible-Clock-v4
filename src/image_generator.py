@@ -884,13 +884,12 @@ class ImageGenerator:
         """Set verse reference position and offsets."""
         valid_positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'center-top', 'center-bottom', 'top-center-right', 'custom']
         if position in valid_positions:
-            # Force reference position to always be center-top for consistent time display
-            self.reference_position = 'center-top'
+            self.reference_position = position
             self.reference_x_offset = x_offset
             self.reference_y_offset = y_offset
             if margin is not None:
                 self.reference_margin = margin
-            self.logger.info(f"Reference position forced to center-top (requested: {position}) with offsets ({x_offset}, {y_offset})")
+            self.logger.info(f"Reference position set to: {position} with offsets ({x_offset}, {y_offset})")
         else:
             raise ValueError(f"Invalid position. Must be one of: {valid_positions}")
     

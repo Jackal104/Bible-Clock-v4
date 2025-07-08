@@ -619,6 +619,7 @@ class VerseManager:
         current_event = selected_events[event_index]
         
         # If we have verses, cycle through them based on time
+        available_verses = current_event.get('verses', [])
         if available_verses:
             verse_in_event = verse_slot % len(available_verses)
             verse = available_verses[verse_in_event]

@@ -1159,14 +1159,28 @@ class ImageGenerator:
         content_start_y = ref_y + ref_height + min_gap
         y_position = content_start_y
         
-        # Draw event name
-        event_name = verse_data.get('event_name', 'Biblical Event')
+        # Draw time-date format prominently (user expects to see time)
+        from datetime import datetime
+        now = datetime.now()
+        current_time = verse_data.get('current_time', now.strftime('%I:%M %p'))
+        current_date = now.strftime('%B %d, %Y')
+        time_date_text = f"{current_time} - {current_date}"
+        
         if self.title_font:
-            title_bbox = draw.textbbox((0, 0), event_name, font=self.title_font)
+            title_bbox = draw.textbbox((0, 0), time_date_text, font=self.title_font)
             title_width = title_bbox[2] - title_bbox[0]
             title_x = (self.width - title_width) // 2
-            draw.text((title_x, y_position), event_name, fill=0, font=self.title_font)
+            draw.text((title_x, y_position), time_date_text, fill=0, font=self.title_font)
             y_position += title_bbox[3] - title_bbox[1] + 30
+        
+        # Draw event name as subtitle
+        event_name = verse_data.get('event_name', 'Biblical Event')
+        if self.reference_font:
+            event_bbox = draw.textbbox((0, 0), event_name, font=self.reference_font)
+            event_width = event_bbox[2] - event_bbox[0]
+            event_x = (self.width - event_width) // 2
+            draw.text((event_x, y_position), event_name, fill=0, font=self.reference_font)
+            y_position += event_bbox[3] - event_bbox[1] + 20
         
         # Draw date match type
         match_type = verse_data.get('date_match', 'exact')

@@ -1422,6 +1422,10 @@ class ImageGenerator:
     
     def _draw_parallel_verse(self, draw: ImageDraw.Draw, verse_data: Dict, margin: int, content_width: int):
         """Draw verse with parallel translations side by side."""
+        # Clear the entire content area first to prevent artifacts
+        content_area = (margin, margin, self.width - margin, self.height - margin)
+        draw.rectangle(content_area, fill=255)  # White background to clear artifacts
+        
         # Split content into two columns
         column_width = (content_width - 40) // 2  # 40px gap between columns
         left_margin = margin
@@ -1505,11 +1509,13 @@ class ImageGenerator:
                 current_y += optimal_font.size + 15
                 secondary_end_y = current_y
         
-        # Add a vertical separator line
+        # Add a prominent vertical separator line in the middle
         separator_x = margin + column_width + 20
-        separator_start_y = text_start_y - 10
-        separator_end_y = max(text_start_y + total_text_height, secondary_end_y) + 10
-        draw.line([(separator_x, separator_start_y), (separator_x, separator_end_y)], fill=128, width=1)
+        # Extend separator to cover more of the display height for better visual separation
+        separator_start_y = margin + 50  # Start from near top
+        separator_end_y = self.height - margin - 50  # End near bottom
+        # Make separator more visible with increased width and darker color
+        draw.line([(separator_x, separator_start_y), (separator_x, separator_end_y)], fill=64, width=2)
         
         # Calculate translation label position with proper spacing
         verse_content_end_y = max(text_start_y + total_text_height, secondary_end_y)

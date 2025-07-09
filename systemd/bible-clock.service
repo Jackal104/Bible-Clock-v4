@@ -7,10 +7,10 @@ Wants=network.target
 Type=simple
 User=admin
 Group=admin
-WorkingDirectory=/home/admin/Bible-Clock-v4
-Environment="PATH=/home/admin/Bible-Clock-v4/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-EnvironmentFile=/home/admin/Bible-Clock-v4/.env
-ExecStart=/bin/bash /home/admin/Bible-Clock-v4/start_bible_clock.sh
+WorkingDirectory=/home/admin/Bible-Clockv4
+Environment="PATH=/home/admin/Bible-Clockv4/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+EnvironmentFile=/home/admin/Bible-Clockv4/.env
+ExecStart=/bin/bash /home/admin/Bible-Clockv4/start_bible_clock.sh
 Restart=always
 RestartSec=10
 StandardOutput=journal

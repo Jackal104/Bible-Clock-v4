@@ -1153,19 +1153,10 @@ class ImageGenerator:
         if has_decorative_border:
             base_margin = max(base_margin, 80)
         
-        # Calculate proper starting position accounting for mirroring
-        mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
-        will_be_mirrored = mirror_setting == 'true'
-        
-        if will_be_mirrored and self.reference_position == 'center-top':
-            # For mirrored displays with center-top reference, the reference will appear at the bottom
-            # so content should start from the top
-            content_start_y = base_margin + self.reference_y_offset
-        else:
-            # Standard logic - reference at top, content below
-            ref_y = base_margin + self.reference_y_offset
-            min_gap = 40
-            content_start_y = ref_y + ref_height + min_gap
+        # Calculate proper starting position - reference at top, content below
+        ref_y = base_margin + self.reference_y_offset
+        min_gap = 40
+        content_start_y = ref_y + ref_height + min_gap
         
         y_position = content_start_y
         
@@ -1505,11 +1496,8 @@ class ImageGenerator:
             if has_decorative_border:
                 base_margin = max(base_margin, 80)  # Ensure enough margin for decorative borders and transformations
             
-            # Check if display will be mirrored to adjust positioning accordingly
-            mirror_setting = os.getenv('DISPLAY_MIRROR', 'false').lower()
-            will_be_mirrored = mirror_setting == 'true'
-            
             # Calculate position based on reference_position setting
+            # Note: Image mirroring is handled at the end of create_verse_image, so position normally here
             if self.reference_position == 'bottom-right':
                 x = self.width - text_width - base_margin
                 y = self.height - text_height - base_margin
@@ -1524,28 +1512,14 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                if will_be_mirrored:
-                    # For mirrored displays, position at bottom so it appears at top after flip
-                    y = self.height - text_height - base_margin - self.reference_y_offset
-                else:
-                    # For non-mirrored displays, position at top
-                    y = base_margin + self.reference_y_offset
+                y = base_margin + self.reference_y_offset
             elif self.reference_position == 'center-bottom':
                 x = (self.width - text_width) // 2
-                if will_be_mirrored:
-                    # For mirrored displays, position at top so it appears at bottom after flip
-                    y = base_margin + self.reference_y_offset
-                else:
-                    # Position lower than very bottom - about 80% down for top-middle appearance after rotation
-                    y = self.height - text_height - (base_margin * 4)
+                y = self.height - text_height - (base_margin * 4)
             elif self.reference_position == 'top-center-right':
                 # Position in upper area, centered horizontally but offset to the right
                 x = (self.width // 2) + (text_width // 2)  # Center + half text width to shift right
-                if will_be_mirrored:
-                    # For mirrored displays, position at bottom so it appears at top after flip
-                    y = self.height - text_height - base_margin
-                else:
-                    y = base_margin
+                y = base_margin
             else:  # custom or fallback to bottom-right
                 x = self.width - text_width - base_margin
                 y = self.height - text_height - base_margin

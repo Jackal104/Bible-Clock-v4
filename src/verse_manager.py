@@ -570,10 +570,10 @@ class VerseManager:
         now = datetime.now()
         today = now.date()
         
-        # Calculate which event and verse to show based on 5-minute intervals for optimal display refresh
-        # This gives us 12 verse slots per hour, 288 verse slots per day
+        # Calculate which event and verse to show based on 1-minute intervals for frequent cycling
+        # This gives us 60 verse slots per hour, 1440 verse slots per day
         minutes_since_midnight = now.hour * 60 + now.minute
-        verse_slot = minutes_since_midnight // 5  # 5-minute intervals
+        verse_slot = minutes_since_midnight // 1  # 1-minute intervals
         
         # Hierarchical event selection: day -> week -> month -> season
         selected_events = []
@@ -647,7 +647,7 @@ class VerseManager:
                 'date_match': match_type,
                 'verse_cycle_position': f"{verse_in_event + 1} of {len(available_verses)}",
                 'event_cycle_position': f"{event_index + 1} of {len(selected_events)}",
-                'next_change_minutes': 5 - (now.minute % 5),  # 5-minute intervals
+                'next_change_minutes': 1 - (now.second // 60),  # 1-minute intervals
                 'current_time': now.strftime('%I:%M %p'),
                 'current_date': now.strftime('%B %d, %Y')
             }

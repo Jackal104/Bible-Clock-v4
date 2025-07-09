@@ -1079,15 +1079,15 @@ class ImageGenerator:
         event_name = verse_data.get('event_name', 'Biblical Event')
         content_parts.append(event_name)
         
-        # Date match type (without redundant date info)
+        # Date match type with historical context
         match_type = verse_data.get('date_match', 'exact')
         match_text = {
-            'exact': "Today's Event",
-            'week': "This Week's Event",
-            'month': "This Month's Event",
-            'season': "This Season's Event",
+            'exact': "On this day over 2000 years ago",
+            'week': "In this week over 2000 years ago",
+            'month': "In this month over 2000 years ago",
+            'season': "In this season over 2000 years ago",
             'fallback': "Daily Blessing"
-        }.get(match_type, "Today's Event")
+        }.get(match_type, "On this day over 2000 years ago")
         content_parts.append(match_text)
         
         # Reference
@@ -1176,15 +1176,18 @@ class ImageGenerator:
             draw.text((event_x, y_position), event_name, fill=0, font=self.reference_font)
             y_position += event_bbox[3] - event_bbox[1] + 20
         
-        # Draw date match type (without redundant date info)
+        # Draw date match type with historical context
         match_type = verse_data.get('date_match', 'exact')
+        from datetime import datetime
+        now = datetime.now()
+        
         match_text = {
-            'exact': "Today's Event",
-            'week': "This Week's Event",
-            'month': "This Month's Event", 
-            'season': "This Season's Event",
+            'exact': f"On this day over 2000 years ago",
+            'week': f"In this week over 2000 years ago", 
+            'month': f"In this month over 2000 years ago",
+            'season': f"In this season over 2000 years ago",
             'fallback': "Daily Blessing"
-        }.get(match_type, "Today's Event")
+        }.get(match_type, "On this day over 2000 years ago")
         
         if self.reference_font and y_position + 50 < self.height - margin:
             ref_bbox = draw.textbbox((0, 0), match_text, font=self.reference_font)
@@ -1512,9 +1515,14 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                # Position lower - start where the bottom of the current placement would be
-                current_y = base_margin + self.reference_y_offset
-                y = current_y + text_height
+                # Position lower for Time Mode only to avoid overlapping in other modes
+                if verse_data.get('is_date_event') or verse_data.get('is_devotional'):
+                    # For Date Mode and Devotional Mode, use original position
+                    y = base_margin + self.reference_y_offset
+                else:
+                    # For Time Mode, position lower - start where the bottom of the current placement would be
+                    current_y = base_margin + self.reference_y_offset
+                    y = current_y + text_height
             elif self.reference_position == 'center-bottom':
                 x = (self.width - text_width) // 2
                 y = self.height - text_height - (base_margin * 4)

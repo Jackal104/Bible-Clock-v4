@@ -45,7 +45,8 @@ class VerseManager:
             'amp': {'api': 'biblegateway', 'code': 'AMP', 'name': 'Amplified Bible'},
             'nlt': {'api': 'biblegateway', 'code': 'NLT', 'name': 'New Living Translation'},
             'msg': {'api': 'biblegateway', 'code': 'MSG', 'name': 'The Message'},
-            'nasb': {'api': 'biblegateway', 'code': 'NASB1995', 'name': 'New American Standard Bible 1995'}
+            'nasb': {'api': 'biblegateway', 'code': 'NASB1995', 'name': 'New American Standard Bible 1995'},
+            'cev': {'api': 'biblegateway', 'code': 'CEV', 'name': 'Contemporary English Version'}
         }
         
         # Enhanced features
@@ -1360,7 +1361,8 @@ async function getVerse() {{
             'NASB': 100,        // NASB 1995
             'NASB1995': 100,    // NASB 1995 (alternative name)
             'NASB2020': 2692,   // NASB 2020
-            'NIV': 111          // NIV (existing)
+            'NIV': 111,         // NIV (existing)
+            'CEV': 392          // Contemporary English Version
         }};
         const id = translationId['{translation_code}'] || 1588;
         

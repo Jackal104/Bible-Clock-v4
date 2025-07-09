@@ -1511,8 +1511,10 @@ class ImageGenerator:
         
         # Add a prominent vertical separator line in the middle
         separator_x = margin + column_width + 20
-        # Extend separator to cover more of the display height for better visual separation
-        separator_start_y = margin + 50  # Start from near top
+        # Calculate proper start position to avoid time reference area
+        # Account for reference position (base_margin + reference_y_offset + text_height for lower position)
+        ref_area_bottom = margin + self.reference_y_offset + 80  # Extra space for reference text height
+        separator_start_y = ref_area_bottom + 20  # Start below time reference with gap
         separator_end_y = self.height - margin - 50  # End near bottom
         # Make separator more visible with increased width and darker color
         draw.line([(separator_x, separator_start_y), (separator_x, separator_end_y)], fill=64, width=2)

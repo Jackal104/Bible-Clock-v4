@@ -1512,7 +1512,9 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                y = base_margin + self.reference_y_offset
+                # Position lower - start where the bottom of the current placement would be
+                current_y = base_margin + self.reference_y_offset
+                y = current_y + text_height
             elif self.reference_position == 'center-bottom':
                 x = (self.width - text_width) // 2
                 y = self.height - text_height - (base_margin * 4)

@@ -1481,19 +1481,27 @@ class ImageGenerator:
             text_start_y = max_text_end_y - total_text_height
             text_start_y = max(content_start_y, text_start_y)
         
-        # Draw primary translation (left)
+        # Draw primary translation (left) - centered within left column
         current_y = text_start_y
         for line in wrapped_primary:
             if optimal_font:
-                draw.text((left_margin, current_y), line, fill=0, font=optimal_font)
+                # Calculate horizontal centering within left column
+                line_bbox = draw.textbbox((0, 0), line, font=optimal_font)
+                line_width = line_bbox[2] - line_bbox[0]
+                left_line_x = left_margin + (column_width - line_width) // 2
+                draw.text((left_line_x, current_y), line, fill=0, font=optimal_font)
                 current_y += optimal_font.size + 15
         
-        # Draw secondary translation (right) 
+        # Draw secondary translation (right) - centered within right column
         current_y = text_start_y
         secondary_end_y = current_y
         for line in wrapped_secondary:
             if optimal_font:
-                draw.text((right_margin, current_y), line, fill=0, font=optimal_font)
+                # Calculate horizontal centering within right column
+                line_bbox = draw.textbbox((0, 0), line, font=optimal_font)
+                line_width = line_bbox[2] - line_bbox[0]
+                right_line_x = right_margin + (column_width - line_width) // 2
+                draw.text((right_line_x, current_y), line, fill=0, font=optimal_font)
                 current_y += optimal_font.size + 15
                 secondary_end_y = current_y
         

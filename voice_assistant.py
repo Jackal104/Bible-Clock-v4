@@ -95,6 +95,10 @@ class VoiceAssistant:
         # Visual feedback
         self.visual_feedback = visual_feedback_callback
         
+        # Voice control state management
+        self.listening = self.enabled  # Start listening if voice control is enabled
+        self.should_stop = False  # Controls main loop termination
+        
         # TTS queue for preventing overlapping speech
         self.tts_queue = queue.Queue()
         self.tts_thread = None
@@ -705,21 +709,44 @@ class VoiceAssistant:
         }
     
     def run_main_loop(self):
-        """Main voice interaction loop."""
+        """Main voice interaction loop with controllable listening state."""
         try:
-            while True:
-                # Wait for wake word
-                if self.listen_for_wake_word():
-                    # Wake word detected, listen for command
-                    command = self.listen_for_command()
-                    if command:
-                        self.process_voice_command(command)
+            while not self.should_stop:
+                if self.listening:
+                    # Wait for wake word when listening is enabled
+                    if self.listen_for_wake_word():
+                        # Wake word detected, listen for command
+                        command = self.listen_for_command()
+                        if command:
+                            self.process_voice_command(command)
+                else:
+                    # When not listening, wait briefly to prevent busy loop
+                    time_module.sleep(0.1)
         except KeyboardInterrupt:
             self._update_visual_state("shutdown", "Voice assistant stopped")
             logger.info("Voice assistant stopped by user")
         except Exception as e:
             self._update_visual_state("error", f"Main loop error: {str(e)}")
             logger.error(f"Main loop error: {e}")
+    
+    def start_listening(self):
+        """Start wake word detection."""
+        self.listening = True
+        self._update_visual_state("listening", "Wake word detection started")
+        logger.info("Voice assistant listening started")
+    
+    def stop_listening(self):
+        """Stop wake word detection."""
+        self.listening = False
+        self._update_visual_state("idle", "Wake word detection stopped")
+        logger.info("Voice assistant listening stopped")
+    
+    def shutdown(self):
+        """Shutdown the voice assistant completely."""
+        self.should_stop = True
+        self.listening = False
+        self._update_visual_state("shutdown", "Voice assistant shutting down")
+        logger.info("Voice assistant shutdown initiated")
     
     def _start_interrupt_detection(self):
         """Start background thread to detect wake word interrupts during TTS."""

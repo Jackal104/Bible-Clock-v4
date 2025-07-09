@@ -1079,15 +1079,40 @@ class ImageGenerator:
         event_name = verse_data.get('event_name', 'Biblical Event')
         content_parts.append(event_name)
         
-        # Date match type with historical context
+        # Date match type with specific historical context
         match_type = verse_data.get('date_match', 'exact')
+        from datetime import datetime
+        now = datetime.now()
+        
+        # Calculate specific years based on biblical timeframes
+        event_name = verse_data.get('event_name', '')
+        
+        # Determine approximate timeframe based on event context
+        if any(term in event_name.lower() for term in ['creation', 'adam', 'eve', 'noah', 'flood']):
+            years_ago = 4000 + now.year  # Pre-Abraham era
+        elif any(term in event_name.lower() for term in ['abraham', 'isaac', 'jacob', 'joseph']):
+            years_ago = now.year - (-2000)  # ~2000 BC
+        elif any(term in event_name.lower() for term in ['moses', 'exodus', 'joshua', 'judges']):
+            years_ago = now.year - (-1400)  # ~1400 BC
+        elif any(term in event_name.lower() for term in ['david', 'solomon', 'saul', 'samuel']):
+            years_ago = now.year - (-1000)  # ~1000 BC
+        elif any(term in event_name.lower() for term in ['isaiah', 'jeremiah', 'daniel', 'ezekiel']):
+            years_ago = now.year - (-600)   # ~600 BC
+        elif any(term in event_name.lower() for term in ['jesus', 'christ', 'nativity', 'birth', 'crucifixion', 'resurrection']):
+            years_ago = now.year - 30       # ~30 AD
+        elif any(term in event_name.lower() for term in ['paul', 'peter', 'john', 'apostle', 'church']):
+            years_ago = now.year - 60       # ~60 AD
+        else:
+            # Default to Jesus era for most events
+            years_ago = now.year - 30
+        
         match_text = {
-            'exact': "On this day over 2000 years ago",
-            'week': "In this week over 2000 years ago",
-            'month': "In this month over 2000 years ago",
-            'season': "In this season over 2000 years ago",
+            'exact': f"On this day around {years_ago} years ago",
+            'week': f"In this week around {years_ago} years ago",
+            'month': f"In this month around {years_ago} years ago",
+            'season': f"In this season around {years_ago} years ago",
             'fallback': "Daily Blessing"
-        }.get(match_type, "On this day over 2000 years ago")
+        }.get(match_type, f"On this day around {years_ago} years ago")
         content_parts.append(match_text)
         
         # Reference
@@ -1176,18 +1201,42 @@ class ImageGenerator:
             draw.text((event_x, y_position), event_name, fill=0, font=self.reference_font)
             y_position += event_bbox[3] - event_bbox[1] + 20
         
-        # Draw date match type with historical context
+        # Draw date match type with specific historical context
         match_type = verse_data.get('date_match', 'exact')
         from datetime import datetime
         now = datetime.now()
         
+        # Calculate specific years based on biblical timeframes
+        # Most biblical events range from ~4000 BC (Creation) to ~95 AD (Revelation)
+        # Use reasonable estimates for different biblical periods
+        event_name = verse_data.get('event_name', '')
+        
+        # Determine approximate timeframe based on event context
+        if any(term in event_name.lower() for term in ['creation', 'adam', 'eve', 'noah', 'flood']):
+            years_ago = 4000 + now.year  # Pre-Abraham era
+        elif any(term in event_name.lower() for term in ['abraham', 'isaac', 'jacob', 'joseph']):
+            years_ago = now.year - (-2000)  # ~2000 BC
+        elif any(term in event_name.lower() for term in ['moses', 'exodus', 'joshua', 'judges']):
+            years_ago = now.year - (-1400)  # ~1400 BC
+        elif any(term in event_name.lower() for term in ['david', 'solomon', 'saul', 'samuel']):
+            years_ago = now.year - (-1000)  # ~1000 BC
+        elif any(term in event_name.lower() for term in ['isaiah', 'jeremiah', 'daniel', 'ezekiel']):
+            years_ago = now.year - (-600)   # ~600 BC
+        elif any(term in event_name.lower() for term in ['jesus', 'christ', 'nativity', 'birth', 'crucifixion', 'resurrection']):
+            years_ago = now.year - 30       # ~30 AD
+        elif any(term in event_name.lower() for term in ['paul', 'peter', 'john', 'apostle', 'church']):
+            years_ago = now.year - 60       # ~60 AD
+        else:
+            # Default to Jesus era for most events
+            years_ago = now.year - 30
+        
         match_text = {
-            'exact': f"On this day over 2000 years ago",
-            'week': f"In this week over 2000 years ago", 
-            'month': f"In this month over 2000 years ago",
-            'season': f"In this season over 2000 years ago",
+            'exact': f"On this day around {years_ago} years ago",
+            'week': f"In this week around {years_ago} years ago", 
+            'month': f"In this month around {years_ago} years ago",
+            'season': f"In this season around {years_ago} years ago",
             'fallback': "Daily Blessing"
-        }.get(match_type, "On this day over 2000 years ago")
+        }.get(match_type, f"On this day around {years_ago} years ago")
         
         if self.reference_font and y_position + 50 < self.height - margin:
             ref_bbox = draw.textbbox((0, 0), match_text, font=self.reference_font)

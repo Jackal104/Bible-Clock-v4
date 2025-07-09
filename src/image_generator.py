@@ -1178,12 +1178,26 @@ class ImageGenerator:
         if has_decorative_border:
             base_margin = max(base_margin, 80)
         
-        # Calculate proper starting position - reference at top, content below
-        ref_y = base_margin + self.reference_y_offset
+        # Calculate proper starting position accounting for lower reference position
+        # Reference is now positioned lower (at original_y + text_height)
+        original_ref_y = base_margin + self.reference_y_offset
+        ref_text_height = ref_bbox[3] - ref_bbox[1]
+        actual_ref_y = original_ref_y + ref_text_height  # Lower position
         min_gap = 40
-        content_start_y = ref_y + ref_height + min_gap
+        content_start_y = actual_ref_y + ref_height + min_gap
         
-        y_position = content_start_y
+        # Calculate remaining space for vertical centering
+        available_height = self.height - content_start_y - base_margin
+        
+        # Estimate total content height for centering
+        total_content_height = self._estimate_date_content_height(verse_data, content_width)
+        
+        # Center content vertically in available space
+        if total_content_height < available_height:
+            vertical_offset = (available_height - total_content_height) // 2
+            y_position = content_start_y + vertical_offset
+        else:
+            y_position = content_start_y
         
         # Time and date will be displayed in the reference position by _add_verse_reference_display
         # No need to duplicate it here
@@ -1286,6 +1300,36 @@ class ImageGenerator:
                     lines_drawn += 1
         
         # Reference display already called at the beginning to ensure proper positioning
+
+    def _estimate_date_content_height(self, verse_data: Dict, content_width: int) -> int:
+        """Estimate the total height needed for Date Mode content."""
+        total_height = 0
+        
+        # Event name height
+        event_name = verse_data.get('event_name', 'Biblical Event')
+        if self.reference_font:
+            event_bbox = (0, 0, 0, self.reference_font.size)
+            total_height += event_bbox[3] + 20  # text height + spacing
+        
+        # Historical context height 
+        total_height += 50  # Approximate height for historical text + spacing
+        
+        # Verse reference height
+        total_height += 50  # Approximate height for reference + spacing
+        
+        # Verse text height (estimate based on typical verse length)
+        verse_text = verse_data.get('text', '')
+        if self.verse_font and verse_text:
+            # Rough estimate: ~40 characters per line, ~25 pixels per line
+            estimated_lines = max(1, len(verse_text) // 40)
+            total_height += estimated_lines * 25 + 30
+        
+        # Event description height (if present)
+        description = verse_data.get('event_description', '')
+        if description:
+            total_height += 60  # Approximate height for description
+        
+        return total_height
 
     def _draw_date_event_page(self, draw: ImageDraw.Draw, verse_data: Dict, page_content: str, margin: int, content_width: int):
         """Draw a single page of date event content."""
@@ -1564,12 +1608,12 @@ class ImageGenerator:
                 y = base_margin
             elif self.reference_position == 'center-top':
                 x = (self.width - text_width) // 2
-                # Position lower for Time Mode only to avoid overlapping in other modes
-                if verse_data.get('is_date_event') or verse_data.get('is_devotional'):
-                    # For Date Mode and Devotional Mode, use original position
+                # Position lower for Time Mode and Date Mode, original for Devotional Mode only
+                if verse_data.get('is_devotional'):
+                    # For Devotional Mode, use original position to avoid overlapping
                     y = base_margin + self.reference_y_offset
                 else:
-                    # For Time Mode, position lower - start where the bottom of the current placement would be
+                    # For Time Mode and Date Mode, position lower - start where the bottom of the current placement would be
                     current_y = base_margin + self.reference_y_offset
                     y = current_y + text_height
             elif self.reference_position == 'center-bottom':

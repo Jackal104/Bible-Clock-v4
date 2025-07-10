@@ -1101,6 +1101,14 @@ class VerseManager:
                 ('biblegateway', 'NASB1995'),   # Tertiary: BibleGateway API (NASB 1995)
                 ('bible_scraper', 'NASB1995'),  # Quaternary: YouVersion scraper (may have 404 issues)
                 ('bible-api', 'kjv')        # Final: KJV fallback
+            ],
+            'cev': [
+                ('local_cache', 'cev'),     # Primary: Growing local cache
+                ('web_scraping', 'CEV'),    # Secondary: Direct website scraping (BibleGateway)
+                ('bible_scraper', 'CEV'),   # Tertiary: YouVersion scraper
+                ('scripture_api', 'CEV'),   # Quaternary: Scripture API (api.bible)
+                ('biblegateway', 'CEV'),    # Quinary: BibleGateway API (with credentials)
+                ('bible-api', 'kjv')        # Final: KJV fallback
             ]
         }
         
@@ -1987,7 +1995,8 @@ getVerse();
             'amp': 'Amplified Bible (AMP)',
             'nlt': 'New Living Translation (NLT)',
             'msg': 'The Message (MSG)',
-            'nasb': 'New American Standard Bible 1995 (NASB)'
+            'nasb': 'New American Standard Bible 1995 (NASB)',
+            'cev': 'Contemporary English Version (CEV)'
         }
     
     def _rotate_daily_activity(self):

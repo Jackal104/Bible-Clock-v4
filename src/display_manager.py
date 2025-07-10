@@ -261,7 +261,8 @@ class DisplayManager:
                     "recording": 5.0,      # Medium for recording
                     "ready": 2.0,          # Short for ready state
                     "error": 4.0,          # Medium for errors
-                    "interrupted": 2.0     # Short for interruptions
+                    "interrupted": 2.0,    # Short for interruptions
+                    "idle": 2.0            # Short for idle state
                 }
                 duration = state_durations.get(state, 2.0)  # Default 2 seconds
             
@@ -370,7 +371,7 @@ class DisplayManager:
             self.logger.info(f"Showing visual feedback: {state} -> {display_text}")
             
             # Start a timer to restore normal display (only for certain states)
-            if state in ["wake_detected", "listening", "recording", "ready", "ai_response", "speaking"]:
+            if state in ["wake_detected", "listening", "recording", "ready", "ai_response", "speaking", "idle"]:
                 def restore_display():
                     time.sleep(duration)
                     # Force a display update to clear the message

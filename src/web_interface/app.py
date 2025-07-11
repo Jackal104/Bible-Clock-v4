@@ -1727,6 +1727,9 @@ def create_app(verse_manager, image_generator, display_manager, service_manager,
             # Toggle voice control enabled state
             current_app.service_manager.voice_control.enabled = enabled
             
+            # Also set listening state to match enabled state
+            current_app.service_manager.voice_control.listening = enabled
+            
             # Actually start or stop the voice control service
             if enabled:
                 if hasattr(current_app.service_manager.voice_control, 'start_listening'):

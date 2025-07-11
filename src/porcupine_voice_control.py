@@ -286,7 +286,7 @@ class PorcupineVoiceControl:
         """Main Porcupine wake word detection loop."""
         self.logger.info("Porcupine wake word detection started")
         
-        while self.listening and self.audio_stream:
+        while self.enabled and self.listening and self.audio_stream:
             try:
                 # Read audio data
                 pcm = self.audio_stream.read(self.porcupine.frame_length, exception_on_overflow=False)
@@ -306,7 +306,7 @@ class PorcupineVoiceControl:
     
     def _command_processing_loop(self):
         """Process commands when wake word is detected."""
-        while self.listening:
+        while self.enabled and self.listening:
             try:
                 # Wait for wake word detection
                 command = self.command_queue.get(timeout=1)

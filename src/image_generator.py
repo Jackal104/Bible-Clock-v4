@@ -373,7 +373,12 @@ class ImageGenerator:
             base_margin = max(base_margin, 80)
         
         # Calculate actual reference Y position to ensure proper spacing
-        ref_y = base_margin + self.reference_y_offset  # Match the reference positioning exactly
+        # For book summaries, account for the adjusted time position
+        if verse_data.get('is_summary'):
+            # Time is positioned lower in summary mode - use the adjusted position
+            ref_y = base_margin + self.reference_y_offset + ref_height  # Start after the time
+        else:
+            ref_y = base_margin + self.reference_y_offset  # Original positioning for other modes
         min_gap = 40  # Minimum gap between reference and content
         reference_bottom = ref_y + ref_height + min_gap
         
@@ -400,20 +405,29 @@ class ImageGenerator:
         total_text_height = len(wrapped_text) * (self.verse_font.size + 25) - 25 if wrapped_text else 0
         
         # Calculate available space for centering the summary
-        available_height = self.height - content_start_y - margin
+        # Adjust bottom margin for decorative borders
+        bottom_boundary = margin if not has_decorative_border else max(margin, 80) + 40
+        available_height = self.height - content_start_y - bottom_boundary
         
         # Center the summary text vertically in remaining space
         y_position = content_start_y + (available_height - total_text_height) // 2
         y_position = max(content_start_y, y_position)  # Don't go above content start
         
-        # Draw summary text (wrapped and centered)
+        # Draw summary text (wrapped and centered) with bottom boundary protection
+        max_y_position = self.height - bottom_boundary
         for line in wrapped_text:
             if self.verse_font:
                 line_bbox = draw.textbbox((0, 0), line, font=self.verse_font)
                 line_width = line_bbox[2] - line_bbox[0]
+                line_height = line_bbox[3] - line_bbox[1]
+                
+                # Check if this line would exceed bottom boundary
+                if y_position + line_height > max_y_position:
+                    break  # Stop drawing if we would overlap with bottom border
+                
                 line_x = (self.width - line_width) // 2
                 draw.text((line_x, y_position), line, fill=0, font=self.verse_font)
-                y_position += line_bbox[3] - line_bbox[1] + 25
+                y_position += line_height + 25
 
     def _paginate_book_summary_text(self, text: str, content_width: int, margin: int) -> List[str]:
         """Split book summary text into pages that fit the display (similar to devotionals)."""
@@ -470,7 +484,12 @@ class ImageGenerator:
             base_margin = max(base_margin, 80)
         
         # Calculate actual reference Y position
-        ref_y = base_margin + self.reference_y_offset
+        # For book summaries, account for the adjusted time position
+        if verse_data.get('is_summary'):
+            # Time is positioned lower in summary mode - use the adjusted position
+            ref_y = base_margin + self.reference_y_offset + ref_height  # Start after the time
+        else:
+            ref_y = base_margin + self.reference_y_offset  # Original positioning for other modes
         min_gap = 40
         reference_bottom = ref_y + ref_height + min_gap
         
@@ -505,12 +524,22 @@ class ImageGenerator:
         # Wrap page content
         wrapped_text = self._wrap_text(page_content, content_width, page_font)
         
-        # Draw page text
+        # Draw page text with bottom margin protection
         y_position = content_start_y
+        # Calculate bottom boundary to avoid border overlap
+        bottom_margin = base_margin if not has_decorative_border else max(base_margin, 80)
+        max_y_position = self.height - bottom_margin - 40  # Extra buffer for decorative borders
+        
         for line in wrapped_text:
             if page_font:
                 line_bbox = draw.textbbox((0, 0), line, font=page_font)
                 line_width = line_bbox[2] - line_bbox[0]
+                line_height = line_bbox[3] - line_bbox[1]
+                
+                # Check if this line would exceed bottom boundary
+                if y_position + line_height > max_y_position:
+                    break  # Stop drawing if we would overlap with bottom border
+                
                 line_x = (self.width - line_width) // 2
                 draw.text((line_x, y_position), line, fill=0, font=page_font)
                 y_position += page_font.size + 25  # Match book summary line spacing

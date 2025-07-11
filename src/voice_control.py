@@ -463,7 +463,7 @@ class BibleClockVoiceControl:
             self.logger.error("speech_recognition not available")
             return
             
-        while self.listening:
+        while self.enabled and self.listening:
             # Check if audio input is enabled
             if not self.audio_input_enabled:
                 time.sleep(1)
@@ -560,7 +560,7 @@ class BibleClockVoiceControl:
     
     def _command_processor(self):
         """Process commands from queue."""
-        while self.listening:
+        while self.enabled and self.listening:
             try:
                 command_type, command_data = self.command_queue.get(timeout=1)
                 

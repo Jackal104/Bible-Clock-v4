@@ -712,7 +712,7 @@ class VoiceAssistant:
         """Main voice interaction loop with controllable listening state."""
         try:
             while not self.should_stop:
-                if self.listening:
+                if self.enabled and self.listening:
                     # Wait for wake word when listening is enabled
                     if self.listen_for_wake_word():
                         # Wake word detected, listen for command

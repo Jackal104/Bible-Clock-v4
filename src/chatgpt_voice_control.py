@@ -232,7 +232,7 @@ class ChatGPTPiperVoiceControl:
         """Main listening loop for wake word detection."""
         self.logger.info("ChatGPT voice control listening started")
         
-        while self.listening:
+        while self.enabled and self.listening:
             try:
                 with self.microphone as source:
                     # Adjust for ambient noise
@@ -265,7 +265,7 @@ class ChatGPTPiperVoiceControl:
     
     def _command_processing_loop(self):
         """Process commands when wake word is detected."""
-        while self.listening:
+        while self.enabled and self.listening:
             try:
                 # Wait for commands
                 command = self.command_queue.get(timeout=1)

@@ -260,6 +260,19 @@ class PorcupineVoiceControl:
         """Stop voice control."""
         self.listening = False
         
+        # Wait for threads to stop properly
+        if hasattr(self, 'listen_thread') and self.listen_thread.is_alive():
+            try:
+                self.listen_thread.join(timeout=2.0)  # Wait up to 2 seconds
+            except Exception as e:
+                self.logger.warning(f"Error waiting for listen thread to stop: {e}")
+        
+        if hasattr(self, 'command_thread') and self.command_thread.is_alive():
+            try:
+                self.command_thread.join(timeout=2.0)  # Wait up to 2 seconds
+            except Exception as e:
+                self.logger.warning(f"Error waiting for command thread to stop: {e}")
+        
         # Safe cleanup with NoneType protection
         if self.audio_stream is not None:
             try:
@@ -322,6 +335,11 @@ class PorcupineVoiceControl:
     def _handle_wake_word_detection(self):
         """Handle wake word detection and listen for command."""
         try:
+            # Check if voice control is still enabled
+            if not self.enabled or not self.listening:
+                self.logger.debug("Wake word detected but voice control is disabled - ignoring")
+                return
+                
             if not self.recognizer or not self.microphone:
                 self.logger.warning("Speech recognition not available for command processing")
                 return

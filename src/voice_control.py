@@ -71,6 +71,7 @@ class BibleClockVoiceControl:
         self.microphone = None
         self.tts_engine = None
         self.listening = False
+        self._enabled = enabled  # Store the original enabled state
         self.command_queue = queue.Queue()
         self.voice_selection = 'default'  # Store current voice selection
         
@@ -122,8 +123,9 @@ class BibleClockVoiceControl:
                 self.test_voice_synthesis = self.porcupine_control.test_voice_synthesis
                 self._process_command = self.porcupine_control._process_command
                 
-                # Expose Porcupine state
+                # Expose Porcupine state and disable main voice control
                 self.listening = False  # Will be managed by Porcupine
+                self.enabled = self.porcupine_control.enabled  # Sync enabled state
                 self.porcupine_enabled = True
                 
                 return True
@@ -1310,6 +1312,20 @@ class BibleClockVoiceControl:
         
         self._speak(test_text)
     
+    @property
+    def enabled(self):
+        """Get enabled state, delegating to Porcupine if available."""
+        if hasattr(self, 'porcupine_control') and self.porcupine_control:
+            return self.porcupine_control.enabled
+        return self._enabled
+    
+    @enabled.setter
+    def enabled(self, value):
+        """Set enabled state, updating both main and Porcupine if available."""
+        self._enabled = value
+        if hasattr(self, 'porcupine_control') and self.porcupine_control:
+            self.porcupine_control.enabled = value
+
     def get_voice_status(self) -> Dict[str, Any]:
         """Get comprehensive voice control status."""
         return {

@@ -38,7 +38,7 @@ class VoiceAssistant:
             verse_manager: Optional verse manager for Bible context
             visual_feedback_callback: Function to call for visual state updates
         """
-        self.enabled = os.getenv('ENABLE_CHATGPT_VOICE', 'true').lower() == 'true'
+        self._enabled = os.getenv('ENABLE_CHATGPT_VOICE', 'true').lower() == 'true'
         self.voice_timeout = int(os.getenv('VOICE_TIMEOUT', '10'))
         
         # Audio device configuration
@@ -435,6 +435,11 @@ class VoiceAssistant:
                         keyword_index = self.porcupine.process(frame.tolist())
                         
                         if keyword_index >= 0:
+                            # Check if voice control is still enabled before processing
+                            if not self.enabled or not self.listening:
+                                logger.debug("Wake word detected but voice control is disabled - ignoring")
+                                continue
+                                
                             logger.info("🎯 Wake word 'Bible Clock' detected by Porcupine!")
                             # Record wake word detection time
                             self._reset_metrics()
@@ -484,6 +489,11 @@ class VoiceAssistant:
                         # Check for wake word variations
                         wake_variations = ['bible clock', 'bible', 'clock', 'computer']
                         if any(word in text for word in wake_variations):
+                            # Check if voice control is still enabled before processing
+                            if not self.enabled or not self.listening:
+                                logger.debug("Wake word detected but voice control is disabled - ignoring")
+                                continue
+                                
                             logger.info(f"🎯 Wake word detected in: '{text}'")
                             self._reset_metrics()
                             self.metrics['wake_word_time'] = time_module.time()
@@ -676,6 +686,18 @@ class VoiceAssistant:
         """Get current performance metrics."""
         return self.metrics.copy()
     
+    @property
+    def enabled(self):
+        """Get enabled state."""
+        return self._enabled
+    
+    @enabled.setter
+    def enabled(self, value):
+        """Set enabled state and sync listening state."""
+        self._enabled = value
+        if hasattr(self, 'listening'):
+            self.listening = value
+
     def get_voice_status(self):
         """Get comprehensive voice control status for web interface compatibility."""
         return {
@@ -711,6 +733,10 @@ class VoiceAssistant:
     def run_main_loop(self):
         """Main voice interaction loop with controllable listening state."""
         try:
+            # Show listening state when starting up
+            if self.enabled and self.listening:
+                self._update_visual_state("listening", "Voice control ready - Say 'Bible Clock' to begin")
+            
             while not self.should_stop:
                 if self.enabled and self.listening:
                     # Wait for wake word when listening is enabled
@@ -1119,6 +1145,13 @@ class VoiceAssistant:
             
             self._update_visual_state("thinking", "Asking ChatGPT...")
             
+            # Check if this is a verse explanation request (disable early TTS for complete responses)
+            is_verse_explanation = any(phrase in question.lower() for phrase in [
+                'explain', 'meaning', 'means', 'interpret', 'what does', 'tell me about',
+                'verse', 'passage', 'scripture', 'biblical', 'theology', 'theological'
+            ])
+            logger.info(f"Query type - Verse explanation: {is_verse_explanation}")
+            
             # Get current verse context
             current_verse = ""
             if self.verse_manager:
@@ -1157,16 +1190,29 @@ For follow-up questions like "continue", "tell me more", or "explain further", r
                     stream=True  # Enable streaming for real-time response
                 )
                 
-                # Collect response with early TTS optimization
+                # Collect response with improved TTS optimization
                 full_response = ""
                 word_count = 0
                 early_tts_sent = False
                 stream_start_time = time_module.time()
+                last_content_time = time_module.time()
                 stream_timeout = 30  # 30 second timeout for streaming
+                pause_threshold = 3.0  # 3 seconds of no new content = likely complete
+                
+                # Dynamic word thresholds based on query type
+                if is_verse_explanation:
+                    min_word_threshold = 50  # Higher threshold for verse explanations
+                    pause_threshold = 4.0   # Longer pause for theological explanations
+                    logger.info("📖 Using extended thresholds for verse explanation")
+                else:
+                    min_word_threshold = 25  # Moderate threshold for other questions
+                    pause_threshold = 3.0   # Standard pause for quick answers
                 
                 for chunk in response_stream:
+                    current_time = time_module.time()
+                    
                     # Check for timeout
-                    if time_module.time() - stream_start_time > stream_timeout:
+                    if current_time - stream_start_time > stream_timeout:
                         logger.warning(f"⏰ ChatGPT streaming timeout after {stream_timeout}s")
                         if full_response.strip():
                             logger.info("🔄 Using partial response due to timeout")
@@ -1174,28 +1220,51 @@ For follow-up questions like "continue", "tell me more", or "explain further", r
                         else:
                             logger.error("❌ No response received before timeout")
                             return "Sorry, I'm having trouble processing your request. Please try again."
+                    
                     if chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         full_response += content
                         word_count += len(content.split())
+                        last_content_time = current_time
                         
                         # Record first response time
                         if self.metrics['gpt_first_response_time'] is None:
-                            self.metrics['gpt_first_response_time'] = time_module.time()
+                            self.metrics['gpt_first_response_time'] = current_time
+                    
+                    # Check for early TTS trigger with improved logic
+                    if (not early_tts_sent and word_count >= min_word_threshold and 
+                        len(full_response.strip()) > 50):
                         
-                        # Early TTS optimization: if we have a complete sentence (~15+ words)
-                        # and it ends with punctuation, start TTS immediately
-                        if (not early_tts_sent and word_count >= 15 and 
-                            any(punct in content for punct in ['.', '!', '?']) and
-                            len(full_response.strip()) > 30):
-                            
-                            # Check if this looks like a complete thought
-                            trimmed_response = full_response.strip()
-                            if any(trimmed_response.endswith(punct) for punct in ['.', '!', '?']):
-                                logger.info("🚀 Early TTS trigger - sending partial response")
-                                self._play_openai_tts_stream(trimmed_response)
-                                early_tts_sent = True
-                                return trimmed_response
+                        # Calculate time since last content (speech pause detection)
+                        time_since_content = current_time - last_content_time
+                        
+                        # Check if response ends with strong punctuation (complete thought)
+                        trimmed_response = full_response.strip()
+                        ends_with_punctuation = any(trimmed_response.endswith(punct) for punct in ['.', '!', '?'])
+                        
+                        # For verse explanations: ONLY trigger if we have both conditions
+                        # For other queries: trigger on word count OR pause detection
+                        should_trigger = False
+                        
+                        if is_verse_explanation:
+                            # Strict mode: need BOTH sufficient words AND natural pause AND punctuation
+                            should_trigger = (word_count >= min_word_threshold and 
+                                            time_since_content >= pause_threshold and 
+                                            ends_with_punctuation)
+                            if should_trigger:
+                                logger.info(f"📖 Verse explanation complete - Words: {word_count}, Pause: {time_since_content:.1f}s")
+                        else:
+                            # Flexible mode: word count OR pause detection with punctuation
+                            should_trigger = ((word_count >= min_word_threshold and ends_with_punctuation) or
+                                            (time_since_content >= pause_threshold and ends_with_punctuation))
+                            if should_trigger:
+                                logger.info(f"💬 Quick response ready - Words: {word_count}, Pause: {time_since_content:.1f}s")
+                        
+                        if should_trigger:
+                            logger.info("🚀 Smart TTS trigger - sending optimized response")
+                            self._play_openai_tts_stream(trimmed_response)
+                            early_tts_sent = True
+                            return trimmed_response
                 
                 # Use OpenAI TTS for the complete response if early TTS wasn't triggered
                 if not early_tts_sent and full_response.strip():

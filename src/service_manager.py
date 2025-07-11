@@ -166,6 +166,7 @@ class ServiceManager:
                 # Use optimized refresh for date mode to prevent cycling artifacts
                 is_devotional_mode = verse_data.get('is_devotional', False)
                 is_date_mode = verse_data.get('is_date_event', False)
+                is_summary_mode = verse_data.get('is_summary', False)
                 
                 if is_devotional_mode:
                     # For devotional mode, only force refresh on background/parallel changes
@@ -175,6 +176,14 @@ class ServiceManager:
                     time_since_last_refresh = time.time() - self.display_manager.last_full_refresh
                     should_refresh_by_interval = time_since_last_refresh >= 300  # 5 minutes
                     force_refresh = background_changed or parallel_mode_changed or should_refresh_by_interval
+                elif is_summary_mode:
+                    # For book summaries, check if we need frequent refresh for pagination
+                    time_since_last_refresh = time.time() - self.display_manager.last_full_refresh
+                    # Refresh every 15 seconds for book summary pagination (matches page rotation)
+                    should_refresh_by_interval = time_since_last_refresh >= 15
+                    force_refresh = background_changed or parallel_mode_changed or should_refresh_by_interval
+                    if should_refresh_by_interval:
+                        self.logger.debug("Book summary page rotation - refreshing display")
                 else:
                     # For parallel mode, only force refresh based on display manager's interval, not every minute
                     if current_parallel_mode:

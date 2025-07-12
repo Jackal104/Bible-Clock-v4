@@ -1288,14 +1288,15 @@ For follow-up questions like "continue", "tell me more", or "explain further", r
                             if should_trigger:
                                 logger.info(f"💬 Quick response ready - Words: {word_count}, Pause: {time_since_content:.1f}s")
                         
-                        if should_trigger:
-                            logger.info("🚀 Smart TTS trigger - sending optimized response")
-                            self._play_openai_tts_stream(trimmed_response)
-                            early_tts_sent = True
-                            return trimmed_response
+                        # Disable early TTS to prevent incomplete responses
+                        # if should_trigger:
+                        #     logger.info("🚀 Smart TTS trigger - starting speech for partial response")
+                        #     self._play_openai_tts_stream(trimmed_response)
+                        #     early_tts_sent = True
+                        #     return trimmed_response
                 
-                # Use OpenAI TTS for the complete response if early TTS wasn't triggered
-                if not early_tts_sent and full_response.strip():
+                # Always use OpenAI TTS for the complete response (early TTS disabled)
+                if full_response.strip():
                     tts_start_time = time_module.time()
                     self._play_openai_tts_stream(full_response.strip())
                     self.timing_metrics['tts_generation_time'] = time_module.time() - tts_start_time

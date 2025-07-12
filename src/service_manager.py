@@ -89,6 +89,9 @@ class ServiceManager:
         
         # Start voice control if available (runs in blocking mode)
         if self.voice_control:
+            # Mark voice control as initialized to enable visual feedback
+            if hasattr(self.voice_control, 'mark_initialized'):
+                self.voice_control.mark_initialized()
             self.voice_control.run_main_loop()
         elif os.getenv('ENABLE_VOICE', 'false').lower() == 'true':
             # Try to initialize voice control if enabled but not provided
@@ -98,6 +101,9 @@ class ServiceManager:
                     self.verse_manager, self.image_generator, self.display_manager
                 )
                 if self.voice_control.enabled:
+                    # Mark voice control as initialized to enable visual feedback
+                    if hasattr(self.voice_control, 'mark_initialized'):
+                        self.voice_control.mark_initialized()
                     self.voice_control.run_main_loop()
                     self.logger.info("Voice control auto-initialized")
             except Exception as e:
@@ -139,11 +145,23 @@ class ServiceManager:
         """Update the displayed verse at precise minute boundaries."""
         now = datetime.now()
         
-        # Only update if we're at the start of a minute (0-2 seconds)
-        if now.second <= 2:
+        # Check if we need frequent updates for book summary pagination
+        last_verse_data = getattr(self, '_last_verse_data', None)
+        is_summary_mode = last_verse_data and last_verse_data.get('is_summary', False) if last_verse_data else False
+        
+        # Only update if we're at the start of a minute (0-2 seconds) OR if we're in summary mode needing pagination
+        minute_boundary_update = now.second <= 2
+        summary_pagination_update = is_summary_mode and hasattr(self.display_manager, 'last_full_refresh') and (time.time() - self.display_manager.last_full_refresh >= 15)
+        
+        if minute_boundary_update or summary_pagination_update:
+            if summary_pagination_update:
+                self.logger.debug("Book summary pagination - triggering 15-second update")
             with self.performance_monitor.time_operation('verse_update'):
                 # Get current verse
                 verse_data = self.verse_manager.get_current_verse()
+                
+                # Store verse data for next iteration's summary mode check
+                self._last_verse_data = verse_data
                 
                 # Generate image
                 image = self.image_generator.create_verse_image(verse_data)

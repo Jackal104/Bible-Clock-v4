@@ -124,6 +124,9 @@ class VoiceAssistant:
         
         if self.enabled:
             self._initialize_components()
+        
+        # Mark as initialized for property setter visual feedback
+        self._initialized = True
     
     def _update_visual_state(self, state, message=None):
         """Update visual feedback if callback is provided."""
@@ -132,6 +135,8 @@ class VoiceAssistant:
                 self.visual_feedback(state, message)
             except Exception as e:
                 logger.warning(f"Visual feedback error: {e}")
+        else:
+            logger.warning("❌ No visual feedback callback available")
     
     def _restore_display_after_tts(self):
         """Restore display to normal after TTS completion."""
@@ -694,9 +699,18 @@ class VoiceAssistant:
     @enabled.setter
     def enabled(self, value):
         """Set enabled state and sync listening state."""
+        was_enabled = getattr(self, '_enabled', False)
         self._enabled = value
         if hasattr(self, 'listening'):
             self.listening = value
+            # Only show visual messages when actually toggling (not during initialization)
+            if was_enabled != value and hasattr(self, '_initialized'):
+                if value:  # Being enabled
+                    self._update_visual_state("listening", "Voice control ready - Say 'Bible Clock' to begin")
+                else:  # Being disabled
+                    self._update_visual_state("idle", "Wake word detection stopped")
+                    # Clear the message after 3 seconds and restore normal display
+                    threading.Timer(3.0, lambda: self._restore_normal_display()).start()
 
     def get_voice_status(self):
         """Get comprehensive voice control status for web interface compatibility."""
@@ -758,7 +772,7 @@ class VoiceAssistant:
     def start_listening(self):
         """Start wake word detection."""
         self.listening = True
-        self._update_visual_state("listening", "Wake word detection started")
+        self._update_visual_state("listening", "Voice control ready - Say 'Bible Clock' to begin")
         logger.info("Voice assistant listening started")
     
     def stop_listening(self):
@@ -766,6 +780,20 @@ class VoiceAssistant:
         self.listening = False
         self._update_visual_state("idle", "Wake word detection stopped")
         logger.info("Voice assistant listening stopped")
+        
+        # Clear the message after 3 seconds and restore normal display
+        threading.Timer(3.0, lambda: self._restore_normal_display()).start()
+    
+    def _restore_normal_display(self):
+        """Restore normal Bible verse display after voice control messages."""
+        try:
+            logger.info("🔄 Restoring normal display after voice control stop")
+            if self.visual_feedback:
+                self.visual_feedback("restore", None)
+            else:
+                logger.warning("No visual feedback callback available for restoration")
+        except Exception as e:
+            logger.error(f"Display restoration failed: {e}")
     
     def shutdown(self):
         """Shutdown the voice assistant completely."""
@@ -1377,3 +1405,8 @@ For follow-up questions like "continue", "tell me more", or "explain further", r
             error_msg = "I'm sorry, I encountered an error processing your request."
             self._update_visual_state("error", error_msg)
             self.speak_with_amy(error_msg, priority=True)
+    
+    def mark_initialized(self):
+        """Mark the voice assistant as fully initialized to enable visual feedback."""
+        self._initialized = True
+        logger.info("Voice assistant marked as initialized - visual feedback enabled")

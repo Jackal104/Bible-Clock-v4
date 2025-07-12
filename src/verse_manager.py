@@ -720,7 +720,13 @@ class VerseManager:
         
         # For time-based display, the reference will show current time
         now = datetime.now()
-        time_display = now.strftime('%H:%M')
+        if self.time_format == '12':
+            hour_12 = now.hour % 12
+            if hour_12 == 0:
+                hour_12 = 12
+            time_display = f"{hour_12:02d}:{now.minute:02d} {now.strftime('%p')}"
+        else:
+            time_display = now.strftime('%H:%M')
         
         return {
             'reference': time_display,  # Show current time instead of book name
@@ -730,7 +736,8 @@ class VerseManager:
             'verse': 0,
             'is_summary': True,
             'summary_type': 'random',
-            'current_time': time_display
+            'current_time': time_display,
+            'time_format': self.time_format  # Include time format for image generator
         }
     
     def _get_verse_from_api(self, chapter: int, verse: int) -> Optional[Dict]:

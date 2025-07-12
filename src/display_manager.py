@@ -266,11 +266,13 @@ class DisplayManager:
                 }
                 duration = state_durations.get(state, 2.0)  # Default 2 seconds
             
-            # Get display text - special handling for AI responses
-            if state == "ai_response" and message:
+            # Get display text - prefer custom message when provided
+            if message:
                 display_text = message
+            elif state == "ai_response":
+                display_text = "AI Response"  # Fallback for AI responses without message
             else:
-                display_text = display_messages.get(state, message or state)
+                display_text = display_messages.get(state, state)
             
             # Create a simple overlay image
             overlay = Image.new('L', (self.width, self.height), 255)  # white background

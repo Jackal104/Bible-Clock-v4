@@ -1322,7 +1322,16 @@ class BibleClockVoiceControl:
     @enabled.setter
     def enabled(self, value):
         """Set enabled state, updating both main and Porcupine if available."""
+        was_enabled = getattr(self, '_enabled', False)
         self._enabled = value
+        if hasattr(self, 'listening'):
+            self.listening = value
+            # Only show visual feedback if this is a real toggle (not during initialization)
+            if was_enabled != value and hasattr(self, '_initialized'):
+                if value:
+                    self._update_visual_state("listening", "Voice control ready - Say 'Bible Clock' to begin")
+                else:
+                    self._update_visual_state("idle", "Wake word detection stopped")
         if hasattr(self, 'porcupine_control') and self.porcupine_control:
             self.porcupine_control.enabled = value
 
@@ -1661,6 +1670,22 @@ class BibleClockVoiceControl:
         import threading
         timer_thread = threading.Thread(target=restore_after_delay, daemon=True)
         timer_thread.start()
+
+    def _update_visual_state(self, state: str, message: str):
+        """Update visual state with feedback message."""
+        try:
+            if hasattr(self.display_manager, 'show_visual_feedback'):
+                self.display_manager.show_visual_feedback(state, message)
+                self.logger.info(f"🔄 Visual state update: {state} - {message}")
+            else:
+                self.logger.warning(f"Display manager doesn't support visual feedback: {state} - {message}")
+        except Exception as e:
+            self.logger.error(f"Failed to update visual state: {e}")
+
+    def mark_initialized(self):
+        """Mark the voice control as fully initialized to enable visual feedback."""
+        self._initialized = True
+        self.logger.info("Voice control marked as initialized - visual feedback enabled")
 
 
 # Backward compatibility alias

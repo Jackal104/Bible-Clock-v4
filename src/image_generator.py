@@ -1613,13 +1613,8 @@ class ImageGenerator:
             current_date = now.strftime('%B %d, %Y')
             display_text = f"{current_time} - {current_date}"
         elif verse_data.get('is_summary'):
-            # For book summaries, show current time in the preferred format
-            now = datetime.now()
-            time_format = verse_data.get('time_format', '12')
-            if time_format == '12':
-                display_text = now.strftime('%I:%M').lstrip('0')  # Remove leading zero from hour
-            else:
-                display_text = now.strftime('%H:%M')
+            # For book summaries, use the pre-calculated time from reference field
+            display_text = verse_data.get('reference', 'Unknown')
         else:
             # Regular verse mode - show reference (this is the main time component!)
             display_text = verse_data.get('reference', 'Unknown')

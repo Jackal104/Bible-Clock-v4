@@ -1331,32 +1331,87 @@ class ImageGenerator:
         # Reference display already called at the beginning to ensure proper positioning
 
     def _estimate_date_content_height(self, verse_data: Dict, content_width: int) -> int:
-        """Estimate the total height needed for Date Mode content."""
+        """Estimate the total height needed for Date Mode content with accurate measurements."""
         total_height = 0
         
-        # Event name height
+        # Event name height - use actual text measurement
         event_name = verse_data.get('event_name', 'Biblical Event')
         if self.reference_font:
-            event_bbox = (0, 0, 0, self.reference_font.size)
-            total_height += event_bbox[3] + 20  # text height + spacing
+            # Create a temporary draw object for measuring
+            temp_img = Image.new('L', (1, 1), 255)
+            temp_draw = ImageDraw.Draw(temp_img)
+            event_bbox = temp_draw.textbbox((0, 0), event_name, font=self.reference_font)
+            total_height += (event_bbox[3] - event_bbox[1]) + 20  # actual text height + spacing
         
-        # Historical context height 
-        total_height += 50  # Approximate height for historical text + spacing
+        # Historical context height - measure actual text
+        from datetime import datetime
+        now = datetime.now()
+        event_name_lower = event_name.lower()
         
-        # Verse reference height
-        total_height += 50  # Approximate height for reference + spacing
+        # Calculate years using same logic as main method
+        if any(term in event_name_lower for term in ['creation', 'adam', 'eve', 'noah', 'flood']):
+            years_ago = 4000 + now.year
+        elif any(term in event_name_lower for term in ['abraham', 'isaac', 'jacob', 'joseph']):
+            years_ago = now.year - (-2000)
+        elif any(term in event_name_lower for term in ['moses', 'exodus', 'joshua', 'judges']):
+            years_ago = now.year - (-1400)
+        elif any(term in event_name_lower for term in ['david', 'solomon', 'saul', 'samuel']):
+            years_ago = now.year - (-1000)
+        elif any(term in event_name_lower for term in ['isaiah', 'jeremiah', 'daniel', 'ezekiel']):
+            years_ago = now.year - (-600)
+        elif any(term in event_name_lower for term in ['jesus', 'christ', 'nativity', 'birth', 'crucifixion', 'resurrection']):
+            years_ago = now.year - 30
+        elif any(term in event_name_lower for term in ['paul', 'peter', 'john', 'apostle', 'church']):
+            years_ago = now.year - 60
+        else:
+            years_ago = now.year - 30
         
-        # Verse text height (estimate based on typical verse length)
+        match_type = verse_data.get('date_match', 'exact')
+        match_text = {
+            'exact': f"On this day around {years_ago} years ago",
+            'week': f"In this week around {years_ago} years ago", 
+            'month': f"In this month around {years_ago} years ago",
+            'season': f"In this season around {years_ago} years ago",
+            'fallback': "Daily Blessing"
+        }.get(match_type, f"On this day around {years_ago} years ago")
+        
+        if self.reference_font:
+            temp_img = Image.new('L', (1, 1), 255)
+            temp_draw = ImageDraw.Draw(temp_img)
+            match_bbox = temp_draw.textbbox((0, 0), match_text, font=self.reference_font)
+            total_height += (match_bbox[3] - match_bbox[1]) + 25  # actual text height + spacing
+        
+        # Verse reference height - measure actual text
+        reference = verse_data.get('reference', 'Unknown')
+        if self.reference_font:
+            temp_img = Image.new('L', (1, 1), 255)
+            temp_draw = ImageDraw.Draw(temp_img)
+            ref_bbox = temp_draw.textbbox((0, 0), reference, font=self.reference_font)
+            total_height += (ref_bbox[3] - ref_bbox[1]) + 30  # actual text height + spacing
+        
+        # Verse text height - measure wrapped text accurately
         verse_text = verse_data.get('text', '')
         if self.verse_font and verse_text:
-            # Rough estimate: ~40 characters per line, ~25 pixels per line
-            estimated_lines = max(1, len(verse_text) // 40)
-            total_height += estimated_lines * 25 + 30
+            wrapped_text = self._wrap_text(verse_text, content_width, self.verse_font)
+            temp_img = Image.new('L', (1, 1), 255)
+            temp_draw = ImageDraw.Draw(temp_img)
+            for line in wrapped_text:
+                line_bbox = temp_draw.textbbox((0, 0), line, font=self.verse_font)
+                total_height += (line_bbox[3] - line_bbox[1]) + 20  # actual line height + spacing
         
-        # Event description height (if present)
+        # Event description height - measure actual wrapped text
         description = verse_data.get('event_description', '')
-        if description:
-            total_height += 60  # Approximate height for description
+        if description and self.reference_font:
+            total_height += 30  # spacing before description
+            wrapped_desc = self._wrap_text(description, content_width, self.reference_font)
+            temp_img = Image.new('L', (1, 1), 255)
+            temp_draw = ImageDraw.Draw(temp_img)
+            # Only count up to 2 lines (same limit as drawing code)
+            for i, line in enumerate(wrapped_desc):
+                if i >= 2:
+                    break
+                line_bbox = temp_draw.textbbox((0, 0), line, font=self.reference_font)
+                total_height += (line_bbox[3] - line_bbox[1]) + 15  # actual line height + spacing
         
         return total_height
 

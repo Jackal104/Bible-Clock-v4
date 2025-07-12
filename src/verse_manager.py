@@ -59,6 +59,10 @@ class VerseManager:
         self.MAX_BOOKS_ACCESSED = 50  # Limit books accessed tracking
         self.MAX_TRANSLATION_USAGE = 20  # Limit translation usage tracking
         
+        # Book summary pagination tracking
+        self.current_book_summary = None  # Store current book summary for pagination
+        self.book_summary_minute = None  # Track which minute the book summary started
+        
         self.statistics = {
             'verses_displayed': 0,
             'verses_today': 0,
@@ -701,25 +705,41 @@ class VerseManager:
         return random.choice(self.fallback_verses)
     
     def _get_random_book_summary(self) -> Dict:
-        """Get a random book summary."""
-        if self.book_summaries:
-            book = random.choice(list(self.book_summaries.keys()))
-            # New format: direct string values
-            summary_text = self.book_summaries[book]
-            summary = {
-                'title': book,
-                'summary': summary_text
-            }
+        """Get a random book summary, using cached summary for pagination within the same minute."""
+        now = datetime.now()
+        current_minute = now.minute
+        
+        # Check if we need a new book summary (new minute or no cached summary)
+        if (self.current_book_summary is None or 
+            self.book_summary_minute != current_minute):
+            
+            # Generate new book summary
+            if self.book_summaries:
+                book = random.choice(list(self.book_summaries.keys()))
+                # New format: direct string values
+                summary_text = self.book_summaries[book]
+                summary = {
+                    'title': book,
+                    'summary': summary_text
+                }
+            else:
+                # Fallback if no summaries available
+                book = random.choice(self.available_books)
+                summary = {
+                    'title': book,
+                    'summary': f'{book} is a book of the Bible containing wisdom and spiritual guidance.'
+                }
+            
+            # Cache the book summary for this minute
+            self.current_book_summary = summary
+            self.book_summary_minute = current_minute
+            self.logger.debug(f"Generated new book summary for minute {current_minute}: {summary['title']}")
         else:
-            # Fallback if no summaries available
-            book = random.choice(self.available_books)
-            summary = {
-                'title': book,
-                'summary': f'{book} is a book of the Bible containing wisdom and spiritual guidance.'
-            }
+            # Use cached book summary
+            summary = self.current_book_summary
+            self.logger.debug(f"Using cached book summary for minute {current_minute}: {summary['title']}")
         
         # For time-based display, the reference will show current time
-        now = datetime.now()
         if self.time_format == '12':
             hour_12 = now.hour % 12
             if hour_12 == 0:
@@ -731,7 +751,7 @@ class VerseManager:
         return {
             'reference': time_display,  # Show current time instead of book name
             'text': summary['summary'],
-            'book': book,
+            'book': summary['title'],
             'chapter': 0,
             'verse': 0,
             'is_summary': True,

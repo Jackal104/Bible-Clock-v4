@@ -373,10 +373,12 @@ class ImageGenerator:
             base_margin = max(base_margin, 80)
         
         # Calculate actual reference Y position to ensure proper spacing
-        # For book summaries, account for the adjusted time position
+        # For book summaries, account for the time at the top
         if verse_data.get('is_summary'):
-            # Time is positioned lower in summary mode - use the adjusted position
-            ref_y = base_margin + self.reference_y_offset + ref_height  # Start after the time
+            # Time is positioned at the top in summary mode - start title after time + gap
+            time_y = base_margin + self.reference_y_offset
+            time_height = ref_height if self.reference_font else 60
+            ref_y = time_y + time_height + 20  # Start title after the time with gap
         else:
             ref_y = base_margin + self.reference_y_offset  # Original positioning for other modes
         min_gap = 40  # Minimum gap between reference and content
@@ -1706,6 +1708,9 @@ class ImageGenerator:
                 # Position lower for Time Mode and Date Mode, original for Devotional Mode only
                 if verse_data.get('is_devotional'):
                     # For Devotional Mode, use original position to avoid overlapping
+                    y = base_margin + self.reference_y_offset
+                elif verse_data.get('is_summary'):
+                    # For Book Summaries, keep time at the top for visibility
                     y = base_margin + self.reference_y_offset
                 else:
                     # For Time Mode and Date Mode, position lower - start where the bottom of the current placement would be

@@ -71,7 +71,7 @@ class DisplayManager:
             self.logger.error(f"Display initialization failed: {e}")
             self.simulation_mode = True
     
-    def display_image(self, image: Image.Image, force_refresh: bool = False):
+    def display_image(self, image: Image.Image, force_refresh: bool = False, preserve_border: bool = False):
         """Display image on e-ink screen or save for simulation."""
         try:
             # Resize image to display dimensions
@@ -98,7 +98,7 @@ class DisplayManager:
                 self._simulate_display(image)
                 self.logger.info("Display updated (simulation mode)")
             else:
-                self._display_on_hardware(image, force_refresh)
+                self._display_on_hardware(image, force_refresh, preserve_border)
                 self.logger.info("Display updated (hardware mode)")
             
             self.last_image_hash = image_hash
@@ -113,7 +113,7 @@ class DisplayManager:
         image.save(simulation_path)
         self.logger.info(f"Display simulated - image saved to {simulation_path}")
     
-    def _display_on_hardware(self, image: Image.Image, force_refresh: bool):
+    def _display_on_hardware(self, image: Image.Image, force_refresh: bool, preserve_border: bool = False):
         """Display image on actual e-ink hardware."""
         if not self.display_device:
             raise RuntimeError("Display device not initialized")
@@ -142,12 +142,27 @@ class DisplayManager:
         
         # Smart refresh mode - full refresh only when needed
         if force_refresh or self._should_force_refresh():
-            # Full refresh for background changes or scheduled refreshes
-            self.display_device.frame_buf.paste(image, (0, 0))
-            self.display_device.draw_full(DisplayModes.GC16)
-            self.last_full_refresh = time.time()
-            self.partial_refresh_count = 0  # Reset counter after full refresh
-            self.logger.debug("Full display refresh (background change or scheduled)")
+            if preserve_border:
+                # Border-preserving refresh: only refresh the content area, not the borders
+                border_width = 40  # Match decorative border width
+                content_area = (border_width, border_width, 
+                               self.width - border_width, self.height - border_width)
+                
+                # Paste only the content area (excluding borders)
+                content_image = image.crop(content_area)
+                self.display_device.frame_buf.paste(content_image, content_area[:2])
+                
+                # Use partial refresh for the content area to avoid jarring border flash
+                self.display_device.draw_partial(DisplayModes.DU)
+                self.partial_refresh_count += 1
+                self.logger.debug("Border-preserving refresh (content area only)")
+            else:
+                # Full refresh for background changes or scheduled refreshes
+                self.display_device.frame_buf.paste(image, (0, 0))
+                self.display_device.draw_full(DisplayModes.GC16)
+                self.last_full_refresh = time.time()
+                self.partial_refresh_count = 0  # Reset counter after full refresh
+                self.logger.debug("Full display refresh (background change or scheduled)")
         else:
             # Smooth partial refresh for regular verse updates
             self.display_device.frame_buf.paste(image, (0, 0))

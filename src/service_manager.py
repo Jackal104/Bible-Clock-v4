@@ -190,10 +190,10 @@ class ServiceManager:
                     # For devotional mode, only force refresh on background/parallel changes
                     force_refresh = background_changed or parallel_mode_changed
                 elif is_date_mode:
-                    # For date mode, force refresh every 5 minutes to prevent artifacts from frequent cycling
-                    time_since_last_refresh = time.time() - self.display_manager.last_full_refresh
-                    should_refresh_by_interval = time_since_last_refresh >= 300  # 5 minutes
-                    force_refresh = background_changed or parallel_mode_changed or should_refresh_by_interval
+                    # For date mode, force refresh on every cycle but preserve borders to reduce jarring
+                    # Date mode cycles content every minute, so we need clean refreshes
+                    force_refresh = True  # Always force refresh for date mode cycling
+                    self.logger.debug("Date mode cycling - forcing border-preserving refresh to prevent artifacts")
                 elif is_summary_mode:
                     # For book summaries, check if we need frequent refresh for pagination
                     time_since_last_refresh = time.time() - self.display_manager.last_full_refresh
@@ -214,7 +214,9 @@ class ServiceManager:
                         # For non-parallel modes, only refresh on changes
                         force_refresh = background_changed or parallel_mode_changed
                 
-                self.display_manager.display_image(image, force_refresh=force_refresh)
+                # Use border-preserving refresh for date mode to reduce visual jarring
+                preserve_border = is_date_mode and force_refresh
+                self.display_manager.display_image(image, force_refresh=force_refresh, preserve_border=preserve_border)
                 
                 # Update tracking
                 self.last_update = datetime.now()

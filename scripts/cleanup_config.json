@@ -1,0 +1,19 @@
+{
+  "log_retention_days": 7,
+  "max_log_size_mb": 10,
+  "temp_file_retention_hours": 24,
+  "debug_file_retention_hours": 2,
+  "audio_test_retention_hours": 6,
+  "python_cache_cleanup": true,
+  "preserve_patterns": [
+    "data/translations/*.json",
+    "images/**/*.png",
+    "src/**/*.py",
+    "*.md",
+    "requirements*.txt",
+    "piper/**/*"
+  ],
+  "cleanup_log_path": "/home/admin/Bible-Clock-v4/logs/cleanup.log",
+  "max_cleanup_log_size_mb": 5,
+  "dry_run": false
+}

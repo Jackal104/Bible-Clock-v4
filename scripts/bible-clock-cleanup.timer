@@ -1,0 +1,16 @@
+[Unit]
+Description=Run Bible Clock Weekly Cleanup
+Requires=bible-clock-cleanup.service
+
+[Timer]
+# Run every Sunday at 3:00 AM
+OnCalendar=Sun *-*-* 03:00:00
+# Also run 10 minutes after boot (for systems that are off on Sunday)
+OnBootSec=10min
+# If the system was off when timer should have triggered, run when it comes back up
+Persistent=true
+# Add some randomization to avoid system load spikes
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target

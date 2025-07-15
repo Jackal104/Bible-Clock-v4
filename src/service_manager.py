@@ -83,6 +83,9 @@ class ServiceManager:
         # Start advanced scheduler
         self.scheduler.start()
         
+        # Initial verse display - show verse immediately on startup
+        self._update_verse(force_immediate=True)
+        
         # Start web interface FIRST (before voice control blocks)
         if self.web_interface:
             self._start_web_interface()
@@ -108,9 +111,6 @@ class ServiceManager:
                     self.logger.info("Voice control auto-initialized")
             except Exception as e:
                 self.logger.error(f"Voice control auto-initialization failed: {e}")
-        
-        # Initial verse display
-        self._update_verse()
         
         self.logger.info("Bible Clock service started")
         
@@ -141,7 +141,7 @@ class ServiceManager:
         self.logger.info("Bible Clock service stopped")
     
     @error_handler.with_retry(max_retries=2)
-    def _update_verse(self):
+    def _update_verse(self, force_immediate=False):
         """Update the displayed verse at precise minute boundaries."""
         now = datetime.now()
         
@@ -149,12 +149,14 @@ class ServiceManager:
         last_verse_data = getattr(self, '_last_verse_data', None)
         is_summary_mode = last_verse_data and last_verse_data.get('is_summary', False) if last_verse_data else False
         
-        # Only update if we're at the start of a minute (0-2 seconds) OR if we're in summary mode needing pagination
+        # Only update if we're at the start of a minute (0-2 seconds) OR if we're in summary mode needing pagination OR if forced
         minute_boundary_update = now.second <= 2
         summary_pagination_update = is_summary_mode and hasattr(self.display_manager, 'last_full_refresh') and (time.time() - self.display_manager.last_full_refresh >= 15)
         
-        if minute_boundary_update or summary_pagination_update:
-            if summary_pagination_update:
+        if minute_boundary_update or summary_pagination_update or force_immediate:
+            if force_immediate:
+                self.logger.info("Startup verse display - showing current time verse immediately")
+            elif summary_pagination_update:
                 self.logger.debug("Book summary pagination - triggering 15-second update")
             with self.performance_monitor.time_operation('verse_update'):
                 # Get current verse

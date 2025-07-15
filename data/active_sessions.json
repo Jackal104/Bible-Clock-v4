@@ -1,0 +1,15 @@
+{
+  "455c80ca-d9c2-4fe4-a009-4e0a4fae3ba8": {
+    "session_id": "455c80ca-d9c2-4fe4-a009-4e0a4fae3ba8",
+    "turns": [
+      {
+        "question": "reverse in more detail for me",
+        "response": "Certainly! In Deuteronomy 9:29, Moses is reminding the Israelites that despite their rebelliousness and sinfulness, they are still God's chosen people...",
+        "timestamp": "2025-07-11T21:30:13.417463",
+        "category": "bible_verse"
+      }
+    ],
+    "created_at": "2025-07-11T21:30:13.417077",
+    "last_activity": "2025-07-11T21:30:13.417485"
+  }
+}

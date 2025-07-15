@@ -88,18 +88,34 @@
             <h3 class="text-lg font-semibold text-bible-dark mb-4">Visual Settings</h3>
             
             <div class="space-y-6">
-                <!-- Background Selection -->
+                <!-- Image Selection Tabs -->
                 <div>
                     <div class="flex justify-between items-center mb-3">
-                        <label class="block text-sm font-medium text-gray-700">Background Images</label>
+                        <label class="block text-sm font-medium text-gray-700">Image Selection</label>
                         <div class="text-sm text-gray-500">
                             <span id="bg-page-info">Page 1 of 5</span>
                         </div>
                     </div>
                     
+                    <!-- Image Type Tabs -->
+                    <div class="flex border-b border-gray-200 mb-4">
+                        <button id="backgrounds-tab" onclick="switchImageTab('backgrounds')" 
+                                class="py-2 px-4 border-b-2 border-bible-accent text-bible-accent font-medium">
+                            Backgrounds
+                        </button>
+                        <button id="borders-tab" onclick="switchImageTab('borders')" 
+                                class="py-2 px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium ml-4">
+                            Borders
+                        </button>
+                        <button id="all-tab" onclick="switchImageTab('all')" 
+                                class="py-2 px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium ml-4">
+                            All Images
+                        </button>
+                    </div>
+                    
                     <!-- Thumbnail Gallery (6 per page) -->
                     <div id="background-gallery" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <!-- Background thumbnails will be loaded here -->
+                        <!-- Image thumbnails will be loaded here -->
                     </div>
                     
                     <!-- Pagination Controls -->
@@ -605,8 +621,10 @@ function updateMultipleSettings(settings) {
     .catch(error => showError('Network error updating settings'));
 }
 
-// Background gallery state
+// Image gallery state
 let allBackgrounds = [];
+let filteredBackgrounds = [];
+let currentImageTab = 'backgrounds';
 let currentPage = 0;
 const backgroundsPerPage = 6;
 
@@ -620,40 +638,92 @@ function loadBackgrounds() {
                 if (data.data.cycling) {
                     updateCyclingUI(data.data.cycling);
                 }
+                filterBackgroundsByTab();
                 displayBackgroundGallery();
             }
         })
         .catch(error => console.error('Background load error:', error));
 }
 
+function switchImageTab(tabName) {
+    currentImageTab = tabName;
+    currentPage = 0; // Reset to first page when switching tabs
+    
+    // Update tab appearance
+    document.querySelectorAll('[id$="-tab"]').forEach(tab => {
+        tab.classList.remove('border-bible-accent', 'text-bible-accent');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    document.getElementById(tabName + '-tab').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById(tabName + '-tab').classList.add('border-bible-accent', 'text-bible-accent');
+    
+    // Filter and display images
+    filterBackgroundsByTab();
+    displayBackgroundGallery();
+}
+
+function filterBackgroundsByTab() {
+    if (currentImageTab === 'backgrounds') {
+        filteredBackgrounds = allBackgrounds.filter(bg => bg.type === 'background');
+    } else if (currentImageTab === 'borders') {
+        filteredBackgrounds = allBackgrounds.filter(bg => bg.type === 'border');
+    } else {
+        // 'all' tab - show everything
+        filteredBackgrounds = allBackgrounds;
+    }
+}
+
 function displayBackgroundGallery() {
     const gallery = document.getElementById('background-gallery');
-    const totalPages = Math.ceil(allBackgrounds.length / backgroundsPerPage);
+    const totalPages = Math.ceil(filteredBackgrounds.length / backgroundsPerPage);
     
-    // Update page info
-    document.getElementById('bg-page-info').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+    // Update page info with current tab info
+    const tabDisplayName = currentImageTab === 'backgrounds' ? 'Backgrounds' : 
+                          currentImageTab === 'borders' ? 'Borders' : 'All Images';
+    document.getElementById('bg-page-info').textContent = `${tabDisplayName}: Page ${currentPage + 1} of ${Math.max(1, totalPages)}`;
     
     // Clear gallery
     gallery.innerHTML = '';
     
+    if (filteredBackgrounds.length === 0) {
+        gallery.innerHTML = `
+            <div class="col-span-3 text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p>No ${tabDisplayName.toLowerCase()} found</p>
+            </div>
+        `;
+        updatePaginationControls(0);
+        return;
+    }
+    
     // Calculate start and end indices
     const startIndex = currentPage * backgroundsPerPage;
-    const endIndex = Math.min(startIndex + backgroundsPerPage, allBackgrounds.length);
+    const endIndex = Math.min(startIndex + backgroundsPerPage, filteredBackgrounds.length);
     
-    // Display backgrounds for current page
+    // Display images for current page
     for (let i = startIndex; i < endIndex; i++) {
-        const bg = allBackgrounds[i];
+        const bg = filteredBackgrounds[i];
         const div = document.createElement('div');
-        div.className = `relative cursor-pointer border-2 rounded-lg overflow-hidden ${bg.current ? 'border-bible-accent' : 'border-gray-200'} hover:border-bible-accent transition-colors`;
+        
+        // Add type indicator styling
+        const typeIndicator = bg.type === 'border' ? 'border-blue-500' : 
+                             bg.type === 'background' ? 'border-green-500' : 'border-gray-400';
+        
+        div.className = `relative cursor-pointer border-2 rounded-lg overflow-hidden ${bg.current ? 'border-bible-accent ring-2 ring-bible-accent ring-opacity-50' : 'border-gray-200'} hover:border-bible-accent transition-all`;
         div.onclick = () => selectBackground(bg.index);
         
         div.innerHTML = `
             <div class="aspect-square relative">
-                <img src="${bg.thumbnail}" alt="${bg.name}" class="w-full h-full object-cover">
-                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-2">
+                <img src="${bg.thumbnail}" alt="${bg.name}" class="w-full h-full object-cover" onerror="this.src='/static/placeholder.png'">
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-xs p-2">
                     <div class="font-medium truncate">${bg.name}</div>
+                    <div class="text-xs text-gray-300 capitalize">${bg.type}</div>
                 </div>
-                ${bg.current ? '<div class="absolute top-2 right-2 w-4 h-4 bg-bible-accent rounded-full border-2 border-white"></div>' : ''}
+                ${bg.current ? '<div class="absolute top-2 right-2 w-4 h-4 bg-bible-accent rounded-full border-2 border-white shadow-lg"></div>' : ''}
+                <div class="absolute top-2 left-2 w-3 h-3 ${bg.type === 'border' ? 'bg-blue-500' : bg.type === 'background' ? 'bg-green-500' : 'bg-gray-400'} rounded-full border border-white"></div>
             </div>
         `;
         
@@ -684,7 +754,7 @@ function updatePaginationControls(totalPages) {
 }
 
 function changePage(direction) {
-    const totalPages = Math.ceil(allBackgrounds.length / backgroundsPerPage);
+    const totalPages = Math.ceil(filteredBackgrounds.length / backgroundsPerPage);
     const newPage = currentPage + direction;
     
     if (newPage >= 0 && newPage < totalPages) {
@@ -724,8 +794,9 @@ function populateFontSelect(fonts) {
 
 function selectBackground(index) {
     updateSetting('background_index', index);
-    // Update current selection in local array
+    // Update current selection in both arrays
     allBackgrounds.forEach(bg => bg.current = bg.index === index);
+    filteredBackgrounds.forEach(bg => bg.current = bg.index === index);
     displayBackgroundGallery(); // Refresh display
 }
 

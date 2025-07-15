@@ -120,54 +120,89 @@ class ImageGenerator:
                     self.logger.warning(f"Could not load font {font_file}: {e}")
     
     def _load_backgrounds(self):
-        """Initialize background metadata for lazy loading."""
+        """Initialize background and border metadata for lazy loading."""
         self.background_files = []  # Store file paths instead of loaded images
         self.background_names = []
+        self.background_types = []  # Track if it's a background or border
         self.background_cache = {}  # LRU cache for loaded backgrounds
         self.max_cached_backgrounds = 3  # Limit cached backgrounds
-        background_dir = Path('images')
         
-        if not background_dir.exists():
-            self.logger.warning(f"Background directory {background_dir} does not exist")
-            self.background_files.append(None)  # Marker for default background
-            self.background_names.append("Default Background")
-            return
+        # Load backgrounds from images/backgrounds/
+        backgrounds_dir = Path('images/backgrounds')
+        borders_dir = Path('images/borders')
         
-        # Get all PNG files in the images directory, sorted by filename
-        background_files = sorted(background_dir.glob('*.png'))
+        # Load background images
+        if backgrounds_dir.exists():
+            background_files = sorted(backgrounds_dir.glob('*.png'))
+            for bg_path in background_files:
+                try:
+                    self.background_files.append(bg_path)
+                    self.background_types.append('background')
+                    
+                    # Extract readable name from filename
+                    name = bg_path.stem
+                    if '_' in name and name.split('_')[0].isdigit():
+                        name = '_'.join(name.split('_')[1:]).replace('_', ' ')
+                    else:
+                        name = name.replace('_', ' ')
+                    
+                    self.background_names.append(f"BG: {name}")
+                    self.logger.debug(f"Found background: {bg_path.name} as '{name}'")
+                    
+                except Exception as e:
+                    self.logger.warning(f"Failed to read background {bg_path.name}: {e}")
         
-        if not background_files:
-            self.logger.warning("No PNG background files found in images directory")
-            self.background_files.append(None)  # Marker for default background
-            self.background_names.append("Default Background")
-            return
+        # Load border images
+        if borders_dir.exists():
+            border_files = sorted(borders_dir.glob('*.png'))
+            for border_path in border_files:
+                try:
+                    self.background_files.append(border_path)
+                    self.background_types.append('border')
+                    
+                    # Extract readable name from filename
+                    name = border_path.stem
+                    if '_' in name and name.split('_')[0].isdigit():
+                        name = '_'.join(name.split('_')[1:]).replace('_', ' ')
+                    else:
+                        name = name.replace('_', ' ')
+                    
+                    self.background_names.append(f"Border: {name}")
+                    self.logger.debug(f"Found border: {border_path.name} as '{name}'")
+                    
+                except Exception as e:
+                    self.logger.warning(f"Failed to read border {border_path.name}: {e}")
         
-        for bg_path in background_files:
-            try:
-                # Just store the path and extract name, don't load image yet
-                self.background_files.append(bg_path)
-                
-                # Extract readable name from filename (remove number prefix and extension)
-                name = bg_path.stem
-                if '_' in name and name.split('_')[0].isdigit():
-                    # Remove number prefix (e.g., "01_Golden_Cross_Traditional" -> "Golden Cross Traditional")
-                    name = '_'.join(name.split('_')[1:]).replace('_', ' ')
-                else:
-                    name = name.replace('_', ' ')
-                
-                self.background_names.append(name)
-                self.logger.debug(f"Found background: {bg_path.name} as '{name}'")
-                
-            except Exception as e:
-                self.logger.warning(f"Failed to read background {bg_path.name}: {e}")
+        # Fallback for legacy images directory
+        legacy_dir = Path('images')
+        if not self.background_files and legacy_dir.exists():
+            self.logger.info("Loading legacy images from images/ directory")
+            legacy_files = sorted(legacy_dir.glob('*.png'))
+            for bg_path in legacy_files:
+                try:
+                    self.background_files.append(bg_path)
+                    self.background_types.append('legacy')
+                    
+                    name = bg_path.stem
+                    if '_' in name and name.split('_')[0].isdigit():
+                        name = '_'.join(name.split('_')[1:]).replace('_', ' ')
+                    else:
+                        name = name.replace('_', ' ')
+                    
+                    self.background_names.append(name)
+                    self.logger.debug(f"Found legacy image: {bg_path.name} as '{name}'")
+                    
+                except Exception as e:
+                    self.logger.warning(f"Failed to read legacy image {bg_path.name}: {e}")
         
         if not self.background_files:
             # Create a marker for default background if none found
             self.background_files.append(None)
             self.background_names.append("Default Background")
+            self.background_types.append('default')
             self.logger.info("Using default background")
         else:
-            self.logger.info(f"Found {len(self.background_files)} background images (lazy loading enabled)")
+            self.logger.info(f"Found {len(self.background_files)} images ({sum(1 for t in self.background_types if t == 'background')} backgrounds, {sum(1 for t in self.background_types if t == 'border')} borders)")
     
     def _create_default_background(self) -> Image.Image:
         """Create a simple default background."""
@@ -780,21 +815,39 @@ class ImageGenerator:
         return None
     
     def get_available_backgrounds(self) -> List[Dict]:
-        """Get available backgrounds with metadata and thumbnails."""
+        """Get available backgrounds and borders with metadata and thumbnails."""
         bg_info = []
         for i in range(len(self.background_files)):
             if hasattr(self, 'background_names') and self.background_names and i < len(self.background_names):
                 name = self.background_names[i]
             else:
-                name = f"Background {i + 1}"
+                name = f"Image {i + 1}"
             
-            # Generate thumbnail filename
-            bg_filename = f"{i+1:02d}_{name.replace(' ', '_')}.png"
-            thumb_filename = f"thumb_{bg_filename.replace('.png', '.jpg')}"
+            # Get image type
+            image_type = 'default'
+            if hasattr(self, 'background_types') and i < len(self.background_types):
+                image_type = self.background_types[i]
+            
+            # Generate thumbnail filename based on image type
+            if self.background_files[i] is not None:
+                bg_path = self.background_files[i]
+                base_name = bg_path.stem
+                
+                if image_type == 'background':
+                    thumb_filename = f"bg_{base_name}_thumb.jpg"
+                elif image_type == 'border':
+                    thumb_filename = f"border_{base_name}_thumb.jpg"
+                else:
+                    # Legacy format
+                    thumb_filename = f"thumb_{base_name}.jpg"
+            else:
+                # Default background
+                thumb_filename = "default_thumb.jpg"
             
             bg_info.append({
                 'index': i,
                 'name': name,
+                'type': image_type,
                 'thumbnail': f"/static/thumbnails/{thumb_filename}",
                 'current': i == self.current_background_index
             })

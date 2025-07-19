@@ -26,6 +26,11 @@ class ImageGenerator:
         self.verse_size = int(os.getenv('VERSE_FONT_SIZE', '80'))  # Larger default
         self.reference_size = int(os.getenv('REFERENCE_FONT_SIZE', '84'))  # Make reference larger and more prominent
         
+        # Enhanced layering support
+        self.enhanced_layering_enabled = True
+        self.separate_background_index = 0  # Pure white by default
+        self.separate_border_index = 0      # No border by default
+        
         # Background cycling settings
         self.background_cycling_enabled = False
         self.background_cycling_interval = 30  # minutes
@@ -38,6 +43,10 @@ class ImageGenerator:
         
         # Load background images
         self._load_backgrounds()
+        
+        # Load enhanced layering components
+        self._load_separate_backgrounds()
+        self._load_separate_borders()
         
         # Current background index for cycling
         self.current_background_index = 0
@@ -204,6 +213,103 @@ class ImageGenerator:
         else:
             self.logger.info(f"Found {len(self.background_files)} images ({sum(1 for t in self.background_types if t == 'background')} backgrounds, {sum(1 for t in self.background_types if t == 'border')} borders)")
     
+    def _load_separate_backgrounds(self):
+        """Load backgrounds separately for enhanced layering."""
+        self.separate_backgrounds = []
+        self.separate_background_names = []
+        
+        # Add pure white as first option
+        self.separate_backgrounds.append(None)  # None = pure white
+        self.separate_background_names.append("Pure White")
+        
+        # Load background files
+        bg_dir = Path('images/backgrounds')
+        if bg_dir.exists():
+            for bg_file in sorted(bg_dir.glob('*.png')):
+                try:
+                    self.separate_backgrounds.append(bg_file)
+                    name = bg_file.stem
+                    if '_' in name and name.split('_')[0].isdigit():
+                        name = '_'.join(name.split('_')[1:]).replace('_', ' ')
+                    self.separate_background_names.append(name)
+                    self.logger.debug(f"Loaded separate background: {name}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to load separate background {bg_file}: {e}")
+    
+    def _load_separate_borders(self):
+        """Load borders separately for enhanced layering."""
+        self.separate_borders = []
+        self.separate_border_names = []
+        
+        # Add "no border" as first option
+        self.separate_borders.append(None)  # None = no border
+        self.separate_border_names.append("No Border")
+        
+        # Load border files
+        border_dir = Path('images/borders')
+        if border_dir.exists():
+            for border_file in sorted(border_dir.glob('*.png')):
+                try:
+                    self.separate_borders.append(border_file)
+                    name = border_file.stem
+                    if '_' in name and name.split('_')[0].isdigit():
+                        name = '_'.join(name.split('_')[1:]).replace('_', ' ')
+                    self.separate_border_names.append(name)
+                    self.logger.debug(f"Loaded separate border: {name}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to load separate border {border_file}: {e}")
+    
+    def _create_enhanced_layered_background(self) -> Image.Image:
+        """Create a properly layered background + border image."""
+        if not self.enhanced_layering_enabled:
+            return self._get_background(self.current_background_index)
+        
+        # Start with pure white base
+        image = Image.new('L', (self.width, self.height), 255)
+        
+        # Layer 1: Background (if not pure white)
+        if (self.separate_background_index < len(self.separate_backgrounds) and 
+            self.separate_backgrounds[self.separate_background_index] is not None):
+            
+            bg_path = self.separate_backgrounds[self.separate_background_index]
+            try:
+                bg_img = Image.open(bg_path)
+                bg_img = bg_img.resize((self.width, self.height), Image.Resampling.LANCZOS)
+                bg_img = bg_img.convert('L')  # Ensure grayscale
+                image = bg_img.copy()
+                self.logger.debug(f"Applied background: {bg_path.name}")
+            except Exception as e:
+                self.logger.warning(f"Failed to apply background {bg_path}: {e}")
+        
+        # Layer 2: Border (if selected)
+        if (self.separate_border_index < len(self.separate_borders) and 
+            self.separate_borders[self.separate_border_index] is not None):
+            
+            border_path = self.separate_borders[self.separate_border_index]
+            try:
+                border_img = Image.open(border_path)
+                border_img = border_img.resize((self.width, self.height), Image.Resampling.LANCZOS)
+                border_img = border_img.convert('L')  # Ensure grayscale
+                
+                # Composite border over background using proper blending
+                import numpy as np
+                
+                image_array = np.array(image)
+                border_array = np.array(border_img)
+                
+                # Apply border where it's darker than background
+                # This preserves the background while adding border details
+                mask = border_array < image_array
+                image_array[mask] = border_array[mask]
+                
+                image = Image.fromarray(image_array, mode='L')
+                self.logger.debug(f"Applied border: {border_path.name}")
+                
+            except Exception as e:
+                self.logger.warning(f"Failed to apply border {border_path}: {e}")
+        
+        return image
+    
     def _create_default_background(self) -> Image.Image:
         """Create a simple default background."""
         bg = Image.new('L', (self.width, self.height), 255)  # White background
@@ -262,9 +368,12 @@ class ImageGenerator:
         # Track background changes for display refresh optimization
         self.last_background_index = self.current_background_index
         
-        # Get current background using lazy loading
+        # Get current background using enhanced layering or legacy system
         try:
-            background = self._get_background(self.current_background_index)
+            if self.enhanced_layering_enabled:
+                background = self._create_enhanced_layered_background()
+            else:
+                background = self._get_background(self.current_background_index)
         except Exception as e:
             self.logger.error(f"Error loading background: {e}")
             background = self._create_default_background()
@@ -1792,3 +1901,70 @@ class ImageGenerator:
             
             # Draw the reference at the configured position (prominently at top for center-top)
             draw.text((x, y), display_text, fill=0, font=self.reference_font)
+    
+    # Enhanced Layering Methods
+    def set_separate_background(self, index: int):
+        """Set background by index for enhanced layering."""
+        if 0 <= index < len(self.separate_backgrounds):
+            self.separate_background_index = index
+            self.logger.info(f"Separate background set to: {self.separate_background_names[index]}")
+        else:
+            self.logger.warning(f"Invalid separate background index: {index}")
+    
+    def set_separate_border(self, index: int):
+        """Set border by index for enhanced layering."""
+        if 0 <= index < len(self.separate_borders):
+            self.separate_border_index = index
+            self.logger.info(f"Separate border set to: {self.separate_border_names[index]}")
+        else:
+            self.logger.warning(f"Invalid separate border index: {index}")
+    
+    def get_separate_background_info(self) -> Dict:
+        """Get current separate background information."""
+        return {
+            'index': self.separate_background_index,
+            'name': self.separate_background_names[self.separate_background_index] if self.separate_background_index < len(self.separate_background_names) else 'Unknown',
+            'total': len(self.separate_backgrounds)
+        }
+    
+    def get_separate_border_info(self) -> Dict:
+        """Get current separate border information."""
+        return {
+            'index': self.separate_border_index,
+            'name': self.separate_border_names[self.separate_border_index] if self.separate_border_index < len(self.separate_border_names) else 'Unknown',
+            'total': len(self.separate_borders)
+        }
+    
+    def get_available_separate_backgrounds(self) -> List[Dict]:
+        """Get list of available separate backgrounds."""
+        return [
+            {
+                'index': i,
+                'name': name,
+                'current': i == self.separate_background_index,
+                'type': 'background'
+            }
+            for i, name in enumerate(self.separate_background_names)
+        ]
+    
+    def get_available_separate_borders(self) -> List[Dict]:
+        """Get list of available separate borders."""
+        return [
+            {
+                'index': i,
+                'name': name,
+                'current': i == self.separate_border_index,
+                'type': 'border'
+            }
+            for i, name in enumerate(self.separate_border_names)
+        ]
+    
+    def toggle_enhanced_layering(self, enabled: bool = None):
+        """Toggle or set enhanced layering mode."""
+        if enabled is None:
+            self.enhanced_layering_enabled = not self.enhanced_layering_enabled
+        else:
+            self.enhanced_layering_enabled = enabled
+        
+        self.logger.info(f"Enhanced layering {'enabled' if self.enhanced_layering_enabled else 'disabled'}")
+        return self.enhanced_layering_enabled
